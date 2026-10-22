@@ -65,6 +65,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [clearAfterDownload, setClearAfterDownload] = useState<boolean>(false);
+  const [directDownloadUrl, setDirectDownloadUrl] = useState<string | null>(null);
 
   // Determine effective creation mode (STANDARD, TEMPLATE, or ADVANCED)
   const effectiveMode: CreationMode =
@@ -77,6 +78,16 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       AdFlowService.startDownloadFlow(effectiveMode);
     }
   }, [isOpen, effectiveMode]);
+
+  const handleClose = () => {
+    if (directDownloadUrl) {
+      try {
+        URL.revokeObjectURL(directDownloadUrl);
+      } catch {}
+      setDirectDownloadUrl(null);
+    }
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -139,8 +150,14 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         Date.now() - startTime
       );
 
-      // Save PDF directly to user's device
-      pdf.save(expectedFilename);
+      // Create Blob for reliable mobile download and fallback link
+      const blob = pdf.output('blob');
+      const blobUrl = URL.createObjectURL(blob);
+      setDirectDownloadUrl(blobUrl);
+
+      // Save PDF directly to user's device via cross-platform saver (Web Share / Blob link)
+      await PDFService.saveBlobFile(blob, expectedFilename, 'application/pdf');
+
       analyticsService.trackDownloadCompleted('pdf', templateId, effectiveMode, language);
       triggerConfetti();
 
@@ -150,10 +167,6 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       setGenerationState('ready');
       setStatusMessage(isHindi ? 'PDF तैयार है! डाउनलोड पूर्ण।' : 'PDF Ready! Download Complete.');
       handlePostDownloadCleanup();
-
-      setTimeout(() => {
-        setGenerationState('idle');
-      }, 3500);
     } catch (err: any) {
       setGenerationState('error');
       setErrorMessage(
@@ -214,7 +227,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         {/* Close Button */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-3 right-3 sm:top-4 sm:right-4 min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-full cursor-pointer transition-all"
           aria-label="Close download dialog"
         >
@@ -268,13 +281,29 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         )}
 
         {generationState === 'ready' && statusMessage && (
-          <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs font-bold text-emerald-900 flex items-center gap-2.5 shadow-2xs">
-            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
+          <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs font-bold text-emerald-900 flex items-start gap-2.5 shadow-2xs">
+            <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
             <div className="flex-1">
               <div>{statusMessage}</div>
               <div className="text-[11px] font-normal text-emerald-700">
                 {isHindi ? 'फ़ाइल आपके डिवाइस पर सहेजी जा चुकी है।' : 'File has been saved to your downloads folder.'}
               </div>
+              {directDownloadUrl && (
+                <div className="mt-2 pt-1.5 border-t border-emerald-200/60">
+                  <a
+                    href={directDownloadUrl}
+                    download={expectedFilename}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-900 hover:text-emerald-950 underline"
+                  >
+                    <Download className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      {isHindi ? 'डाउनलोड नहीं हुआ? यहाँ टैप करके सहेजें' : "Didn't download? Tap here to save/open"}
+                    </span>
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -424,11 +453,11 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         aria-hidden="true"
         style={{
           position: 'fixed',
-          left: 0,
+          left: '-9999px',
           top: 0,
-          width: '210mm',
+          width: '794px',
           zIndex: -9999,
-          opacity: 0,
+          opacity: 1,
           pointerEvents: 'none'
         }}
       >

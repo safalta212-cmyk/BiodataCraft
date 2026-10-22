@@ -21,13 +21,22 @@ function mapFirebaseAuthError(code: string): string {
     case 'auth/invalid-email':
       return 'Please enter a valid administrator email address.';
     case 'auth/user-disabled':
-      return 'This administrator account has been suspended. Please contact the platform owner.';
+      return 'This administrator account has been suspended in Firebase Console.';
     case 'auth/too-many-requests':
       return 'Too many consecutive failed login attempts. Access is temporarily locked. Please try again in a few minutes.';
     case 'auth/network-request-failed':
       return 'Network connection error. Please verify your internet connection.';
+    case 'auth/operation-not-allowed':
+      return 'Email/Password sign-in is disabled in your Firebase project. Please enable Email/Password in Firebase Console → Authentication → Sign-in method, or use your Vercel environment admin credentials.';
+    case 'auth/unauthorized-domain':
+      return 'This domain (biodatacraft.vercel.app) is not authorized in Firebase. Add it in Firebase Console → Authentication → Settings → Authorized domains.';
+    case 'auth/api-key-not-valid':
+    case 'auth/invalid-api-key':
+      return 'Firebase API key is invalid. Please check VITE_FIREBASE_API_KEY in Vercel Environment Variables, or use environment admin credentials.';
+    case 'auth/project-not-found':
+      return 'Firebase project not found. Please verify VITE_FIREBASE_PROJECT_ID in Vercel.';
     default:
-      return 'Authentication failed. Please verify your administrator credentials.';
+      return 'Authentication failed. Please verify your administrator credentials or check your Firebase settings.';
   }
 }
 
@@ -168,31 +177,27 @@ class AdminAuthService {
       return { success: false, error: 'Password must be at least 6 characters long.' };
     }
 
-    // 1. Firebase Authentication Path (Primary)
-    if (isConfigured && auth) {
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, password);
-        const adminUser = this.mapFirebaseUserToAdmin(userCredential.user);
-        this.setSession(adminUser);
-        return { success: true, user: adminUser };
-      } catch (err: any) {
-        const errorMessage = mapFirebaseAuthError(err?.code || '');
-        return { success: false, error: errorMessage };
-      }
-    }
-
-    // 2. Offline / Development Environment Fallback (when Firebase keys are not set in environment)
+    // 1. Environment-Configured Administrator Credentials (Vercel / Local)
     const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : ({} as any);
-    const configuredAdminEmail = env.VITE_ADMIN_EMAIL;
-    const configuredAdminPass = env.VITE_ADMIN_PASSWORD;
+    const configuredAdminEmail = (env.VITE_ADMIN_EMAIL || '').trim();
+    const configuredAdminPass = (env.VITE_ADMIN_PASSWORD || '').trim();
+    const configuredAdminPasscode = (env.VITE_ADMIN_PASSCODE || '').trim();
 
-    // Secure environment-configured fallback credentials
-    if (
+    // Check if credentials match Vercel environment variables
+    const matchesEmailAndPassword = Boolean(
       configuredAdminEmail &&
       configuredAdminPass &&
       trimmedEmail.toLowerCase() === configuredAdminEmail.toLowerCase() &&
       password === configuredAdminPass
-    ) {
+    );
+
+    const matchesEmailAndPasscode = Boolean(
+      configuredAdminPasscode &&
+      password === configuredAdminPasscode &&
+      (configuredAdminEmail ? trimmedEmail.toLowerCase() === configuredAdminEmail.toLowerCase() : true)
+    );
+
+    if (matchesEmailAndPassword || matchesEmailAndPasscode) {
       const adminUser: AdminUser = {
         uid: 'admin_env_' + Math.random().toString(36).substring(2, 9),
         email: trimmedEmail,
@@ -203,6 +208,19 @@ class AdminAuthService {
       };
       this.setSession(adminUser);
       return { success: true, user: adminUser };
+    }
+
+    // 2. Firebase Authentication Path (if configured)
+    if (isConfigured && auth) {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, password);
+        const adminUser = this.mapFirebaseUserToAdmin(userCredential.user);
+        this.setSession(adminUser);
+        return { success: true, user: adminUser };
+      } catch (err: any) {
+        const errorMessage = mapFirebaseAuthError(err?.code || '');
+        return { success: false, error: errorMessage };
+      }
     }
 
     return {

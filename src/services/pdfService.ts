@@ -212,9 +212,16 @@ export class PDFService {
       compress: true
     });
 
+    const isMobile =
+      typeof navigator !== 'undefined' &&
+      (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && window.innerWidth < 1024));
+
     const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
     const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
-    const scale = options?.scale ?? 2; // 2x Retina scale
+    // Mobile devices (especially iOS WebKit) have strict canvas memory limits.
+    // scale: 1.8 on mobile guarantees crisp A4 rendering while preventing tab crashes.
+    const scale = options?.scale ?? (isMobile ? 1.8 : 2);
 
     // 5. Render each page
     for (let i = 0; i < pagesToRender.length; i++) {
@@ -238,7 +245,34 @@ export class PDFService {
         scrollY: 0,
         x: 0,
         y: 0,
-        windowWidth: 794 // 210mm in standard 96dpi pixels
+        windowWidth: 794, // 210mm in standard 96dpi pixels
+        windowHeight: 1123, // 297mm in standard 96dpi pixels
+        onclone: (clonedDoc: Document, element: HTMLElement) => {
+          // Guarantee that the cloned element and all pages are fully visible at A4 dimensions
+          element.style.opacity = '1';
+          element.style.visibility = 'visible';
+          element.style.display = 'block';
+          element.style.width = '794px';
+          element.style.minWidth = '794px';
+          element.style.maxWidth = '794px';
+
+          if (element.parentElement) {
+            element.parentElement.style.opacity = '1';
+            element.parentElement.style.visibility = 'visible';
+            element.parentElement.style.width = '794px';
+          }
+
+          const printPages = clonedDoc.querySelectorAll('.print-page');
+          printPages.forEach((p) => {
+            const htmlP = p as HTMLElement;
+            htmlP.style.width = '794px';
+            htmlP.style.minWidth = '794px';
+            htmlP.style.maxWidth = '794px';
+            htmlP.style.opacity = '1';
+            htmlP.style.visibility = 'visible';
+            htmlP.style.display = 'flex';
+          });
+        }
       });
 
       let imgData: string;
@@ -270,6 +304,67 @@ export class PDFService {
   }
 
   /**
+   * Cross-platform file saver that works identically across desktop and mobile devices.
+   * On mobile devices (iOS Safari, Android Chrome):
+   * 1. Uses Web Share API if supported to allow saving to "Files", WhatsApp, or Downloads.
+   * 2. Falls back to a reliable, clean Blob object URL click.
+   */
+  static async saveBlobFile(
+    blob: Blob,
+    filename: string,
+    mimeType: string = 'application/pdf'
+  ): Promise<void> {
+    const isMobile =
+      typeof navigator !== 'undefined' &&
+      (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && window.innerWidth < 1024));
+
+    // 1. Mobile Web Share API (native sheet: "Save to Files", "WhatsApp", etc.)
+    if (isMobile && typeof navigator !== 'undefined' && navigator.canShare && typeof File !== 'undefined') {
+      try {
+        const file = new File([blob], filename, { type: mimeType });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: filename
+          });
+          return;
+        }
+      } catch (shareErr: any) {
+        // If user cancelled the share dialog, do not error out
+        if (shareErr?.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
+    // 2. Direct Blob ObjectURL download with iOS/Android compatible anchor attributes
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+
+    setTimeout(() => {
+      try {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      } catch {}
+    }, 12000);
+  }
+
+  /**
+   * Saves jsPDF instance using cross-platform mobile & desktop handlers
+   */
+  static async savePdfFile(pdf: jsPDFType, filename: string): Promise<void> {
+    const blob = pdf.output('blob');
+    await this.saveBlobFile(blob, filename, 'application/pdf');
+  }
+
+  /**
    * Generates and automatically downloads the professional PDF file:
    * Marriage-Biodata-[Name].pdf
    */
@@ -286,7 +381,7 @@ export class PDFService {
       const pdf = await this.generateBiodataPDF(dataOrElementId, options);
       const filename = getBiodataPdfFilename(candidateName);
 
-      pdf.save(filename);
+      await this.savePdfFile(pdf, filename);
       return true;
     } catch (error: any) {
       options?.onProgress?.({
@@ -300,7 +395,7 @@ export class PDFService {
   }
 
   /**
-   * Generates crisp PNG image for fast WhatsApp sharing
+   * Generates crisp PNG image for fast WhatsApp sharing across mobile and desktop
    */
   static async downloadBiodataPNG(
     elementId: string = 'biodata-print-container',
@@ -316,11 +411,16 @@ export class PDFService {
 
     const { html2canvas } = await getPdfEngines();
 
+    const isMobile =
+      typeof navigator !== 'undefined' &&
+      (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && window.innerWidth < 1024));
+
     // Look for first print-page
     const pageEl = (element.querySelector('.print-page') as HTMLElement) || element;
 
     const canvas = await html2canvas(pageEl, {
-      scale: 2,
+      scale: isMobile ? 1.8 : 2,
       useCORS: true,
       allowTaint: false,
       logging: false,
@@ -328,25 +428,53 @@ export class PDFService {
       scrollX: 0,
       scrollY: 0,
       x: 0,
-      y: 0
+      y: 0,
+      windowWidth: 794,
+      windowHeight: 1123,
+      onclone: (clonedDoc: Document, clonedEl: HTMLElement) => {
+        clonedEl.style.opacity = '1';
+        clonedEl.style.visibility = 'visible';
+        clonedEl.style.display = 'block';
+        clonedEl.style.width = '794px';
+        clonedEl.style.minWidth = '794px';
+        clonedEl.style.maxWidth = '794px';
+      }
     });
 
     const filename = getBiodataPngFilename(candidateName);
-    let imgData: string;
-    try {
-      imgData = canvas.toDataURL('image/png');
-    } catch {
-      try {
-        imgData = canvas.toDataURL('image/jpeg', 0.98);
-      } catch {
-        throw new Error('Image export failed due to browser security restrictions.');
-      }
-    }
 
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = imgData;
-    link.click();
+    await new Promise<void>((resolve, reject) => {
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          try {
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = dataUrl;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+              try {
+                document.body.removeChild(link);
+              } catch {}
+            }, 3000);
+            resolve();
+          } catch (e) {
+            reject(new Error('Image export failed on mobile browser.'));
+          }
+          return;
+        }
+
+        try {
+          await PDFService.saveBlobFile(blob, filename, 'image/png');
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      }, 'image/png');
+    });
+
     return true;
   }
 

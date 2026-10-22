@@ -682,16 +682,16 @@ export const CreateBiodataPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Dedicated Off-Screen Print & Export Target (Always in DOM, scale=1, 210mm width, ready on mobile/tablet/desktop) */}
+      {/* Dedicated Off-Screen Print & Export Target (Always in DOM, scale=1, 794px width, ready on mobile/tablet/desktop) */}
       <div
         aria-hidden="true"
         style={{
           position: 'fixed',
-          left: 0,
+          left: '-9999px',
           top: 0,
-          width: '210mm',
+          width: '794px',
           zIndex: -9999,
-          opacity: 0,
+          opacity: 1,
           pointerEvents: 'none'
         }}
       >

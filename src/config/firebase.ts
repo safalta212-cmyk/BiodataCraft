@@ -21,9 +21,18 @@ const firebaseConfig = {
   appId: env.VITE_FIREBASE_APP_ID || '',
 };
 
+const isPlaceholder = (val: string) =>
+  !val ||
+  val.trim() === '' ||
+  val.includes('your-') ||
+  val.includes('your_') ||
+  val.startsWith('TODO');
+
 const isConfigured = Boolean(
   firebaseConfig.apiKey &&
-  firebaseConfig.projectId
+  !isPlaceholder(firebaseConfig.apiKey) &&
+  firebaseConfig.projectId &&
+  !isPlaceholder(firebaseConfig.projectId)
 );
 
 let app: FirebaseApp | null = null;
