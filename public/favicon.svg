@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#92400e" />
+      <stop offset="50%" stop-color="#78350f" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+  </defs>
+  <!-- Rounded Shield Base -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#bgGrad)" stroke="#f59e0b" stroke-width="2" />
+  <!-- Sacred Auspicious Motif: Stylized Om with Floral Halo -->
+  <circle cx="32" cy="32" r="22" fill="none" stroke="#fef08a" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.6" />
+  <text x="32" y="41" font-family="'Rozha One', 'Noto Sans Devanagari', serif" font-size="28" font-weight="bold" fill="url(#goldGrad)" text-anchor="middle">ॐ</text>
+  <!-- Auspicious accent dots -->
+  <circle cx="32" cy="11" r="1.5" fill="#fef08a" />
+  <circle cx="32" cy="53" r="1.5" fill="#fef08a" />
+  <circle cx="11" cy="32" r="1.5" fill="#fef08a" />
+  <circle cx="53" cy="32" r="1.5" fill="#fef08a" />
+</svg>

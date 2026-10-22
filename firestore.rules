@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Template inventory - Public read for published designs, Admin full management
+    match /templates/{templateId} {
+      allow read: if resource.data.isPublished == true || request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Cultural Categories - Public read, Admin write
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Blog Posts & Editorial Content - Public read for published posts, Admin write
+    match /blog_posts/{postId} {
+      allow read: if resource.data.isPublished == true || request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Site Settings & Configuration - Public read, Admin write
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Analytics Aggregates - Admin read and write only (never exposed publicly)
+    match /analytics/{metricId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Contact Messages - Public submit only, Admin full management
+    // STRICT SEPARATION: Contact form is strictly for support feedback, never for customer biodatas
+    match /contact_messages/{messageId} {
+      // Only authenticated admins can read, update (mark status), or delete messages
+      allow read, update, delete: if request.auth != null;
+
+      // Anyone can submit a support inquiry with required fields and unread status
+      // Strictly enforce that no biodata or sensitive matrimonial records are accepted
+      allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'subject', 'message', 'status', 'createdAt', 'updatedAt', 'firestoreTimestamp'])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 2
+                    && request.resource.data.name.size() <= 100
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() >= 5
+                    && request.resource.data.email.size() <= 150
+                    && request.resource.data.subject is string
+                    && request.resource.data.subject.size() >= 3
+                    && request.resource.data.subject.size() <= 200
+                    && request.resource.data.message is string
+                    && request.resource.data.message.size() >= 5
+                    && request.resource.data.message.size() <= 3000
+                    && request.resource.data.status == 'unread'
+                    && !('biodata' in request.resource.data)
+                    && !('kundali' in request.resource.data)
+                    && !('gotra' in request.resource.data)
+                    && !('candidatePhoto' in request.resource.data)
+                    && !('familyDetails' in request.resource.data);
+    }
+
+    // STRICT ZERO CUSTOMER DATA GUARANTEE:
+    // Block all attempts to store customer profiles, contact info, biodatas or private records
+    match /biodatas/{document=**} {
+      allow read, write: if false;
+    }
+    match /customers/{document=**} {
+      allow read, write: if false;
+    }
+    match /submissions/{document=**} {
+      allow read, write: if false;
+    }
+    match /users/{document=**} {
+      allow read, write: if false;
+    }
+    match /profiles/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

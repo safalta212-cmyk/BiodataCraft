@@ -1,0 +1,6 @@
+{
+  "name": "BiodataCraft",
+  "description": "BiodataCraft - Professional Indian Marriage Biodata Maker. Create elegant, customized marriage biodata in English & Hindi without signup or data storage. 100% private, free PDF download.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

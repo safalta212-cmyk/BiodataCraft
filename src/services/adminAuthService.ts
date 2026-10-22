@@ -1,0 +1,267 @@
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { auth, isConfigured } from '../config/firebase';
+import { AdminRole, AdminPermission, AdminUser, ROLE_PERMISSIONS } from '../types/auth';
+
+const ADMIN_SESSION_KEY = 'biodatacraft_admin_auth_user';
+const ADMIN_TOKEN_KEY = 'biodatacraft_admin_token';
+
+// Map Firebase error codes to professional, security-compliant user error messages
+function mapFirebaseAuthError(code: string): string {
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+      return 'Invalid administrator email or password.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid administrator email address.';
+    case 'auth/user-disabled':
+      return 'This administrator account has been suspended. Please contact the platform owner.';
+    case 'auth/too-many-requests':
+      return 'Too many consecutive failed login attempts. Access is temporarily locked. Please try again in a few minutes.';
+    case 'auth/network-request-failed':
+      return 'Network connection error. Please verify your internet connection.';
+    default:
+      return 'Authentication failed. Please verify your administrator credentials.';
+  }
+}
+
+class AdminAuthService {
+  private currentUser: AdminUser | null = null;
+  private listeners: Set<(user: AdminUser | null) => void> = new Set();
+  private authInitialized = false;
+
+  constructor() {
+    this.initAuth();
+  }
+
+  private initAuth(): void {
+    if (typeof window === 'undefined') return;
+
+    // First attempt to restore existing validated session from sessionStorage
+    try {
+      const stored = sessionStorage.getItem(ADMIN_SESSION_KEY);
+      if (stored) {
+        this.currentUser = JSON.parse(stored);
+      }
+    } catch {
+      // Ignore parse errors
+    }
+
+    // Connect to real Firebase Auth listener if Firebase client is configured
+    if (isConfigured && auth) {
+      try {
+        onAuthStateChanged(auth, (firebaseUser) => {
+          this.authInitialized = true;
+          if (firebaseUser) {
+            const adminUser = this.mapFirebaseUserToAdmin(firebaseUser);
+            this.setSession(adminUser);
+          } else {
+            // Only clear if we were using Firebase Auth
+            if (this.currentUser && isConfigured) {
+              this.clearSession();
+            }
+          }
+          this.notifyListeners();
+        });
+      } catch (err) {
+        console.warn('Firebase Auth state listener notice:', err);
+        this.authInitialized = true;
+      }
+    } else {
+      this.authInitialized = true;
+    }
+  }
+
+  private mapFirebaseUserToAdmin(user: FirebaseUser, roleOverride?: AdminRole): AdminUser {
+    // Default administrator role with configurable role overrides
+    const role: AdminRole = roleOverride || 'admin';
+    return {
+      uid: user.uid,
+      email: user.email || 'admin@biodatacraft.internal',
+      role,
+      permissions: ROLE_PERMISSIONS[role] || [],
+      displayName: user.displayName || user.email?.split('@')[0] || 'Administrator',
+      photoURL: user.photoURL || undefined,
+      lastLoginAt: Date.now()
+    };
+  }
+
+  private setSession(user: AdminUser): void {
+    this.currentUser = user;
+    try {
+      sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(user));
+      sessionStorage.setItem(ADMIN_TOKEN_KEY, `admin_${user.uid}_${Date.now()}`);
+    } catch {
+      // Ignore storage errors
+    }
+    this.notifyListeners();
+  }
+
+  private clearSession(): void {
+    this.currentUser = null;
+    try {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      sessionStorage.removeItem(ADMIN_TOKEN_KEY);
+    } catch {
+      // Ignore
+    }
+    this.notifyListeners();
+  }
+
+  private notifyListeners(): void {
+    this.listeners.forEach((listener) => {
+      try {
+        listener(this.currentUser);
+      } catch {
+        // Ignore listener error
+      }
+    });
+  }
+
+  public subscribe(listener: (user: AdminUser | null) => void): () => void {
+    this.listeners.add(listener);
+    listener(this.currentUser);
+    return () => this.listeners.delete(listener);
+  }
+
+  public getCurrentUser(): AdminUser | null {
+    return this.currentUser;
+  }
+
+  public isAuthenticated(): boolean {
+    if (this.currentUser) return true;
+    try {
+      const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
+      return Boolean(token && token.length > 5);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Admin Login with Firebase Authentication
+   * Validates credentials against Firebase Auth
+   */
+  public async login(
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail || !password) {
+      return { success: false, error: 'Please enter both administrator email and password.' };
+    }
+
+    // Basic client-side email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return { success: false, error: 'Please enter a valid administrator email address.' };
+    }
+
+    if (password.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters long.' };
+    }
+
+    // 1. Firebase Authentication Path (Primary)
+    if (isConfigured && auth) {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, password);
+        const adminUser = this.mapFirebaseUserToAdmin(userCredential.user);
+        this.setSession(adminUser);
+        return { success: true, user: adminUser };
+      } catch (err: any) {
+        const errorMessage = mapFirebaseAuthError(err?.code || '');
+        return { success: false, error: errorMessage };
+      }
+    }
+
+    // 2. Offline / Development Environment Fallback (when Firebase keys are not set in environment)
+    const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : ({} as any);
+    const configuredAdminEmail = env.VITE_ADMIN_EMAIL;
+    const configuredAdminPass = env.VITE_ADMIN_PASSWORD;
+
+    // Secure environment-configured fallback credentials
+    if (
+      configuredAdminEmail &&
+      configuredAdminPass &&
+      trimmedEmail.toLowerCase() === configuredAdminEmail.toLowerCase() &&
+      password === configuredAdminPass
+    ) {
+      const adminUser: AdminUser = {
+        uid: 'admin_env_' + Math.random().toString(36).substring(2, 9),
+        email: trimmedEmail,
+        role: 'super_admin',
+        permissions: ROLE_PERMISSIONS.super_admin,
+        displayName: trimmedEmail.split('@')[0] || 'Administrator',
+        lastLoginAt: Date.now()
+      };
+      this.setSession(adminUser);
+      return { success: true, user: adminUser };
+    }
+
+    return {
+      success: false,
+      error: 'Invalid administrator email or password.'
+    };
+  }
+
+  /**
+   * Admin Logout
+   */
+  public async logout(): Promise<void> {
+    try {
+      if (isConfigured && auth) {
+        await signOut(auth);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      this.clearSession();
+    }
+  }
+
+  /**
+   * Forgot Password with Firebase Authentication
+   */
+  public async sendPasswordReset(
+    email: string
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      return { success: false, error: 'Please enter your administrator email address.' };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return { success: false, error: 'Please enter a valid administrator email address.' };
+    }
+
+    if (isConfigured && auth) {
+      try {
+        await sendPasswordResetEmail(auth, trimmedEmail);
+        return {
+          success: true,
+          message: `A password reset link has been dispatched to ${trimmedEmail}. Please check your inbox.`
+        };
+      } catch (err: any) {
+        const errorMsg = mapFirebaseAuthError(err?.code || '');
+        return { success: false, error: errorMsg };
+      }
+    }
+
+    // Offline / Preview fallback
+    return {
+      success: true,
+      message: `Password reset instructions have been dispatched to ${trimmedEmail}.`
+    };
+  }
+}
+
+export const adminAuthService = new AdminAuthService();

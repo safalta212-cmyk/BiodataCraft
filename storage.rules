@@ -1,0 +1,29 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Template assets (Thumbnails, background textures, motifs, badges)
+    match /template-assets/{assetId} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size <= 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp|svg\\+xml)');
+    }
+
+    // STRICT ZERO CUSTOMER DATA GUARANTEE:
+    // Block customer photo uploads to cloud storage
+    match /customer-photos/{photoId} {
+      allow read, write: if false;
+    }
+    match /user-uploads/{allPaths=**} {
+      allow read, write: if false;
+    }
+    match /biodatas/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

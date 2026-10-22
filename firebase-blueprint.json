@@ -1,0 +1,176 @@
+{
+  "entities": {
+    "Template": {
+      "title": "Template",
+      "description": "Matrimonial biodata design template metadata",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "description": "Unique URL identifier for the template"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the template"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed explanation of cultural styling"
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Category identifier"
+        },
+        "categoryName": {
+          "type": "string",
+          "description": "Category title"
+        },
+        "religion": {
+          "type": "string",
+          "description": "Associated religious tradition or Universal"
+        },
+        "region": {
+          "type": "string",
+          "description": "Geographic/cultural region or Global"
+        },
+        "language": {
+          "type": "string",
+          "description": "Language support (English, Hindi, Bilingual, Any)"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Target gender or Unisex"
+        },
+        "style": {
+          "type": "string",
+          "description": "Aesthetic style"
+        },
+        "thumbnail": {
+          "type": "string",
+          "description": "Storage URL or data URI for thumbnail card"
+        },
+        "previewImage": {
+          "type": "string",
+          "description": "Storage URL or data URI for high-res preview"
+        },
+        "isFree": {
+          "type": "boolean",
+          "description": "Whether template is accessible free of charge"
+        },
+        "isPremium": {
+          "type": "boolean",
+          "description": "Whether template is marked as premium"
+        },
+        "isPublished": {
+          "type": "boolean",
+          "description": "Whether template is live and visible to customers"
+        },
+        "sortOrder": {
+          "type": "number",
+          "description": "Integer ranking for display order"
+        },
+        "seoTitle": {
+          "type": "string",
+          "description": "Meta title for search optimization"
+        },
+        "seoDescription": {
+          "type": "string",
+          "description": "Meta description for search optimization"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when template was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when template was last updated"
+        }
+      },
+      "required": ["slug", "name", "categoryId", "isPublished", "sortOrder"]
+    },
+    "TemplateCategory": {
+      "title": "TemplateCategory",
+      "description": "Matrimonial biodata template category taxonomy",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "description": "URL slug for category"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of category"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the category"
+        },
+        "sortOrder": {
+          "type": "number",
+          "description": "Sort ordering index"
+        }
+      },
+      "required": ["slug", "name", "sortOrder"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Customer support and general feedback inquiries",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Sender full name"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Sender contact email"
+        },
+        "subject": {
+          "type": "string",
+          "description": "Topic or category of the inquiry"
+        },
+        "message": {
+          "type": "string",
+          "description": "Body content of the message"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["unread", "read", "resolved"],
+          "description": "Operational status of the inquiry"
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Internal notes from support team"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when message was submitted"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when status was last modified"
+        }
+      },
+      "required": ["name", "email", "subject", "message", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/templates/{templateId}": {
+      "schema": "Template",
+      "description": "Collection of matrimonial biodata design templates"
+    },
+    "/categories/{categoryId}": {
+      "schema": "TemplateCategory",
+      "description": "Collection of template cultural categories"
+    },
+    "/contact_messages/{messageId}": {
+      "schema": "ContactMessage",
+      "description": "Support messages and user feedback"
+    }
+  }
+}
