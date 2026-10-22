@@ -66,6 +66,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [clearAfterDownload, setClearAfterDownload] = useState<boolean>(false);
   const [directDownloadUrl, setDirectDownloadUrl] = useState<string | null>(null);
+  const [readyPdfBlob, setReadyPdfBlob] = useState<Blob | null>(null);
 
   // Determine effective creation mode (STANDARD, TEMPLATE, or ADVANCED)
   const effectiveMode: CreationMode =
@@ -150,13 +151,14 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         Date.now() - startTime
       );
 
-      // Create Blob for reliable mobile download and fallback link
+      // Create Blob for reliable direct download across all devices (phones & laptops)
       const blob = pdf.output('blob');
+      setReadyPdfBlob(blob);
       const blobUrl = URL.createObjectURL(blob);
       setDirectDownloadUrl(blobUrl);
 
-      // Save PDF directly to user's device via cross-platform saver (Web Share / Blob link)
-      await PDFService.saveBlobFile(blob, expectedFilename, 'application/pdf');
+      // Save PDF directly to user's device downloads folder
+      PDFService.triggerDirectDownload(blob, expectedFilename);
 
       analyticsService.trackDownloadCompleted('pdf', templateId, effectiveMode, language);
       triggerConfetti();
@@ -283,25 +285,28 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         {generationState === 'ready' && statusMessage && (
           <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs font-bold text-emerald-900 flex items-start gap-2.5 shadow-2xs">
             <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
-            <div className="flex-1">
-              <div>{statusMessage}</div>
-              <div className="text-[11px] font-normal text-emerald-700">
-                {isHindi ? 'फ़ाइल आपके डिवाइस पर सहेजी जा चुकी है।' : 'File has been saved to your downloads folder.'}
+            <div className="flex-1 space-y-2">
+              <div>
+                <div>{statusMessage}</div>
+                <div className="text-[11px] font-normal text-emerald-700">
+                  {isHindi ? 'फ़ाइल आपके डाउनलोड्स फोल्डर में सहेजी जा चुकी है।' : 'File saved to your device Downloads folder.'}
+                </div>
               </div>
-              {directDownloadUrl && (
-                <div className="mt-2 pt-1.5 border-t border-emerald-200/60">
-                  <a
-                    href={directDownloadUrl}
-                    download={expectedFilename}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-900 hover:text-emerald-950 underline"
+              {readyPdfBlob && (
+                <div className="pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      PDFService.triggerDirectDownload(readyPdfBlob, expectedFilename);
+                      triggerConfetti();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-colors"
                   >
                     <Download className="w-3.5 h-3.5 shrink-0" />
                     <span>
-                      {isHindi ? 'डाउनलोड नहीं हुआ? यहाँ टैप करके सहेजें' : "Didn't download? Tap here to save/open"}
+                      {isHindi ? 'फ़ाइल दोबारा डाउनलोड करें' : 'Download File Again'}
                     </span>
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
@@ -336,7 +341,14 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           <button
             type="button"
             disabled={generationState === 'generating'}
-            onClick={handleGenerateAndDownloadPdf}
+            onClick={
+              generationState === 'ready' && readyPdfBlob
+                ? () => {
+                    PDFService.triggerDirectDownload(readyPdfBlob, expectedFilename);
+                    triggerConfetti();
+                  }
+                : handleGenerateAndDownloadPdf
+            }
             className="w-full flex items-center justify-between p-3 sm:p-3.5 bg-gradient-to-r from-amber-800 to-amber-900 hover:from-amber-700 hover:to-amber-800 text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer disabled:opacity-50 gap-2"
           >
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
@@ -345,18 +357,24 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
               </div>
               <div className="text-left min-w-0 flex-1">
                 <div className="truncate text-xs sm:text-sm font-bold">
-                  {isHindi ? 'PDF डाउनलोड करें' : 'Download PDF'}
+                  {generationState === 'ready' && readyPdfBlob
+                    ? (isHindi ? 'PDF दोबारा डाउनलोड करें' : 'Download PDF Again')
+                    : (isHindi ? 'PDF डाउनलोड करें' : 'Download PDF')}
                 </div>
                 <div className="text-[10px] sm:text-[11px] font-normal text-amber-200/90 truncate">
                   {isHindi
-                    ? 'उच्च गुणवत्ता वाला A4 प्रिंट प्रारूप'
-                    : 'High-Res A4 Print-Ready Document'}
+                    ? 'सीधे आपके डिवाइस पर उच्च गुणवत्ता वाला A4'
+                    : 'Direct download to your device'}
                 </div>
               </div>
             </div>
             {generationState === 'generating' ? (
               <span className="text-[10px] sm:text-xs bg-amber-950/60 px-2 py-1 rounded-md animate-pulse shrink-0">
                 Generating...
+              </span>
+            ) : generationState === 'ready' && readyPdfBlob ? (
+              <span className="text-[10px] sm:text-xs bg-emerald-600 px-2 sm:px-2.5 py-1 rounded-md shrink-0 text-white">
+                Saved
               </span>
             ) : (
               <span className="text-[10px] sm:text-xs bg-amber-950/40 px-2 sm:px-2.5 py-1 rounded-md shrink-0">

@@ -304,64 +304,56 @@ export class PDFService {
   }
 
   /**
-   * Cross-platform file saver that works identically across desktop and mobile devices.
-   * On mobile devices (iOS Safari, Android Chrome):
-   * 1. Uses Web Share API if supported to allow saving to "Files", WhatsApp, or Downloads.
-   * 2. Falls back to a reliable, clean Blob object URL click.
+   * Cross-platform direct file downloader that works identically across all devices (phones, tablets, laptops).
+   * Directly triggers download to the device's downloads folder without intercepting share dialogs.
    */
-  static async saveBlobFile(
-    blob: Blob,
-    filename: string,
-    mimeType: string = 'application/pdf'
-  ): Promise<void> {
-    const isMobile =
-      typeof navigator !== 'undefined' &&
-      (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && window.innerWidth < 1024));
-
-    // 1. Mobile Web Share API (native sheet: "Save to Files", "WhatsApp", etc.)
-    if (isMobile && typeof navigator !== 'undefined' && navigator.canShare && typeof File !== 'undefined') {
-      try {
-        const file = new File([blob], filename, { type: mimeType });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: filename
-          });
-          return;
-        }
-      } catch (shareErr: any) {
-        // If user cancelled the share dialog, do not error out
-        if (shareErr?.name === 'AbortError') {
-          return;
-        }
-      }
-    }
-
-    // 2. Direct Blob ObjectURL download with iOS/Android compatible anchor attributes
+  static triggerDirectDownload(blob: Blob, filename: string): void {
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
     link.download = filename;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
+    link.style.display = 'none';
+    // Do NOT set target="_blank", which causes mobile browsers to open a blank tab instead of downloading
     document.body.appendChild(link);
-    link.click();
+
+    try {
+      link.click();
+    } catch {
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      });
+      link.dispatchEvent(clickEvent);
+    }
 
     setTimeout(() => {
       try {
-        document.body.removeChild(link);
+        if (link.parentNode) {
+          document.body.removeChild(link);
+        }
         URL.revokeObjectURL(blobUrl);
       } catch {}
-    }, 12000);
+    }, 20000);
   }
 
   /**
-   * Saves jsPDF instance using cross-platform mobile & desktop handlers
+   * Direct file saver for Blobs across phones and laptops
+   */
+  static async saveBlobFile(
+    blob: Blob,
+    filename: string,
+    _mimeType: string = 'application/pdf'
+  ): Promise<void> {
+    this.triggerDirectDownload(blob, filename);
+  }
+
+  /**
+   * Saves jsPDF instance directly to downloads folder across all devices
    */
   static async savePdfFile(pdf: jsPDFType, filename: string): Promise<void> {
     const blob = pdf.output('blob');
-    await this.saveBlobFile(blob, filename, 'application/pdf');
+    this.triggerDirectDownload(blob, filename);
   }
 
   /**
