@@ -20,7 +20,8 @@ import {
   X,
   ShieldCheck,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 import { BiodataData } from '../../types/biodata';
 import { BiodataTemplateView } from '../templates/BiodataTemplateView';
@@ -67,6 +68,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const [clearAfterDownload, setClearAfterDownload] = useState<boolean>(false);
   const [directDownloadUrl, setDirectDownloadUrl] = useState<string | null>(null);
   const [readyPdfBlob, setReadyPdfBlob] = useState<Blob | null>(null);
+  const [isDraftCleared, setIsDraftCleared] = useState<boolean>(false);
 
   // Determine effective creation mode (STANDARD, TEMPLATE, or ADVANCED)
   const effectiveMode: CreationMode =
@@ -76,6 +78,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   // Trigger AdFlowService download flow start on modal open
   useEffect(() => {
     if (isOpen) {
+      setIsDraftCleared(false);
       AdFlowService.startDownloadFlow(effectiveMode);
     }
   }, [isOpen, effectiveMode]);
@@ -88,6 +91,14 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       setDirectDownloadUrl(null);
     }
     onClose();
+  };
+
+  const handleManualWipeDraft = () => {
+    storageService.clearDraft();
+    setIsDraftCleared(true);
+    if (onClearSession) {
+      onClearSession();
+    }
   };
 
   if (!isOpen) return null;
@@ -111,10 +122,14 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   };
 
   const handlePostDownloadCleanup = () => {
-    if (clearAfterDownload && onClearSession) {
-      setTimeout(() => {
-        onClearSession();
-      }, 1200);
+    if (clearAfterDownload) {
+      storageService.clearDraft();
+      setIsDraftCleared(true);
+      if (onClearSession) {
+        setTimeout(() => {
+          onClearSession();
+        }, 1200);
+      }
     }
   };
 
@@ -432,28 +447,55 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         </div>
 
         {/* Clear Temporary Biodata Option (Session Cleanup) */}
-        {onClearSession && (
-          <div className="mt-4 p-3 bg-stone-50 border border-stone-200 rounded-2xl">
-            <label className="flex items-start gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={clearAfterDownload}
-                onChange={(e) => setClearAfterDownload(e.target.checked)}
-                className="mt-0.5 rounded text-amber-800 focus:ring-amber-800 w-4 h-4 cursor-pointer"
-              />
-              <span className="text-xs text-stone-700 leading-tight">
-                <span className="font-bold text-stone-900 block mb-0.5">
-                  {isHindi ? 'डाउनलोड के बाद ब्राउज़र से डेटा हटाएं' : 'Clear temporary data after download'}
-                </span>
-                <span className="text-stone-500 text-[11px]">
-                  {isHindi
-                    ? 'अतिरिक्त सुरक्षा हेतु स्थानीय ड्राफ्ट को स्वतः मिटाएं (Session Cleanup)'
-                    : 'Wipes your temporary draft from local browser storage once file is saved'}
-                </span>
+        <div className="mt-4 p-3.5 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={clearAfterDownload}
+              onChange={(e) => setClearAfterDownload(e.target.checked)}
+              className="mt-0.5 rounded text-amber-800 focus:ring-amber-800 w-4 h-4 cursor-pointer"
+            />
+            <span className="text-xs text-stone-700 leading-tight">
+              <span className="font-bold text-stone-900 block mb-0.5">
+                {isHindi ? 'डाउनलोड के बाद ब्राउज़र से डेटा हटाएं' : 'Clear temporary data after download'}
               </span>
-            </label>
+              <span className="text-stone-500 text-[11px] block">
+                {isHindi
+                  ? 'अतिरिक्त सुरक्षा हेतु स्थानीय ड्राफ्ट को स्वतः मिटाएं (Session Cleanup)'
+                  : 'Wipes your temporary draft from local browser storage once file is saved'}
+              </span>
+            </span>
+          </label>
+
+          {/* Action Button: Wipe Draft Now */}
+          <div className="pt-2 border-t border-stone-200/80 flex items-center justify-between gap-2">
+            <span className="text-[11px] text-stone-500">
+              {isHindi ? 'तुरंत डेटा मिटाना चाहते हैं?' : 'Need to wipe draft right now?'}
+            </span>
+            <button
+              type="button"
+              onClick={handleManualWipeDraft}
+              disabled={isDraftCleared}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                isDraftCleared
+                  ? 'bg-emerald-100 text-emerald-800 cursor-default'
+                  : 'bg-stone-200 hover:bg-red-50 hover:text-red-700 text-stone-700 border border-stone-300 hover:border-red-300'
+              }`}
+            >
+              {isDraftCleared ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{isHindi ? 'ड्राफ्ट मिटा दिया गया' : 'Draft Wiped'}</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{isHindi ? 'अभी ड्राफ्ट हटाएं' : 'Wipe Draft Now'}</span>
+                </>
+              )}
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Privacy Note */}
         <div className="mt-4 pt-3 border-t border-stone-200 flex items-center gap-2 text-[11px] text-stone-500">
