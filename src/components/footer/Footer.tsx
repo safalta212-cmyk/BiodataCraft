@@ -147,10 +147,12 @@ export const Footer: React.FC<FooterProps> = ({ language }) => {
           <div>
             © {new Date().getFullYear()} BiodataCraft. All rights reserved. Designed with cultural reverence for Indian families.
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
             <span>Client-Side Architecture</span>
             <span>•</span>
             <span>Made with Respect for Privacy</span>
+            <span>•</span>
+            <span className="text-amber-400 font-medium">Design by Anwar Ansari</span>
           </div>
         </div>
       </div>

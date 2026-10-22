@@ -114,6 +114,19 @@ export const AboutPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Designer Attribution Card */}
+        <div className="bg-gradient-to-r from-amber-50 via-stone-50 to-amber-50 border border-amber-200/80 rounded-2xl p-6 text-center max-w-xl mx-auto shadow-xs space-y-2">
+          <p className="text-xs uppercase tracking-widest font-bold text-amber-800 font-cinzel">
+            Creator & Craftsmanship
+          </p>
+          <h3 className="text-base font-bold text-stone-900 font-cinzel">
+            Design by Anwar Ansari
+          </h3>
+          <p className="text-xs text-stone-600 leading-relaxed max-w-md mx-auto">
+            Dedicated to providing dignified, culturally authentic, and 100% private marriage biodata designs for Indian families across the world.
+          </p>
+        </div>
+
         {/* CTA Banner */}
         <div className="bg-stone-900 text-white rounded-3xl p-8 sm:p-10 text-center space-y-4">
           <h2 className="text-2xl font-bold font-cinzel">

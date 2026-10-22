@@ -93,7 +93,7 @@ const defaultSiteSettings: SiteSettings = {
     monetizationLevel: 'standard'
   },
   footerText:
-    '© 2026 BiodataCraft. Auspicious Matrimonial Biodata Creator. All Rights Reserved. Made with reverence in India.',
+    '© 2026 BiodataCraft. Auspicious Matrimonial Biodata Creator. All Rights Reserved. Design by Anwar Ansari.',
   announcementText: '✨ New Festival Special Templates Added! 100% Free Forever with Zero Registration.',
   announcementActive: true,
   maintenanceMode: false
