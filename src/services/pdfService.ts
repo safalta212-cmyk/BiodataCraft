@@ -103,7 +103,11 @@ async function waitForImagesReady(element: HTMLElement): Promise<void> {
 export function findPrintRootElement(preferredId: string = 'biodata-print-container'): HTMLElement | null {
   if (typeof document === 'undefined') return null;
 
-  // 1. Direct ID match
+  // 1. Modal specific print container if open
+  const modalEl = document.getElementById('biodata-print-container-modal');
+  if (modalEl) return modalEl;
+
+  // 2. Direct ID match
   let el = document.getElementById(preferredId);
   if (el) return el;
 
@@ -243,24 +247,28 @@ export class PDFService {
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
-        x: 0,
-        y: 0,
         windowWidth: 794, // 210mm in standard 96dpi pixels
         windowHeight: 1123, // 297mm in standard 96dpi pixels
         onclone: (clonedDoc: Document, element: HTMLElement) => {
           // Guarantee that the cloned element and all pages are fully visible at A4 dimensions
+          if (element.parentElement) {
+            element.parentElement.style.position = 'static';
+            element.parentElement.style.left = '0';
+            element.parentElement.style.top = '0';
+            element.parentElement.style.opacity = '1';
+            element.parentElement.style.visibility = 'visible';
+            element.parentElement.style.width = '794px';
+          }
+
+          element.style.position = 'static';
+          element.style.left = '0';
+          element.style.top = '0';
           element.style.opacity = '1';
           element.style.visibility = 'visible';
           element.style.display = 'block';
           element.style.width = '794px';
           element.style.minWidth = '794px';
           element.style.maxWidth = '794px';
-
-          if (element.parentElement) {
-            element.parentElement.style.opacity = '1';
-            element.parentElement.style.visibility = 'visible';
-            element.parentElement.style.width = '794px';
-          }
 
           const printPages = clonedDoc.querySelectorAll('.print-page');
           printPages.forEach((p) => {
@@ -419,11 +427,21 @@ export class PDFService {
       backgroundColor: '#ffffff',
       scrollX: 0,
       scrollY: 0,
-      x: 0,
-      y: 0,
       windowWidth: 794,
       windowHeight: 1123,
-      onclone: (clonedDoc: Document, clonedEl: HTMLElement) => {
+      onclone: (_clonedDoc: Document, clonedEl: HTMLElement) => {
+        if (clonedEl.parentElement) {
+          clonedEl.parentElement.style.position = 'static';
+          clonedEl.parentElement.style.left = '0';
+          clonedEl.parentElement.style.top = '0';
+          clonedEl.parentElement.style.opacity = '1';
+          clonedEl.parentElement.style.visibility = 'visible';
+          clonedEl.parentElement.style.width = '794px';
+        }
+
+        clonedEl.style.position = 'static';
+        clonedEl.style.left = '0';
+        clonedEl.style.top = '0';
         clonedEl.style.opacity = '1';
         clonedEl.style.visibility = 'visible';
         clonedEl.style.display = 'block';
@@ -443,7 +461,6 @@ export class PDFService {
             const link = document.createElement('a');
             link.download = filename;
             link.href = dataUrl;
-            link.target = '_blank';
             document.body.appendChild(link);
             link.click();
             setTimeout(() => {

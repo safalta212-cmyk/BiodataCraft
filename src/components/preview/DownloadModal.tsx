@@ -304,24 +304,22 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
               <div>
                 <div>{statusMessage}</div>
                 <div className="text-[11px] font-normal text-emerald-700">
-                  {isHindi ? 'फ़ाइल आपके डाउनलोड्स फोल्डर में सहेजी जा चुकी है।' : 'File saved to your device Downloads folder.'}
+                  {isHindi ? 'फ़ाइल आपके डाउनलोड्स फोल्डर में सहेजी जा चुकी है।' : 'File saved to your Downloads folder.'}
                 </div>
               </div>
-              {readyPdfBlob && (
+              {directDownloadUrl && (
                 <div className="pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      PDFService.triggerDirectDownload(readyPdfBlob, expectedFilename);
-                      triggerConfetti();
-                    }}
+                  <a
+                    href={directDownloadUrl}
+                    download={expectedFilename}
+                    onClick={() => triggerConfetti()}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-colors"
                   >
                     <Download className="w-3.5 h-3.5 shrink-0" />
                     <span>
                       {isHindi ? 'फ़ाइल दोबारा डाउनलोड करें' : 'Download File Again'}
                     </span>
-                  </button>
+                  </a>
                 </div>
               )}
             </div>
@@ -353,50 +351,68 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         {/* ================= Unobstructed Action Buttons ================= */}
         <div className="space-y-2.5 sm:space-y-3">
           {/* High Res PDF Button (Requirement: "Download PDF") */}
-          <button
-            type="button"
-            disabled={generationState === 'generating'}
-            onClick={
-              generationState === 'ready' && readyPdfBlob
-                ? () => {
-                    PDFService.triggerDirectDownload(readyPdfBlob, expectedFilename);
-                    triggerConfetti();
-                  }
-                : handleGenerateAndDownloadPdf
-            }
-            className="w-full flex items-center justify-between p-3 sm:p-3.5 bg-gradient-to-r from-amber-800 to-amber-900 hover:from-amber-700 hover:to-amber-800 text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer disabled:opacity-50 gap-2"
-          >
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-              <div className="w-9 h-9 rounded-xl bg-amber-950/40 flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5 text-amber-200" />
-              </div>
-              <div className="text-left min-w-0 flex-1">
-                <div className="truncate text-xs sm:text-sm font-bold">
-                  {generationState === 'ready' && readyPdfBlob
-                    ? (isHindi ? 'PDF दोबारा डाउनलोड करें' : 'Download PDF Again')
-                    : (isHindi ? 'PDF डाउनलोड करें' : 'Download PDF')}
+          {generationState === 'ready' && directDownloadUrl ? (
+            <a
+              href={directDownloadUrl}
+              download={expectedFilename}
+              onClick={() => {
+                triggerConfetti();
+              }}
+              className="w-full flex items-center justify-between p-3 sm:p-3.5 bg-gradient-to-r from-emerald-800 to-emerald-900 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer gap-2"
+            >
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 rounded-xl bg-emerald-950/40 flex items-center justify-center shrink-0">
+                  <Download className="w-5 h-5 text-emerald-200" />
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-normal text-amber-200/90 truncate">
-                  {isHindi
-                    ? 'सीधे आपके डिवाइस पर उच्च गुणवत्ता वाला A4'
-                    : 'Direct download to your device'}
+                <div className="text-left min-w-0 flex-1">
+                  <div className="truncate text-xs sm:text-sm font-bold">
+                    {isHindi ? 'PDF डाउनलोड करें (तैयार)' : 'Download PDF File'}
+                  </div>
+                  <div className="text-[10px] sm:text-[11px] font-normal text-emerald-200/90 truncate">
+                    {isHindi
+                      ? 'सीधे आपके डिवाइस के डाउनलोड्स में सहेजें'
+                      : 'Downloads directly to your device storage'}
+                  </div>
                 </div>
               </div>
-            </div>
-            {generationState === 'generating' ? (
-              <span className="text-[10px] sm:text-xs bg-amber-950/60 px-2 py-1 rounded-md animate-pulse shrink-0">
-                Generating...
+              <span className="text-[10px] sm:text-xs bg-emerald-700 px-2 sm:px-2.5 py-1 rounded-md shrink-0 text-white font-semibold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Save</span>
               </span>
-            ) : generationState === 'ready' && readyPdfBlob ? (
-              <span className="text-[10px] sm:text-xs bg-emerald-600 px-2 sm:px-2.5 py-1 rounded-md shrink-0 text-white">
-                Saved
-              </span>
-            ) : (
-              <span className="text-[10px] sm:text-xs bg-amber-950/40 px-2 sm:px-2.5 py-1 rounded-md shrink-0">
-                Standard A4
-              </span>
-            )}
-          </button>
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled={generationState === 'generating'}
+              onClick={handleGenerateAndDownloadPdf}
+              className="w-full flex items-center justify-between p-3 sm:p-3.5 bg-gradient-to-r from-amber-800 to-amber-900 hover:from-amber-700 hover:to-amber-800 text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer disabled:opacity-50 gap-2"
+            >
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 rounded-xl bg-amber-950/40 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5 text-amber-200" />
+                </div>
+                <div className="text-left min-w-0 flex-1">
+                  <div className="truncate text-xs sm:text-sm font-bold">
+                    {isHindi ? 'PDF डाउनलोड करें' : 'Download PDF'}
+                  </div>
+                  <div className="text-[10px] sm:text-[11px] font-normal text-amber-200/90 truncate">
+                    {isHindi
+                      ? 'उच्च गुणवत्ता वाला A4 प्रिंट प्रारूप'
+                      : 'High-Res A4 Print-Ready Document'}
+                  </div>
+                </div>
+              </div>
+              {generationState === 'generating' ? (
+                <span className="text-[10px] sm:text-xs bg-amber-950/60 px-2 py-1 rounded-md animate-pulse shrink-0">
+                  Generating...
+                </span>
+              ) : (
+                <span className="text-[10px] sm:text-xs bg-amber-950/40 px-2 sm:px-2.5 py-1 rounded-md shrink-0">
+                  Standard A4
+                </span>
+              )}
+            </button>
+          )}
 
           {/* WhatsApp Image (PNG) */}
           <button
@@ -513,10 +529,10 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         aria-hidden="true"
         style={{
           position: 'fixed',
-          left: '-9999px',
+          left: 0,
           top: 0,
           width: '794px',
-          zIndex: -9999,
+          zIndex: -99999,
           opacity: 1,
           pointerEvents: 'none'
         }}
@@ -524,7 +540,7 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         <BiodataTemplateView
           data={currentData}
           scale={1}
-          id="biodata-print-container"
+          id="biodata-print-container-modal"
           isPrintMode={true}
         />
       </div>

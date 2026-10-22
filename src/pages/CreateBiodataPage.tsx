@@ -687,10 +687,10 @@ export const CreateBiodataPage: React.FC = () => {
         aria-hidden="true"
         style={{
           position: 'fixed',
-          left: '-9999px',
+          left: 0,
           top: 0,
           width: '794px',
-          zIndex: -9999,
+          zIndex: -99999,
           opacity: 1,
           pointerEvents: 'none'
         }}
