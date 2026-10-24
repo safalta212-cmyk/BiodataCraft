@@ -255,20 +255,26 @@ export class PDFService {
             element.parentElement.style.position = 'static';
             element.parentElement.style.left = '0';
             element.parentElement.style.top = '0';
+            element.parentElement.style.height = 'auto';
+            element.parentElement.style.overflow = 'visible';
             element.parentElement.style.opacity = '1';
             element.parentElement.style.visibility = 'visible';
             element.parentElement.style.width = '794px';
+            element.parentElement.style.zIndex = '1';
           }
 
           element.style.position = 'static';
           element.style.left = '0';
           element.style.top = '0';
+          element.style.height = 'auto';
+          element.style.overflow = 'visible';
           element.style.opacity = '1';
           element.style.visibility = 'visible';
           element.style.display = 'block';
           element.style.width = '794px';
           element.style.minWidth = '794px';
           element.style.maxWidth = '794px';
+          element.style.zIndex = '1';
 
           const printPages = clonedDoc.querySelectorAll('.print-page');
           printPages.forEach((p) => {
@@ -312,16 +318,53 @@ export class PDFService {
   }
 
   /**
-   * Cross-platform direct file downloader that works identically across all devices (phones, tablets, laptops).
-   * Directly triggers download to the device's downloads folder without intercepting share dialogs.
+   * Cross-platform direct file downloader that works seamlessly across all devices:
+   * - Desktop / Laptop (Mac, Windows, Linux, Chromebook): Direct anchor download to Downloads folder.
+   * - Android (Chrome, Firefox, Samsung Internet): Direct anchor download to Downloads folder.
+   * - iOS Safari (iPhone / iPad): Uses Web Share API with File object (prompts native "Save to Files" / Downloads)
+   *   or opens blob URL directly in Safari viewer so the user can easily save it.
    */
-  static triggerDirectDownload(blob: Blob, filename: string): void {
+  static async triggerDirectDownload(blob: Blob, filename: string, mimeType: string = 'application/pdf'): Promise<void> {
+    const isIOS =
+      typeof navigator !== 'undefined' &&
+      (/iP(ad|od|hone)/i.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
+    // 1. iOS Safari (iPhone / iPad) specialized handling
+    if (isIOS) {
+      if (typeof navigator !== 'undefined' && navigator.canShare && typeof File !== 'undefined') {
+        try {
+          const file = new File([blob], filename, { type: mimeType });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: filename
+            });
+            return;
+          }
+        } catch (err: any) {
+          if (err?.name === 'AbortError') {
+            return;
+          }
+        }
+      }
+
+      // iOS Safari fallback: Open blob URL directly so Safari presents native PDF viewer with Share/Save
+      const blobUrl = URL.createObjectURL(blob);
+      const newWin = window.open(blobUrl, '_blank');
+      if (!newWin) {
+        window.location.href = blobUrl;
+      }
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+      return;
+    }
+
+    // 2. Android and Desktop / Laptop (Chrome, Firefox, Edge, Safari Desktop)
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = blobUrl;
     link.download = filename;
     link.style.display = 'none';
-    // Do NOT set target="_blank", which causes mobile browsers to open a blank tab instead of downloading
     document.body.appendChild(link);
 
     try {
@@ -351,9 +394,9 @@ export class PDFService {
   static async saveBlobFile(
     blob: Blob,
     filename: string,
-    _mimeType: string = 'application/pdf'
+    mimeType: string = 'application/pdf'
   ): Promise<void> {
-    this.triggerDirectDownload(blob, filename);
+    await this.triggerDirectDownload(blob, filename, mimeType);
   }
 
   /**
@@ -361,7 +404,7 @@ export class PDFService {
    */
   static async savePdfFile(pdf: jsPDFType, filename: string): Promise<void> {
     const blob = pdf.output('blob');
-    this.triggerDirectDownload(blob, filename);
+    await this.triggerDirectDownload(blob, filename, 'application/pdf');
   }
 
   /**
@@ -434,20 +477,26 @@ export class PDFService {
           clonedEl.parentElement.style.position = 'static';
           clonedEl.parentElement.style.left = '0';
           clonedEl.parentElement.style.top = '0';
+          clonedEl.parentElement.style.height = 'auto';
+          clonedEl.parentElement.style.overflow = 'visible';
           clonedEl.parentElement.style.opacity = '1';
           clonedEl.parentElement.style.visibility = 'visible';
           clonedEl.parentElement.style.width = '794px';
+          clonedEl.parentElement.style.zIndex = '1';
         }
 
         clonedEl.style.position = 'static';
         clonedEl.style.left = '0';
         clonedEl.style.top = '0';
+        clonedEl.style.height = 'auto';
+        clonedEl.style.overflow = 'visible';
         clonedEl.style.opacity = '1';
         clonedEl.style.visibility = 'visible';
         clonedEl.style.display = 'block';
         clonedEl.style.width = '794px';
         clonedEl.style.minWidth = '794px';
         clonedEl.style.maxWidth = '794px';
+        clonedEl.style.zIndex = '1';
       }
     });
 

@@ -532,9 +532,11 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
           left: 0,
           top: 0,
           width: '794px',
-          zIndex: -99999,
-          opacity: 1,
-          pointerEvents: 'none'
+          height: '1px',
+          overflow: 'hidden',
+          opacity: 0.01,
+          pointerEvents: 'none',
+          zIndex: 1
         }}
       >
         <BiodataTemplateView
