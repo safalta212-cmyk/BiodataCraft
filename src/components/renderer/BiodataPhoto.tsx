@@ -88,8 +88,8 @@ export const BiodataPhoto: React.FC<BiodataPhotoProps> = ({
             alt={candidateName || 'Candidate Photo'}
             onError={() => setHasError(true)}
             crossOrigin="anonymous"
-            loading="lazy"
-            decoding="async"
+            loading="eager"
+            decoding="sync"
             className="w-full h-full object-cover transition-transform duration-200 select-none"
             style={{
               transform: `scale(${zoom}) rotate(${rotate}deg)`,

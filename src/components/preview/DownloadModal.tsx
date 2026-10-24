@@ -173,7 +173,11 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
       setDirectDownloadUrl(blobUrl);
 
       // Save PDF directly to user's device downloads folder
-      PDFService.triggerDirectDownload(blob, expectedFilename);
+      try {
+        await PDFService.triggerDirectDownload(blob, expectedFilename);
+      } catch (err: any) {
+        // Continue gracefully if mobile browser suppresses async automatic download
+      }
 
       analyticsService.trackDownloadCompleted('pdf', templateId, effectiveMode, language);
       triggerConfetti();
@@ -308,11 +312,23 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
                 </div>
               </div>
               {directDownloadUrl && (
-                <div className="pt-0.5">
+                <div className="pt-0.5 flex flex-wrap items-center gap-2">
                   <a
                     href={directDownloadUrl}
                     download={expectedFilename}
-                    onClick={() => triggerConfetti()}
+                    onClick={async (e) => {
+                      triggerConfetti();
+                      if (readyPdfBlob) {
+                        const isIOS =
+                          typeof navigator !== 'undefined' &&
+                          (/iP(ad|od|hone)/i.test(navigator.userAgent) ||
+                            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+                        if (isIOS) {
+                          e.preventDefault();
+                        }
+                        await PDFService.triggerDirectDownload(readyPdfBlob, expectedFilename);
+                      }
+                    }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-colors"
                   >
                     <Download className="w-3.5 h-3.5 shrink-0" />
@@ -352,34 +368,91 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
         <div className="space-y-2.5 sm:space-y-3">
           {/* High Res PDF Button (Requirement: "Download PDF") */}
           {generationState === 'ready' && directDownloadUrl ? (
-            <a
-              href={directDownloadUrl}
-              download={expectedFilename}
-              onClick={() => {
-                triggerConfetti();
-              }}
-              className="w-full flex items-center justify-between p-3 sm:p-3.5 bg-gradient-to-r from-emerald-800 to-emerald-900 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer gap-2"
-            >
-              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                <div className="w-9 h-9 rounded-xl bg-emerald-950/40 flex items-center justify-center shrink-0">
-                  <Download className="w-5 h-5 text-emerald-200" />
-                </div>
-                <div className="text-left min-w-0 flex-1">
-                  <div className="truncate text-xs sm:text-sm font-bold">
-                    {isHindi ? 'PDF डाउनलोड करें (तैयार)' : 'Download PDF File'}
+            <>
+              <a
+                href={directDownloadUrl}
+                download={expectedFilename}
+                onClick={async (e) => {
+                  triggerConfetti();
+                  if (readyPdfBlob) {
+                    const isIOS =
+                      typeof navigator !== 'undefined' &&
+                      (/iP(ad|od|hone)/i.test(navigator.userAgent) ||
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+                    if (isIOS) {
+                      e.preventDefault();
+                    }
+                    await PDFService.triggerDirectDownload(readyPdfBlob, expectedFilename);
+                    handlePostDownloadCleanup();
+                  }
+                }}
+                className="w-full flex items-center justify-between p-3 sm:p-3.5 bg-gradient-to-r from-emerald-800 to-emerald-900 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-2xl font-bold text-sm shadow-md transition-all cursor-pointer gap-2"
+              >
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-950/40 flex items-center justify-center shrink-0">
+                    <Download className="w-5 h-5 text-emerald-200" />
                   </div>
-                  <div className="text-[10px] sm:text-[11px] font-normal text-emerald-200/90 truncate">
-                    {isHindi
-                      ? 'सीधे आपके डिवाइस के डाउनलोड्स में सहेजें'
-                      : 'Downloads directly to your device storage'}
+                  <div className="text-left min-w-0 flex-1">
+                    <div className="truncate text-xs sm:text-sm font-bold">
+                      {isHindi ? 'PDF डाउनलोड करें (तैयार)' : 'Download PDF File'}
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] font-normal text-emerald-200/90 truncate">
+                      {isHindi
+                        ? 'सीधे आपके डिवाइस के डाउनलोड्स में सहेजें'
+                        : 'Downloads directly to your device storage'}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <span className="text-[10px] sm:text-xs bg-emerald-700 px-2 sm:px-2.5 py-1 rounded-md shrink-0 text-white font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Save</span>
-              </span>
-            </a>
+                <span className="text-[10px] sm:text-xs bg-emerald-700 px-2 sm:px-2.5 py-1 rounded-md shrink-0 text-white font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Save</span>
+                </span>
+              </a>
+
+              {/* Mobile Native Share Sheet (WhatsApp, Mail, Files) */}
+              {readyPdfBlob && typeof navigator !== 'undefined' && 'canShare' in navigator && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    triggerConfetti();
+                    try {
+                      const file = new File([readyPdfBlob], expectedFilename, { type: 'application/pdf' });
+                      if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                          files: [file],
+                          title: expectedFilename,
+                          text: `${candidateName} Marriage Biodata`
+                        });
+                        handlePostDownloadCleanup();
+                        return;
+                      }
+                    } catch (err: any) {
+                      if (err?.name === 'AbortError') return;
+                    }
+                    // Fallback to direct download
+                    await PDFService.triggerDirectDownload(readyPdfBlob, expectedFilename);
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 sm:p-3 bg-teal-800 hover:bg-teal-900 text-white rounded-2xl font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer gap-2"
+                >
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 rounded-lg bg-teal-950/40 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4 text-teal-200" />
+                    </div>
+                    <div className="text-left min-w-0 flex-1">
+                      <div className="truncate text-xs font-bold">
+                        {isHindi ? 'फ़ाइल शेयर करें (व्हाट्सएप / फाइल्स)' : 'Share PDF (WhatsApp / Files)'}
+                      </div>
+                      <div className="text-[10px] text-teal-200/90 truncate">
+                        {isHindi ? 'सीधे व्हाट्सएप या ईमेल पर भेजें' : 'Send directly via WhatsApp, Mail, or Files'}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-teal-950/40 px-2 py-1 rounded-md shrink-0 font-semibold">
+                    Share
+                  </span>
+                </button>
+              )}
+            </>
           ) : (
             <button
               type="button"
@@ -526,17 +599,19 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
 
       {/* Guaranteed Offscreen Print Target for PDF & PNG Generation */}
       <div
+        id="biodata-modal-offscreen-host"
         aria-hidden="true"
         style={{
           position: 'fixed',
           left: 0,
           top: 0,
           width: '794px',
-          height: '1px',
-          overflow: 'hidden',
-          opacity: 0.01,
+          minHeight: '1123px',
+          height: 'auto',
+          overflow: 'visible',
+          opacity: 0.001,
           pointerEvents: 'none',
-          zIndex: 1
+          zIndex: -10
         }}
       >
         <BiodataTemplateView

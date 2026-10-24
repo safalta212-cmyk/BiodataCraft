@@ -3,10 +3,15 @@ import { BiodataData } from '../types/biodata';
 
 // Dynamically load heavy canvas and PDF generation engines only when needed
 async function getPdfEngines() {
-  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+  const [jspdfModule, html2canvasModule] = await Promise.all([
     import('jspdf'),
-    import('html2canvas-pro')
+    import('html2canvas-pro').catch(() => import('html2canvas'))
   ]);
+
+  // Robustly resolve the jsPDF constructor across all ESM/bundler environments
+  const jsPDF = ((jspdfModule as any).jsPDF || (jspdfModule as any).default?.jsPDF || (jspdfModule as any).default) as typeof jsPDFType;
+  const html2canvas = ((html2canvasModule as any).default || (html2canvasModule as any).html2canvas || html2canvasModule) as any;
+
   return { jsPDF, html2canvas };
 }
 
@@ -245,46 +250,74 @@ export class PDFService {
         allowTaint: false,
         logging: false,
         backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: 0,
+        width: 794,
+        height: 1123,
         windowWidth: 794, // 210mm in standard 96dpi pixels
         windowHeight: 1123, // 297mm in standard 96dpi pixels
+        scrollX: 0,
+        scrollY: 0,
         onclone: (clonedDoc: Document, element: HTMLElement) => {
-          // Guarantee that the cloned element and all pages are fully visible at A4 dimensions
-          if (element.parentElement) {
-            element.parentElement.style.position = 'static';
-            element.parentElement.style.left = '0';
-            element.parentElement.style.top = '0';
-            element.parentElement.style.height = 'auto';
-            element.parentElement.style.overflow = 'visible';
-            element.parentElement.style.opacity = '1';
-            element.parentElement.style.visibility = 'visible';
-            element.parentElement.style.width = '794px';
-            element.parentElement.style.zIndex = '1';
+          // Normalize cloned document body and root
+          if (clonedDoc.documentElement) {
+            clonedDoc.documentElement.style.overflow = 'visible';
+            clonedDoc.documentElement.style.width = '794px';
+          }
+          if (clonedDoc.body) {
+            clonedDoc.body.style.overflow = 'visible';
+            clonedDoc.body.style.width = '794px';
+            clonedDoc.body.style.margin = '0';
+            clonedDoc.body.style.padding = '0';
           }
 
+          // Traverse and reset all ancestor containers to prevent any height: 1px or overflow: hidden clipping
+          let currentAncestor: HTMLElement | null = element;
+          while (currentAncestor && currentAncestor !== clonedDoc.body && currentAncestor !== clonedDoc.documentElement) {
+            currentAncestor.style.position = 'static';
+            currentAncestor.style.left = '0';
+            currentAncestor.style.top = '0';
+            currentAncestor.style.width = '794px';
+            currentAncestor.style.minWidth = '794px';
+            currentAncestor.style.maxWidth = '794px';
+            currentAncestor.style.height = 'auto';
+            currentAncestor.style.minHeight = '1123px';
+            currentAncestor.style.overflow = 'visible';
+            currentAncestor.style.opacity = '1';
+            currentAncestor.style.visibility = 'visible';
+            currentAncestor.style.display = 'block';
+            currentAncestor.style.zIndex = '1';
+            currentAncestor = currentAncestor.parentElement;
+          }
+
+          // Normalize target element
           element.style.position = 'static';
           element.style.left = '0';
           element.style.top = '0';
           element.style.height = 'auto';
+          element.style.minHeight = '1123px';
           element.style.overflow = 'visible';
           element.style.opacity = '1';
           element.style.visibility = 'visible';
-          element.style.display = 'block';
+          element.style.display = 'flex';
+          element.style.flexDirection = 'column';
           element.style.width = '794px';
           element.style.minWidth = '794px';
           element.style.maxWidth = '794px';
           element.style.zIndex = '1';
 
+          // Guarantee that all .print-page elements render cleanly
           const printPages = clonedDoc.querySelectorAll('.print-page');
           printPages.forEach((p) => {
             const htmlP = p as HTMLElement;
             htmlP.style.width = '794px';
             htmlP.style.minWidth = '794px';
             htmlP.style.maxWidth = '794px';
+            htmlP.style.minHeight = '1123px';
             htmlP.style.opacity = '1';
             htmlP.style.visibility = 'visible';
             htmlP.style.display = 'flex';
+            htmlP.style.flexDirection = 'column';
+            htmlP.style.boxSizing = 'border-box';
+            htmlP.style.backgroundColor = '#ffffff';
           });
         }
       });
@@ -470,40 +503,63 @@ export class PDFService {
       backgroundColor: '#ffffff',
       scrollX: 0,
       scrollY: 0,
+      width: 794,
+      height: 1123,
       windowWidth: 794,
       windowHeight: 1123,
-      onclone: (_clonedDoc: Document, clonedEl: HTMLElement) => {
-        if (clonedEl.parentElement) {
-          clonedEl.parentElement.style.position = 'static';
-          clonedEl.parentElement.style.left = '0';
-          clonedEl.parentElement.style.top = '0';
-          clonedEl.parentElement.style.height = 'auto';
-          clonedEl.parentElement.style.overflow = 'visible';
-          clonedEl.parentElement.style.opacity = '1';
-          clonedEl.parentElement.style.visibility = 'visible';
-          clonedEl.parentElement.style.width = '794px';
-          clonedEl.parentElement.style.zIndex = '1';
+      onclone: (clonedDoc: Document, clonedEl: HTMLElement) => {
+        if (clonedDoc.documentElement) {
+          clonedDoc.documentElement.style.overflow = 'visible';
+          clonedDoc.documentElement.style.width = '794px';
+        }
+        if (clonedDoc.body) {
+          clonedDoc.body.style.overflow = 'visible';
+          clonedDoc.body.style.width = '794px';
+          clonedDoc.body.style.margin = '0';
+          clonedDoc.body.style.padding = '0';
+        }
+
+        let currentAncestor: HTMLElement | null = clonedEl;
+        while (currentAncestor && currentAncestor !== clonedDoc.body && currentAncestor !== clonedDoc.documentElement) {
+          currentAncestor.style.position = 'static';
+          currentAncestor.style.left = '0';
+          currentAncestor.style.top = '0';
+          currentAncestor.style.width = '794px';
+          currentAncestor.style.minWidth = '794px';
+          currentAncestor.style.maxWidth = '794px';
+          currentAncestor.style.height = 'auto';
+          currentAncestor.style.minHeight = '1123px';
+          currentAncestor.style.overflow = 'visible';
+          currentAncestor.style.opacity = '1';
+          currentAncestor.style.visibility = 'visible';
+          currentAncestor.style.display = 'block';
+          currentAncestor.style.zIndex = '1';
+          currentAncestor = currentAncestor.parentElement;
         }
 
         clonedEl.style.position = 'static';
         clonedEl.style.left = '0';
         clonedEl.style.top = '0';
         clonedEl.style.height = 'auto';
+        clonedEl.style.minHeight = '1123px';
         clonedEl.style.overflow = 'visible';
         clonedEl.style.opacity = '1';
         clonedEl.style.visibility = 'visible';
-        clonedEl.style.display = 'block';
+        clonedEl.style.display = 'flex';
+        clonedEl.style.flexDirection = 'column';
         clonedEl.style.width = '794px';
         clonedEl.style.minWidth = '794px';
         clonedEl.style.maxWidth = '794px';
         clonedEl.style.zIndex = '1';
+        clonedEl.style.boxSizing = 'border-box';
+        clonedEl.style.backgroundColor = '#ffffff';
       }
     });
 
     const filename = getBiodataPngFilename(candidateName);
 
     await new Promise<void>((resolve, reject) => {
-      canvas.toBlob(async (blob) => {
+      canvas.toBlob(async (blob: Blob | null) => {
         if (!blob) {
           try {
             const dataUrl = canvas.toDataURL('image/png');

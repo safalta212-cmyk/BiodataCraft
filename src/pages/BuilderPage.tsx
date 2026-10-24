@@ -468,6 +468,16 @@ export const BuilderPage: React.FC<BuilderPageProps> = ({ language, onLanguageTo
         candidateName={data.fullName || 'Biodata'}
         templateId={data.templateId}
         language={data.language}
+        data={data}
+        onClearSession={() => {
+          storageService.clearDraft();
+          setData(defaultEmptyBiodata);
+          toast.info(
+            isHindi
+              ? 'गोपनीयता सुरक्षा हेतु स्थानीय ड्राफ्ट मिटा दिया गया है।'
+              : 'Local draft cleared from browser memory for your privacy.'
+          );
+        }}
       />
 
       {/* Live Full Preview Modal */}
