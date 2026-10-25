@@ -8,12 +8,12 @@ import { BiodataTemplateView } from '../components/templates/BiodataTemplateView
 import { DownloadModal } from '../components/preview/DownloadModal';
 import { Sparkles, Edit3, Download, Eye, FileText, Check } from 'lucide-react';
 
-interface SamplesPageProps {
-  language: 'en' | 'hi' | 'bilingual';
-  onLanguageToggle: (lang: 'en' | 'hi') => void;
+export interface SamplesPageProps {
+  language?: 'en' | 'hi' | 'bilingual';
+  onLanguageToggle?: (lang: 'en' | 'hi') => void;
 }
 
-export const SamplesPage: React.FC<SamplesPageProps> = ({ language, onLanguageToggle }) => {
+export const SamplesPage: React.FC<SamplesPageProps> = ({ language = 'en', onLanguageToggle }) => {
   const [activeSampleTab, setActiveSampleTab] = useState<'hindu' | 'hindi'>('hindu');
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const navigate = useNavigate();
@@ -25,13 +25,11 @@ export const SamplesPage: React.FC<SamplesPageProps> = ({ language, onLanguageTo
 
   const handleEditSample = () => {
     storageService.saveLocalDraft(currentSampleData);
-    if (activeSampleTab === 'hindi') {
-      onLanguageToggle('hi');
-    } else {
-      onLanguageToggle('en');
+    if (onLanguageToggle) {
+      onLanguageToggle(activeSampleTab === 'hindi' ? 'hi' : 'en');
     }
     analyticsService.trackEvent('edit_sample_clicked', { templateId: currentSampleData.templateId });
-    navigate('/builder');
+    navigate('/create');
   };
 
   return (

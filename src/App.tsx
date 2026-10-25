@@ -20,6 +20,9 @@ const TemplatesPage = lazy(() =>
 const TemplateDetailPage = lazy(() =>
   import('./pages/TemplateDetailPage').then((m) => ({ default: m.TemplateDetailPage }))
 );
+const SamplesPage = lazy(() =>
+  import('./pages/SamplesPage').then((m) => ({ default: m.SamplesPage }))
+);
 
 // Lazy-loaded Knowledge Base & Editorial Blog
 const BlogPage = lazy(() =>
@@ -121,9 +124,10 @@ export function App() {
     <ErrorBoundary>
       <ToastProvider>
         <AdProvider>
-          <BrowserRouter>
-            <RouteTracker />
-            <Suspense fallback={<PageLoadingFallback />}>
+          <AdminAuthProvider>
+            <BrowserRouter>
+              <RouteTracker />
+              <Suspense fallback={<PageLoadingFallback />}>
           <Routes>
             {/* Public Routes with Global MainLayout (Header, Footer, Toast Stack) */}
             <Route
@@ -155,6 +159,14 @@ export function App() {
               element={
                 <MainLayout>
                   <TemplateDetailPage />
+                </MainLayout>
+              }
+            />
+            <Route
+              path="/samples"
+              element={
+                <MainLayout>
+                  <SamplesPage language="en" />
                 </MainLayout>
               }
             />
@@ -285,14 +297,12 @@ export function App() {
             <Route path="/builder" element={<Navigate to="/create" replace />} />
             <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
 
-            {/* Admin Routes with Lazy Auth Context Wrapper */}
+            {/* Admin Routes with Lazy Auth Context */}
             <Route
               path="/admin/login"
               element={
                 <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminAuthProvider>
-                    <AdminLoginPage />
-                  </AdminAuthProvider>
+                  <AdminLoginPage />
                 </Suspense>
               }
             />
@@ -300,11 +310,9 @@ export function App() {
               path="/admin"
               element={
                 <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminAuthProvider>
-                    <AdminProtectedRoute>
-                      <AdminOverviewPage />
-                    </AdminProtectedRoute>
-                  </AdminAuthProvider>
+                  <AdminProtectedRoute>
+                    <AdminOverviewPage />
+                  </AdminProtectedRoute>
                 </Suspense>
               }
             />
@@ -312,11 +320,9 @@ export function App() {
               path="/admin/templates"
               element={
                 <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminAuthProvider>
-                    <AdminProtectedRoute requiredPermission="manage_templates">
-                      <AdminTemplatesPage />
-                    </AdminProtectedRoute>
-                  </AdminAuthProvider>
+                  <AdminProtectedRoute requiredPermission="manage_templates">
+                    <AdminTemplatesPage />
+                  </AdminProtectedRoute>
                 </Suspense>
               }
             />
@@ -324,11 +330,9 @@ export function App() {
               path="/admin/categories"
               element={
                 <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminAuthProvider>
-                    <AdminProtectedRoute requiredPermission="manage_categories">
-                      <AdminCategoriesPage />
-                    </AdminProtectedRoute>
-                  </AdminAuthProvider>
+                  <AdminProtectedRoute requiredPermission="manage_categories">
+                    <AdminCategoriesPage />
+                  </AdminProtectedRoute>
                 </Suspense>
               }
             />
@@ -336,11 +340,9 @@ export function App() {
               path="/admin/analytics"
               element={
                 <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminAuthProvider>
-                    <AdminProtectedRoute requiredPermission="view_analytics">
-                      <AdminAnalyticsPage />
-                    </AdminProtectedRoute>
-                  </AdminAuthProvider>
+                  <AdminProtectedRoute requiredPermission="view_analytics">
+                    <AdminAnalyticsPage />
+                  </AdminProtectedRoute>
                 </Suspense>
               }
             />
@@ -348,11 +350,9 @@ export function App() {
               path="/admin/blog"
               element={
                 <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminAuthProvider>
-                    <AdminProtectedRoute requiredPermission="manage_blog">
-                      <AdminBlogPage />
-                    </AdminProtectedRoute>
-                  </AdminAuthProvider>
+                  <AdminProtectedRoute requiredPermission="manage_blog">
+                    <AdminBlogPage />
+                  </AdminProtectedRoute>
                 </Suspense>
               }
             />
@@ -360,11 +360,9 @@ export function App() {
               path="/admin/settings"
               element={
                 <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminAuthProvider>
-                    <AdminProtectedRoute requiredPermission="manage_settings">
-                      <AdminSettingsPage />
-                    </AdminProtectedRoute>
-                  </AdminAuthProvider>
+                  <AdminProtectedRoute requiredPermission="manage_settings">
+                    <AdminSettingsPage />
+                  </AdminProtectedRoute>
                 </Suspense>
               }
             />
@@ -372,11 +370,9 @@ export function App() {
               path="/admin/ads"
               element={
                 <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminAuthProvider>
-                    <AdminProtectedRoute requiredPermission="manage_settings">
-                      <AdminAdsPage />
-                    </AdminProtectedRoute>
-                  </AdminAuthProvider>
+                  <AdminProtectedRoute requiredPermission="manage_settings">
+                    <AdminAdsPage />
+                  </AdminProtectedRoute>
                 </Suspense>
               }
             />
@@ -386,11 +382,9 @@ export function App() {
               path="/admin/messages"
               element={
                 <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminAuthProvider>
-                    <AdminProtectedRoute>
-                      <AdminMessagesPage />
-                    </AdminProtectedRoute>
-                  </AdminAuthProvider>
+                  <AdminProtectedRoute>
+                    <AdminMessagesPage />
+                  </AdminProtectedRoute>
                 </Suspense>
               }
             />
@@ -408,8 +402,9 @@ export function App() {
           </Routes>
         </Suspense>
       </BrowserRouter>
-    </AdProvider>
-  </ToastProvider>
+    </AdminAuthProvider>
+  </AdProvider>
+</ToastProvider>
 </ErrorBoundary>
 );
 }

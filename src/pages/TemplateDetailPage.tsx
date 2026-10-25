@@ -12,6 +12,7 @@ import { Button } from '../components/ui/Button';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Loading } from '../components/ui/Loading';
 import { useToast } from '../context/ToastContext';
+import { DownloadModal } from '../components/preview/DownloadModal';
 import {
   ArrowLeft,
   Sparkles,
@@ -35,8 +36,7 @@ export const TemplateDetailPage: React.FC = () => {
   const [template, setTemplate] = useState<Template | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [sampleType, setSampleType] = useState<'groom' | 'bride'>('groom');
-  const [previewScale, setPreviewScale] = useState(0.85);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   const currentSampleData = sampleType === 'groom' ? sampleHinduBiodata : sampleHindiBiodata;
 
@@ -68,19 +68,9 @@ export const TemplateDetailPage: React.FC = () => {
     navigate(`/create?template=${template.id}`);
   };
 
-  const handleDownloadSamplePdf = async () => {
+  const handleDownloadSamplePdf = () => {
     if (!template) return;
-    setIsDownloading(true);
-    try {
-      const { pdfService } = await import('../services/pdfService');
-      await pdfService.generatePdf('template-detail-preview', `${template.name}-Sample`);
-      toast.success('Sample PDF downloaded successfully!');
-    } catch (err) {
-      console.error('Failed to generate sample PDF:', err);
-      toast.error('Could not download sample PDF. Try using the live preview.');
-    } finally {
-      setIsDownloading(false);
-    }
+    setIsDownloadModalOpen(true);
   };
 
   const handlePrint = () => {
@@ -210,7 +200,6 @@ export const TemplateDetailPage: React.FC = () => {
                   size="md"
                   variant="ghost"
                   onClick={handleDownloadSamplePdf}
-                  isLoading={isDownloading}
                   className="text-white hover:bg-white/10 border border-white/30"
                   leftIcon={<Download className="w-4 h-4" />}
                 >
@@ -357,7 +346,6 @@ export const TemplateDetailPage: React.FC = () => {
                     size="sm"
                     variant="outline"
                     onClick={handleDownloadSamplePdf}
-                    isLoading={isDownloading}
                     leftIcon={<Download className="w-3.5 h-3.5" />}
                     className="text-xs"
                   >
@@ -400,6 +388,20 @@ export const TemplateDetailPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {template && (
+        <DownloadModal
+          isOpen={isDownloadModalOpen}
+          onClose={() => setIsDownloadModalOpen(false)}
+          candidateName={currentSampleData.fullName}
+          templateId={template.id}
+          language={currentSampleData.language}
+          data={{
+            ...currentSampleData,
+            templateId: template.id as any,
+            themeColor: template.templateConfig?.primaryColor || currentSampleData.themeColor
+          }}
+        />
       )}
     </div>
   );
