@@ -18,6 +18,8 @@ import {
   TemplateFilterParams
 } from '../types/template';
 import { INITIAL_TEMPLATES, TEMPLATE_CATEGORIES } from '../data/templateData';
+import { adminAuthService } from './adminAuthService';
+import { adminService } from './adminService';
 
 const TEMPLATES_COLLECTION = 'templates';
 const CATEGORIES_COLLECTION = 'categories';
@@ -38,7 +40,12 @@ function verifyAdminAuthorization(): void {
   const isAuthed = Boolean(
     sessionStorage.getItem('biodatacraft_admin_token') ||
     sessionStorage.getItem('biodatacraft_admin_session_token') ||
-    sessionStorage.getItem('biodatacraft_admin_auth_user')
+    sessionStorage.getItem('biodatacraft_admin_auth_user') ||
+    localStorage.getItem('biodatacraft_admin_token') ||
+    localStorage.getItem('biodatacraft_admin_session_token') ||
+    localStorage.getItem('biodatacraft_admin_auth_user') ||
+    adminAuthService.isAuthenticated() ||
+    adminService.isAuthenticated()
   );
   if (!isAuthed) {
     throw new Error('Unauthorized: Administrator clearance required to modify template catalog.');
@@ -71,16 +78,37 @@ class TemplateService {
     this.templatesCacheTime = 0;
   }
 
+  public getAllTemplatesSync(): Template[] {
+    this.loadLocalCustomTemplates();
+    return [...this.localTemplates];
+  }
+
+  public getTemplateSync(idOrSlug: string): Template | undefined {
+    this.loadLocalCustomTemplates();
+    const clean = idOrSlug.trim();
+    const effectiveSlug = SLUG_ALIASES[clean.toLowerCase()] || clean;
+    return this.localTemplates.find(
+      (t) => t.id === clean || t.slug === clean || t.id === effectiveSlug || t.slug === effectiveSlug
+    );
+  }
+
   private loadLocalCustomTemplates() {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_CUSTOM_TEMPLATES);
       if (stored) {
         const custom: Template[] = JSON.parse(stored);
-        this.localTemplates = [...INITIAL_TEMPLATES, ...custom];
+        if (Array.isArray(custom)) {
+          const customFiltered = custom.filter(
+            (c) => !INITIAL_TEMPLATES.some((init) => init.id === c.id)
+          );
+          this.localTemplates = [...INITIAL_TEMPLATES, ...customFiltered];
+          return;
+        }
       }
     } catch {
       // Ignore
     }
+    this.localTemplates = [...INITIAL_TEMPLATES];
   }
 
   private saveLocalCustomTemplates(templates: Template[]) {
@@ -132,28 +160,39 @@ class TemplateService {
     // Check if we can reuse the cached raw templates list
     if (this.cachedAllTemplates && now - this.templatesCacheTime < this.CACHE_TTL_MS) {
       results = [...this.cachedAllTemplates];
-    } else if (isConfigured && db) {
-      try {
-        const templatesCol = collection(db, TEMPLATES_COLLECTION);
-        const q = query(templatesCol, orderBy('sortOrder', 'asc'));
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-          results = snapshot.docs.map((doc) => ({
-            ...doc.data(),
-            id: doc.id
-          } as Template));
-        } else {
-          results = [...this.localTemplates];
-        }
-      } catch (err) {
-        console.warn('Firestore templates query notice, falling back to local dataset:', err);
-        results = [...this.localTemplates];
-      }
-      this.cachedAllTemplates = [...results];
-      this.templatesCacheTime = now;
     } else {
-      results = [...this.localTemplates];
+      this.loadLocalCustomTemplates();
+      let firestoreTemplates: Template[] = [];
+
+      if (isConfigured && db) {
+        try {
+          const templatesCol = collection(db, TEMPLATES_COLLECTION);
+          const q = query(templatesCol, orderBy('sortOrder', 'asc'));
+          const snapshot = await getDocs(q);
+
+          if (!snapshot.empty) {
+            firestoreTemplates = snapshot.docs.map((docSnap) => ({
+              ...docSnap.data(),
+              id: docSnap.id
+            } as Template));
+          }
+        } catch (err) {
+          console.warn('Firestore templates query notice, falling back to local dataset:', err);
+        }
+      }
+
+      // Merge: start with all local templates (INITIAL + localStorage custom)
+      const templateMap = new Map<string, Template>();
+      for (const t of this.localTemplates) {
+        templateMap.set(t.id, t);
+      }
+      // Overlay Firestore documents
+      for (const ft of firestoreTemplates) {
+        templateMap.set(ft.id, ft);
+      }
+
+      results = Array.from(templateMap.values());
+      this.localTemplates = [...results];
       this.cachedAllTemplates = [...results];
       this.templatesCacheTime = now;
     }
@@ -256,6 +295,7 @@ class TemplateService {
    */
   async getTemplateBySlug(slug: string, allowUnpublished: boolean = false): Promise<Template | null> {
     const effectiveSlug = SLUG_ALIASES[slug.toLowerCase()] || slug;
+    this.loadLocalCustomTemplates();
 
     // 1. Fast in-memory template check (instant 0ms response, zero network)
     const localMatch = this.localTemplates.find(
@@ -271,7 +311,7 @@ class TemplateService {
     // 2. Cached templates check
     if (this.cachedAllTemplates) {
       const cached = this.cachedAllTemplates.find(
-        (t) => t.slug === effectiveSlug || t.id === effectiveSlug
+        (t) => t.slug === effectiveSlug || t.id === effectiveSlug || t.slug === slug || t.id === slug
       );
       if (cached) {
         if (!allowUnpublished && !cached.isPublished) return null;
@@ -304,12 +344,13 @@ class TemplateService {
   }
 
   /**
-   * Admin CRUD: Create a new template metadata entry in Firestore
+   * Admin CRUD: Create a new template metadata entry in Firestore & Local Storage
    */
   async createTemplate(
     data: Omit<Template, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<Template> {
     verifyAdminAuthorization();
+    this.loadLocalCustomTemplates();
     const cleanSlug = data.slug.trim().toLowerCase();
     const existing = this.localTemplates.find((t) => t.slug === cleanSlug);
     if (existing) {
@@ -331,7 +372,7 @@ class TemplateService {
         const docRef = doc(db, TEMPLATES_COLLECTION, id);
         await setDoc(docRef, newTemplate);
       } catch (err) {
-        console.warn('Firestore template write notice:', err);
+        console.warn('Firestore template write notice (saved to persistent local storage):', err);
       }
     }
 
@@ -342,10 +383,11 @@ class TemplateService {
   }
 
   /**
-   * Admin CRUD: Update existing template metadata in Firestore
+   * Admin CRUD: Update existing template metadata in Firestore & Local Storage
    */
   async updateTemplate(id: string, updates: Partial<Template>): Promise<boolean> {
     verifyAdminAuthorization();
+    this.loadLocalCustomTemplates();
     const now = new Date().toISOString();
     const cleanUpdates = { ...updates, updatedAt: now };
 
@@ -354,7 +396,7 @@ class TemplateService {
         const docRef = doc(db, TEMPLATES_COLLECTION, id);
         await updateDoc(docRef, cleanUpdates);
       } catch (err) {
-        console.warn('Firestore template update notice:', err);
+        console.warn('Firestore template update notice (updated in persistent local storage):', err);
       }
     }
 
@@ -369,16 +411,17 @@ class TemplateService {
   }
 
   /**
-   * Admin CRUD: Delete template metadata from Firestore
+   * Admin CRUD: Delete template metadata from Firestore & Local Storage
    */
   async deleteTemplate(id: string): Promise<boolean> {
     verifyAdminAuthorization();
+    this.loadLocalCustomTemplates();
     if (isConfigured && db) {
       try {
         const docRef = doc(db, TEMPLATES_COLLECTION, id);
         await deleteDoc(docRef);
       } catch (err) {
-        console.warn('Firestore template delete notice:', err);
+        console.warn('Firestore template delete notice (removed from local storage):', err);
       }
     }
 
@@ -392,6 +435,7 @@ class TemplateService {
    * Admin CRUD: Duplicate an existing template
    */
   async duplicateTemplate(id: string): Promise<Template | null> {
+    this.loadLocalCustomTemplates();
     const source = (await this.getTemplateBySlug(id, true)) || this.localTemplates.find((t) => t.id === id);
     if (!source) return null;
 
@@ -421,7 +465,7 @@ class TemplateService {
   }
 
   /**
-   * Admin Storage: Upload template visual asset to Firebase Storage (template-assets/)
+   * Admin Storage: Upload template visual asset to Firebase Storage or persistent base64 data URL
    */
   async uploadTemplateAsset(file: File, assetName: string): Promise<string> {
     verifyAdminAuthorization();
@@ -445,12 +489,23 @@ class TemplateService {
           return await getDownloadURL(snapshot.ref);
         }
       } catch (err) {
-        console.warn('Firebase Storage upload notice:', err);
+        console.warn('Firebase Storage upload notice, falling back to persistent base64 data URL:', err);
       }
     }
 
-    // Fallback in-browser object URL for local simulation
-    return URL.createObjectURL(file);
+    // Fallback: convert to persistent base64 data URL so image survives page reloads
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+        } else {
+          resolve(URL.createObjectURL(file));
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read image file.'));
+      reader.readAsDataURL(file);
+    });
   }
 }
 

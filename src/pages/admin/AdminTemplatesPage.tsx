@@ -6,6 +6,9 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Input, Select, Textarea } from '../../components/ui/Form';
 import { templateService } from '../../services/templateService';
+import { adminAuthService } from '../../services/adminAuthService';
+import { adminService } from '../../services/adminService';
+import { TEMPLATE_CATEGORIES } from '../../data/templateData';
 import {
   Template,
   TemplateCategory,
@@ -162,8 +165,15 @@ export const AdminTemplatesPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const token = sessionStorage.getItem('biodatacraft_admin_token');
-    if (!token) {
+    const isAuthed = Boolean(
+      sessionStorage.getItem('biodatacraft_admin_token') ||
+      sessionStorage.getItem('biodatacraft_admin_session_token') ||
+      sessionStorage.getItem('biodatacraft_admin_auth_user') ||
+      localStorage.getItem('biodatacraft_admin_token') ||
+      adminAuthService.isAuthenticated() ||
+      adminService.isAuthenticated()
+    );
+    if (!isAuthed) {
       navigate('/admin/login');
       return;
     }
@@ -246,16 +256,15 @@ export const AdminTemplatesPage: React.FC = () => {
       return;
     }
 
-    const selectedCat = categories.find((c) => c.id === categoryId);
-    if (!selectedCat) {
-      toast.error('Invalid template category. Please select a valid category from the list.');
-      return;
-    }
+    const selectedCat =
+      categories.find((c) => c.id === categoryId) ||
+      TEMPLATE_CATEGORIES.find((c) => c.id === categoryId) ||
+      { id: categoryId, name: categoryId.charAt(0).toUpperCase() + categoryId.slice(1) };
 
     // Auto-generate elegant SVG thumbnail if none provided
     let finalThumbnail = thumbnail.trim();
     if (!finalThumbnail) {
-      finalThumbnail = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560"><rect width="400" height="560" fill="${encodeURIComponent(config.primaryColor)}"/><rect x="15" y="15" width="370" height="530" fill="none" stroke="${encodeURIComponent(config.secondaryColor)}" stroke-width="3"/><text x="200" y="270" font-family="serif" font-size="22" font-weight="bold" fill="white" text-anchor="middle">${encodeURIComponent(name.trim())}</text><text x="200" y="300" font-family="serif" font-size="14" fill="${encodeURIComponent(config.secondaryColor)}" text-anchor="middle">${encodeURIComponent(style)} Matrimonial Biodata</text></svg>`;
+      finalThumbnail = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560"><rect width="400" height="560" fill="${encodeURIComponent(config.primaryColor || '#831843')}"/><rect x="15" y="15" width="370" height="530" fill="none" stroke="${encodeURIComponent(config.secondaryColor || '#fbbf24')}" stroke-width="3"/><text x="200" y="270" font-family="serif" font-size="22" font-weight="bold" fill="white" text-anchor="middle">${encodeURIComponent(name.trim())}</text><text x="200" y="300" font-family="serif" font-size="14" fill="${encodeURIComponent(config.secondaryColor || '#fbbf24')}" text-anchor="middle">${encodeURIComponent(style || 'Royal')} Matrimonial Biodata</text></svg>`;
       setThumbnail(finalThumbnail);
     }
 
@@ -290,14 +299,14 @@ export const AdminTemplatesPage: React.FC = () => {
         toast.success(`Template "${name}" updated successfully.`);
       } else {
         await templateService.createTemplate(templateData);
-        toast.success(`Template "${name}" created in Firestore.`);
+        toast.success(`Template "${name}" created successfully.`);
       }
 
       setIsEditorOpen(false);
       loadData();
     } catch (err: any) {
       console.error('Save template error:', err);
-      toast.error(err?.message || 'Failed to save template metadata to Firestore.');
+      toast.error(err?.message || 'Failed to save template metadata.');
     } finally {
       setIsSaving(false);
     }

@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { BiodataData, TemplateId } from '../types/biodata';
 import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
+import { templateService } from '../services/templateService';
 import {
   defaultEmptyBiodata,
   sampleHinduBiodata,
@@ -66,10 +67,15 @@ export const CreateBiodataPage: React.FC = () => {
   // Load from local browser storage (client-side only, NO Firestore)
   const [data, setData] = useState<BiodataData>(() => {
     const draft = storageService.loadLocalDraft();
-    if (templateFromQuery && TEMPLATES.some((t) => t.id === templateFromQuery)) {
-      draft.templateId = templateFromQuery as TemplateId;
-      const tmpl = TEMPLATES.find((t) => t.id === templateFromQuery);
-      if (tmpl) draft.themeColor = tmpl.primaryColor;
+    if (templateFromQuery) {
+      const allTemplates = templateService.getAllTemplatesSync();
+      const customMatch = allTemplates.find((t) => t.id === templateFromQuery || t.slug === templateFromQuery);
+      const tmpl = customMatch || TEMPLATES.find((t) => t.id === templateFromQuery);
+      if (tmpl) {
+        draft.templateId = (customMatch ? tmpl.id : templateFromQuery) as TemplateId;
+        const color = (tmpl as any).templateConfig?.primaryColor || (tmpl as any).primaryColor;
+        if (color) draft.themeColor = color;
+      }
     }
     return draft;
   });
@@ -103,13 +109,18 @@ export const CreateBiodataPage: React.FC = () => {
 
   // Sync template from query parameter if changed
   useEffect(() => {
-    if (templateFromQuery && TEMPLATES.some((t) => t.id === templateFromQuery)) {
-      const tmpl = TEMPLATES.find((t) => t.id === templateFromQuery);
-      setData((prev) => ({
-        ...prev,
-        templateId: templateFromQuery as TemplateId,
-        themeColor: tmpl ? tmpl.primaryColor : prev.themeColor
-      }));
+    if (templateFromQuery) {
+      const allTemplates = templateService.getAllTemplatesSync();
+      const customMatch = allTemplates.find((t) => t.id === templateFromQuery || t.slug === templateFromQuery);
+      const tmpl = customMatch || TEMPLATES.find((t) => t.id === templateFromQuery);
+      if (tmpl) {
+        const color = (tmpl as any).templateConfig?.primaryColor || (tmpl as any).primaryColor;
+        setData((prev) => ({
+          ...prev,
+          templateId: (customMatch ? tmpl.id : templateFromQuery) as TemplateId,
+          themeColor: color || prev.themeColor
+        }));
+      }
     }
   }, [templateFromQuery]);
 
@@ -312,14 +323,17 @@ export const CreateBiodataPage: React.FC = () => {
   };
 
   // Template switch helper
-  const handleSelectTemplate = (templateId: TemplateId) => {
-    const tmpl = TEMPLATES.find((t) => t.id === templateId);
+  const handleSelectTemplate = (templateId: string) => {
+    const allTemplates = templateService.getAllTemplatesSync();
+    const customMatch = allTemplates.find((t) => t.id === templateId || t.slug === templateId);
+    const tmpl = customMatch || TEMPLATES.find((t) => t.id === templateId);
     if (tmpl) {
+      const color = (tmpl as any).templateConfig?.primaryColor || (tmpl as any).primaryColor || data.themeColor;
       updateFields({
-        templateId,
-        themeColor: tmpl.primaryColor
+        templateId: (customMatch ? tmpl.id : templateId) as TemplateId,
+        themeColor: color
       });
-      analyticsService.trackTemplateSelected(templateId, 'builder');
+      analyticsService.trackTemplateSelected(tmpl.id, 'builder');
       toast.info(`Switched design to ${tmpl.name}`, 'Template Updated');
     }
   };
@@ -609,27 +623,31 @@ export const CreateBiodataPage: React.FC = () => {
                 <label className="text-[11px] font-bold text-stone-600 block mb-1.5">
                   Choose Template:
                 </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {TEMPLATES.slice(0, 6).map((tmpl) => (
-                    <button
-                      key={tmpl.id}
-                      type="button"
-                      onClick={() => handleSelectTemplate(tmpl.id)}
-                      className={`p-1.5 rounded-lg border text-left text-[11px] font-semibold transition-all cursor-pointer truncate ${
-                        data.templateId === tmpl.id
-                          ? 'border-amber-800 bg-amber-50 text-amber-950 font-bold'
-                          : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: tmpl.primaryColor }}
-                        />
-                        <span className="truncate">{tmpl.name}</span>
-                      </div>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-0.5">
+                  {templateService.getAllTemplatesSync().filter((t) => t.isPublished).slice(0, 9).map((tmpl) => {
+                    const isSelected = data.templateId === tmpl.id || data.templateId === tmpl.slug;
+                    const primaryColor = tmpl.templateConfig?.primaryColor || (tmpl as any).primaryColor || '#991b1b';
+                    return (
+                      <button
+                        key={tmpl.id}
+                        type="button"
+                        onClick={() => handleSelectTemplate(tmpl.id)}
+                        className={`p-1.5 rounded-lg border text-left text-[11px] font-semibold transition-all cursor-pointer truncate ${
+                          isSelected
+                            ? 'border-amber-800 bg-amber-50 text-amber-950 font-bold'
+                            : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: primaryColor }}
+                          />
+                          <span className="truncate">{tmpl.name}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

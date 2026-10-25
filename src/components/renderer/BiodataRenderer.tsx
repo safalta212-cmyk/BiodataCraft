@@ -3,6 +3,7 @@ import { BiodataData } from '../../types/biodata';
 import { TemplateConfig } from '../../types/template';
 import { INITIAL_TEMPLATES } from '../../data/templateData';
 import { TEMPLATES } from '../../data/initialBiodata';
+import { templateService } from '../../services/templateService';
 
 import { BiodataPage } from './BiodataPage';
 import { BiodataHeader } from './BiodataHeader';
@@ -39,7 +40,9 @@ export function resolveTemplateConfig(
   templateId: string,
   overrideConfig?: Partial<TemplateConfig>
 ): TemplateConfig {
+  const customTmpl = templateService.getTemplateSync(templateId);
   const match =
+    customTmpl ||
     INITIAL_TEMPLATES.find((t) => t.slug === templateId || t.id === templateId) ||
     INITIAL_TEMPLATES[0];
 
