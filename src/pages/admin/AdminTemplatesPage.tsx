@@ -234,8 +234,8 @@ export const AdminTemplatesPage: React.FC = () => {
   };
 
   // Handle Form Submission (Create or Update)
-  const handleSaveTemplate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveTemplate = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault?.();
     if (isSaving) return; // Prevent accidental double-submit
 
     if (!name.trim()) {
@@ -296,17 +296,17 @@ export const AdminTemplatesPage: React.FC = () => {
 
       if (editingTemplate) {
         await templateService.updateTemplate(editingTemplate.id, templateData);
-        toast.success(`Template "${name}" updated successfully.`);
+        toast.success(`Template "${name}" updated successfully in Firestore.`);
       } else {
         await templateService.createTemplate(templateData);
-        toast.success(`Template "${name}" created successfully.`);
+        toast.success(`Template "${name}" created and saved to Firestore.`);
       }
 
       setIsEditorOpen(false);
-      loadData();
+      await loadData();
     } catch (err: any) {
       console.error('Save template error:', err);
-      toast.error(err?.message || 'Failed to save template metadata.');
+      toast.error(err?.message || 'Failed to save template metadata to Firestore.');
     } finally {
       setIsSaving(false);
     }

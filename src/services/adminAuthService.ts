@@ -1,5 +1,7 @@
 import {
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut,
   sendPasswordResetEmail,
   onAuthStateChanged,
@@ -227,6 +229,26 @@ class AdminAuthService {
       success: false,
       error: 'Invalid administrator email or password.'
     };
+  }
+
+  /**
+   * Admin Login via Google Sign-In with Popup
+   */
+  public async loginWithGoogle(): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
+    if (!isConfigured || !auth) {
+      return { success: false, error: 'Firebase Authentication is not configured.' };
+    }
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const userCredential = await signInWithPopup(auth, provider);
+      const adminUser = this.mapFirebaseUserToAdmin(userCredential.user);
+      this.setSession(adminUser);
+      return { success: true, user: adminUser };
+    } catch (err: any) {
+      console.error('Google Sign-In error:', err);
+      return { success: false, error: err?.message || 'Google Sign-In failed.' };
+    }
   }
 
   /**

@@ -7,6 +7,7 @@ interface AdminAuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   hasPermission: (permission: AdminPermission) => boolean;
@@ -45,6 +46,19 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    setIsLoading(true);
+    try {
+      const res = await adminAuthService.loginWithGoogle();
+      if (res.success && res.user) {
+        setCurrentUser(res.user);
+      }
+      return res;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async (): Promise<void> => {
     setIsLoading(true);
     try {
@@ -71,6 +85,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     isAuthenticated: Boolean(currentUser),
     isLoading,
     login,
+    loginWithGoogle,
     logout,
     forgotPassword,
     hasPermission

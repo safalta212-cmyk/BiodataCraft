@@ -53,6 +53,27 @@ function verifyAdminAuthorization(): void {
 }
 
 /**
+ * Ensures asynchronous Firestore/Storage promises reject with clear messages instead of hanging indefinitely
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      const timer = setTimeout(() => {
+        reject(
+          new Error(
+            `${operationName} timed out after ${timeoutMs / 1000}s. Please check network connection and Firebase permissions.`
+          )
+        );
+      }, timeoutMs);
+      if (typeof timer === 'object' && timer !== null && 'unref' in timer) {
+        (timer as any).unref();
+      }
+    })
+  ]);
+}
+
+/**
  * Template Service provides secure CRUD and querying for Template Metadata (Firestore)
  * and Template Assets (Firebase Storage).
  *
@@ -135,7 +156,7 @@ class TemplateService {
     if (isConfigured && db) {
       try {
         const catCol = collection(db, CATEGORIES_COLLECTION);
-        const snapshot = await getDocs(catCol);
+        const snapshot = await withTimeout(getDocs(catCol), 8000, 'Firestore categories query');
         if (!snapshot.empty) {
           this.cachedCategories = snapshot.docs.map((doc) => doc.data() as TemplateCategory);
           this.categoriesCacheTime = now;
@@ -168,7 +189,7 @@ class TemplateService {
         try {
           const templatesCol = collection(db, TEMPLATES_COLLECTION);
           const q = query(templatesCol, orderBy('sortOrder', 'asc'));
-          const snapshot = await getDocs(q);
+          const snapshot = await withTimeout(getDocs(q), 10000, 'Firestore templates query');
 
           if (!snapshot.empty) {
             firestoreTemplates = snapshot.docs.map((docSnap) => ({
@@ -177,7 +198,7 @@ class TemplateService {
             } as Template));
           }
         } catch (err) {
-          console.warn('Firestore templates query notice, falling back to local dataset:', err);
+          console.error('Firestore templates query notice, falling back to local dataset:', err);
         }
       }
 
@@ -367,15 +388,15 @@ class TemplateService {
       updatedAt: now
     };
 
-    if (isConfigured && db) {
-      try {
-        const docRef = doc(db, TEMPLATES_COLLECTION, id);
-        await setDoc(docRef, newTemplate);
-      } catch (err) {
-        console.warn('Firestore template write notice (saved to persistent local storage):', err);
-      }
+    if (!isConfigured || !db) {
+      throw new Error('Firestore database is not configured. Please verify Firebase initialization in firebase-applet-config.json.');
     }
 
+    // 1. Await confirmation of actual write to Firestore with timeout
+    const docRef = doc(db, TEMPLATES_COLLECTION, id);
+    await withTimeout(setDoc(docRef, newTemplate), 12000, 'Firestore template creation');
+
+    // 2. Only after Firestore confirmation succeeds, update local state
     this.localTemplates.push(newTemplate);
     this.saveLocalCustomTemplates(this.localTemplates);
     this.invalidateCache();
@@ -391,23 +412,20 @@ class TemplateService {
     const now = new Date().toISOString();
     const cleanUpdates = { ...updates, updatedAt: now };
 
-    if (isConfigured && db) {
-      try {
-        const docRef = doc(db, TEMPLATES_COLLECTION, id);
-        await updateDoc(docRef, cleanUpdates);
-      } catch (err) {
-        console.warn('Firestore template update notice (updated in persistent local storage):', err);
-      }
+    if (!isConfigured || !db) {
+      throw new Error('Firestore database is not configured. Please verify Firebase initialization.');
     }
+
+    const docRef = doc(db, TEMPLATES_COLLECTION, id);
+    await withTimeout(updateDoc(docRef, cleanUpdates), 12000, 'Firestore template update');
 
     const idx = this.localTemplates.findIndex((t) => t.id === id);
     if (idx !== -1) {
       this.localTemplates[idx] = { ...this.localTemplates[idx], ...cleanUpdates };
       this.saveLocalCustomTemplates(this.localTemplates);
       this.invalidateCache();
-      return true;
     }
-    return false;
+    return true;
   }
 
   /**
@@ -416,14 +434,12 @@ class TemplateService {
   async deleteTemplate(id: string): Promise<boolean> {
     verifyAdminAuthorization();
     this.loadLocalCustomTemplates();
-    if (isConfigured && db) {
-      try {
-        const docRef = doc(db, TEMPLATES_COLLECTION, id);
-        await deleteDoc(docRef);
-      } catch (err) {
-        console.warn('Firestore template delete notice (removed from local storage):', err);
-      }
+    if (!isConfigured || !db) {
+      throw new Error('Firestore database is not configured. Please verify Firebase initialization.');
     }
+
+    const docRef = doc(db, TEMPLATES_COLLECTION, id);
+    await withTimeout(deleteDoc(docRef), 12000, 'Firestore template deletion');
 
     this.localTemplates = this.localTemplates.filter((t) => t.id !== id);
     this.saveLocalCustomTemplates(this.localTemplates);
@@ -465,7 +481,7 @@ class TemplateService {
   }
 
   /**
-   * Admin Storage: Upload template visual asset to Firebase Storage or persistent base64 data URL
+   * Admin Storage: Upload template visual asset to Firebase Storage with proper error handling
    */
   async uploadTemplateAsset(file: File, assetName: string): Promise<string> {
     verifyAdminAuthorization();
@@ -479,33 +495,26 @@ class TemplateService {
 
     const safeName = assetName.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-    if (isConfigured) {
-      try {
-        const storageInstance = await getStorageInstance();
-        if (storageInstance) {
-          const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-          const storageRef = ref(storageInstance, `template-assets/${Date.now()}_${safeName}`);
-          const snapshot = await uploadBytes(storageRef, file);
-          return await getDownloadURL(snapshot.ref);
-        }
-      } catch (err) {
-        console.warn('Firebase Storage upload notice, falling back to persistent base64 data URL:', err);
-      }
+    if (!isConfigured) {
+      throw new Error('Firebase Storage is not configured.');
     }
 
-    // Fallback: convert to persistent base64 data URL so image survives page reloads
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          resolve(reader.result);
-        } else {
-          resolve(URL.createObjectURL(file));
-        }
-      };
-      reader.onerror = () => reject(new Error('Failed to read image file.'));
-      reader.readAsDataURL(file);
-    });
+    const storageInstance = await getStorageInstance();
+    if (!storageInstance) {
+      throw new Error('Firebase Storage service is unavailable. Please verify Firebase project setup.');
+    }
+
+    const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+    const storageRef = ref(storageInstance, `template-assets/${Date.now()}_${safeName}`);
+    
+    const uploadOperation = async () => {
+      const snapshot = await uploadBytes(storageRef, file, {
+        contentType: file.type
+      });
+      return await getDownloadURL(snapshot.ref);
+    };
+
+    return await withTimeout(uploadOperation(), 20000, 'Firebase Storage asset upload');
   }
 }
 
