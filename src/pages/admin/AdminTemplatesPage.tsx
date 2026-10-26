@@ -6,8 +6,6 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Input, Select, Textarea } from '../../components/ui/Form';
 import { templateService } from '../../services/templateService';
-import { adminAuthService } from '../../services/adminAuthService';
-import { adminService } from '../../services/adminService';
 import { TEMPLATE_CATEGORIES } from '../../data/templateData';
 import {
   Template,
@@ -169,9 +167,7 @@ export const AdminTemplatesPage: React.FC = () => {
       sessionStorage.getItem('biodatacraft_admin_token') ||
       sessionStorage.getItem('biodatacraft_admin_session_token') ||
       sessionStorage.getItem('biodatacraft_admin_auth_user') ||
-      localStorage.getItem('biodatacraft_admin_token') ||
-      adminAuthService.isAuthenticated() ||
-      adminService.isAuthenticated()
+      localStorage.getItem('biodatacraft_admin_token')
     );
     if (!isAuthed) {
       navigate('/admin/login');
@@ -306,7 +302,7 @@ export const AdminTemplatesPage: React.FC = () => {
       await loadData();
     } catch (err: any) {
       console.error('Save template error:', err);
-      toast.error(err?.message || 'Failed to save template metadata to Firestore.');
+      toast.error(err?.message || 'Failed to save template to Firestore. Please check your network connection.');
     } finally {
       setIsSaving(false);
     }
@@ -1044,7 +1040,7 @@ export const AdminTemplatesPage: React.FC = () => {
                 variant="primary"
                 onClick={handleSaveTemplate}
                 isLoading={isSaving}
-                disabled={isSaving}
+                disabled={isSaving || isUploadingThumbnail || isUploadingPreview}
               >
                 {editingTemplate ? 'Save Changes' : 'Create Template'}
               </Button>

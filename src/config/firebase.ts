@@ -1,8 +1,7 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
-import rawConfig from '../../firebase-applet-config.json';
+import appletConfig from '../../firebase-applet-config.json';
 
 /**
  * Firebase Client Configuration
@@ -10,18 +9,18 @@ import rawConfig from '../../firebase-applet-config.json';
  * - Admin Authentication only
  * - Anonymous operational telemetry only
  * - NEVER stores customer biodatas or photos
- * - Configured via firebase-applet-config.json and environment overrides
+ * - Seamlessly integrates with AI Studio provisioned configuration
  */
 const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : ({} as any);
 
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || rawConfig.apiKey || '',
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || rawConfig.authDomain || '',
-  projectId: env.VITE_FIREBASE_PROJECT_ID || rawConfig.projectId || '',
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || rawConfig.storageBucket || '',
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || rawConfig.messagingSenderId || '',
-  appId: env.VITE_FIREBASE_APP_ID || rawConfig.appId || '',
-  firestoreDatabaseId: rawConfig.firestoreDatabaseId || undefined,
+  apiKey: appletConfig.apiKey || env.VITE_FIREBASE_API_KEY || '',
+  authDomain: appletConfig.authDomain || env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: appletConfig.projectId || env.VITE_FIREBASE_PROJECT_ID || '',
+  storageBucket: appletConfig.storageBucket || env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: appletConfig.messagingSenderId || env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: appletConfig.appId || env.VITE_FIREBASE_APP_ID || '',
+  firestoreDatabaseId: appletConfig.firestoreDatabaseId || env.VITE_FIREBASE_DATABASE_ID || ''
 };
 
 const isPlaceholder = (val: string) =>
@@ -41,29 +40,25 @@ const isConfigured = Boolean(
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
-let storage: FirebaseStorage | null = null;
 
 if (isConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     auth = getAuth(app);
-    // CRITICAL: In AI Studio, named Firestore database must be passed to getFirestore
+    // Connect to named Firestore database when provided in configuration
     db = firebaseConfig.firestoreDatabaseId
       ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
       : getFirestore(app);
-    storage = getStorage(app);
   } catch (error) {
-    console.error('Firebase initialization error:', error);
+    console.warn('Firebase initialization notice:', error);
   }
 }
 
-// Lazy/direct getter for Firebase Storage
+// Backward-compatible lazy getter for storage (only loaded if admin explicitly uploads asset)
 const getStorageInstance = async () => {
   if (!isConfigured || !app) return null;
-  if (!storage) {
-    storage = getStorage(app);
-  }
-  return storage;
+  const { getStorage } = await import('firebase/storage');
+  return getStorage(app);
 };
 
-export { app, auth, db, storage, getStorageInstance, isConfigured, firebaseConfig };
+export { app, auth, db, getStorageInstance, isConfigured, firebaseConfig };

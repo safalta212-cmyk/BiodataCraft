@@ -1,16 +1,13 @@
-import { db, isConfigured, getStorageInstance } from '../config/firebase';
+import { db, isConfigured, getStorageInstance, auth } from '../config/firebase';
 import {
   collection,
   getDocs,
   doc,
-  getDoc,
   setDoc,
   updateDoc,
   deleteDoc,
   query,
-  where,
-  orderBy,
-  limit
+  orderBy
 } from 'firebase/firestore';
 import {
   Template,
@@ -18,8 +15,6 @@ import {
   TemplateFilterParams
 } from '../types/template';
 import { INITIAL_TEMPLATES, TEMPLATE_CATEGORIES } from '../data/templateData';
-import { adminAuthService } from './adminAuthService';
-import { adminService } from './adminService';
 
 const TEMPLATES_COLLECTION = 'templates';
 const CATEGORIES_COLLECTION = 'categories';
@@ -42,10 +37,7 @@ function verifyAdminAuthorization(): void {
     sessionStorage.getItem('biodatacraft_admin_session_token') ||
     sessionStorage.getItem('biodatacraft_admin_auth_user') ||
     localStorage.getItem('biodatacraft_admin_token') ||
-    localStorage.getItem('biodatacraft_admin_session_token') ||
-    localStorage.getItem('biodatacraft_admin_auth_user') ||
-    adminAuthService.isAuthenticated() ||
-    adminService.isAuthenticated()
+    auth?.currentUser
   );
   if (!isAuthed) {
     throw new Error('Unauthorized: Administrator clearance required to modify template catalog.');
@@ -62,7 +54,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: s
       const timer = setTimeout(() => {
         reject(
           new Error(
-            `${operationName} timed out after ${timeoutMs / 1000}s. Please check network connection and Firebase permissions.`
+            `${operationName} timed out after ${timeoutMs / 1000}s. Please check network connectivity and Firebase permissions.`
           )
         );
       }, timeoutMs);
@@ -86,7 +78,7 @@ class TemplateService {
   private categoriesCacheTime: number = 0;
   private cachedAllTemplates: Template[] | null = null;
   private templatesCacheTime: number = 0;
-  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache to prevent duplicate Firestore reads
+  private readonly CACHE_TTL_MS = 60 * 1000; // 1 minute in-memory cache
 
   constructor() {
     this.loadLocalCustomTemplates();
@@ -145,7 +137,7 @@ class TemplateService {
   }
 
   /**
-   * Retrieves categories (with 5-minute memory cache to minimize Firestore reads)
+   * Retrieves categories
    */
   async getCategories(): Promise<TemplateCategory[]> {
     const now = Date.now();
@@ -172,13 +164,12 @@ class TemplateService {
   }
 
   /**
-   * Retrieves templates with multi-criteria filtering, sorting, and in-memory caching
+   * Retrieves templates with multi-criteria filtering and sorting
    */
   async getTemplates(filters?: TemplateFilterParams): Promise<Template[]> {
     let results: Template[] = [];
     const now = Date.now();
 
-    // Check if we can reuse the cached raw templates list
     if (this.cachedAllTemplates && now - this.templatesCacheTime < this.CACHE_TTL_MS) {
       results = [...this.cachedAllTemplates];
     } else {
@@ -198,7 +189,7 @@ class TemplateService {
             } as Template));
           }
         } catch (err) {
-          console.error('Firestore templates query notice, falling back to local dataset:', err);
+          console.warn('Firestore templates query notice, falling back to local inventory:', err);
         }
       }
 
@@ -207,7 +198,7 @@ class TemplateService {
       for (const t of this.localTemplates) {
         templateMap.set(t.id, t);
       }
-      // Overlay Firestore documents
+      // Overlay Firestore documents (cloud truth)
       for (const ft of firestoreTemplates) {
         templateMap.set(ft.id, ft);
       }
@@ -312,56 +303,16 @@ class TemplateService {
 
   /**
    * Retrieves single template by slug
-   * By default, unpublished templates return null to protect draft privacy.
    */
   async getTemplateBySlug(slug: string, allowUnpublished: boolean = false): Promise<Template | null> {
     const effectiveSlug = SLUG_ALIASES[slug.toLowerCase()] || slug;
-    this.loadLocalCustomTemplates();
-
-    // 1. Fast in-memory template check (instant 0ms response, zero network)
-    const localMatch = this.localTemplates.find(
+    const all = await this.getTemplates({ includeUnpublished: true });
+    const match = all.find(
       (t) => t.slug === effectiveSlug || t.id === effectiveSlug || t.slug === slug || t.id === slug
     );
-    if (localMatch) {
-      if (!allowUnpublished && !localMatch.isPublished) {
-        return null;
-      }
-      return localMatch;
-    }
-
-    // 2. Cached templates check
-    if (this.cachedAllTemplates) {
-      const cached = this.cachedAllTemplates.find(
-        (t) => t.slug === effectiveSlug || t.id === effectiveSlug || t.slug === slug || t.id === slug
-      );
-      if (cached) {
-        if (!allowUnpublished && !cached.isPublished) return null;
-        return cached;
-      }
-    }
-
-    // 3. Fallback to Firestore only if not found in pre-bundled or cached inventory
-    if (isConfigured && db) {
-      try {
-        const templatesCol = collection(db, TEMPLATES_COLLECTION);
-        const q = query(templatesCol, where('slug', '==', effectiveSlug), limit(1));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          const tmpl = {
-            ...snapshot.docs[0].data(),
-            id: snapshot.docs[0].id
-          } as Template;
-          if (!allowUnpublished && !tmpl.isPublished) {
-            return null;
-          }
-          return tmpl;
-        }
-      } catch (err) {
-        console.warn('Firestore template slug query notice:', err);
-      }
-    }
-
-    return null;
+    if (!match) return null;
+    if (!allowUnpublished && !match.isPublished) return null;
+    return match;
   }
 
   /**
@@ -389,14 +340,14 @@ class TemplateService {
     };
 
     if (!isConfigured || !db) {
-      throw new Error('Firestore database is not configured. Please verify Firebase initialization in firebase-applet-config.json.');
+      throw new Error('Firestore database is not configured. Please check firebase-applet-config.json.');
     }
 
-    // 1. Await confirmation of actual write to Firestore with timeout
+    // Await confirmation of actual write to Firestore - DO NOT swallow errors
     const docRef = doc(db, TEMPLATES_COLLECTION, id);
-    await withTimeout(setDoc(docRef, newTemplate), 12000, 'Firestore template creation');
+    await withTimeout(setDoc(docRef, newTemplate), 15000, 'Firestore template creation');
 
-    // 2. Only after Firestore confirmation succeeds, update local state
+    // Only after Firestore confirms the write, update cache and local state
     this.localTemplates.push(newTemplate);
     this.saveLocalCustomTemplates(this.localTemplates);
     this.invalidateCache();
@@ -413,11 +364,11 @@ class TemplateService {
     const cleanUpdates = { ...updates, updatedAt: now };
 
     if (!isConfigured || !db) {
-      throw new Error('Firestore database is not configured. Please verify Firebase initialization.');
+      throw new Error('Firestore database is not configured.');
     }
 
     const docRef = doc(db, TEMPLATES_COLLECTION, id);
-    await withTimeout(updateDoc(docRef, cleanUpdates), 12000, 'Firestore template update');
+    await withTimeout(updateDoc(docRef, cleanUpdates), 15000, 'Firestore template update');
 
     const idx = this.localTemplates.findIndex((t) => t.id === id);
     if (idx !== -1) {
@@ -435,11 +386,11 @@ class TemplateService {
     verifyAdminAuthorization();
     this.loadLocalCustomTemplates();
     if (!isConfigured || !db) {
-      throw new Error('Firestore database is not configured. Please verify Firebase initialization.');
+      throw new Error('Firestore database is not configured.');
     }
 
     const docRef = doc(db, TEMPLATES_COLLECTION, id);
-    await withTimeout(deleteDoc(docRef), 12000, 'Firestore template deletion');
+    await withTimeout(deleteDoc(docRef), 15000, 'Firestore template deletion');
 
     this.localTemplates = this.localTemplates.filter((t) => t.id !== id);
     this.saveLocalCustomTemplates(this.localTemplates);
@@ -481,7 +432,7 @@ class TemplateService {
   }
 
   /**
-   * Admin Storage: Upload template visual asset to Firebase Storage with proper error handling
+   * Admin Storage: Upload template visual asset to Firebase Storage
    */
   async uploadTemplateAsset(file: File, assetName: string): Promise<string> {
     verifyAdminAuthorization();
@@ -506,15 +457,15 @@ class TemplateService {
 
     const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
     const storageRef = ref(storageInstance, `template-assets/${Date.now()}_${safeName}`);
-    
-    const uploadOperation = async () => {
+
+    const uploadTask = async () => {
       const snapshot = await uploadBytes(storageRef, file, {
         contentType: file.type
       });
       return await getDownloadURL(snapshot.ref);
     };
 
-    return await withTimeout(uploadOperation(), 20000, 'Firebase Storage asset upload');
+    return await withTimeout(uploadTask(), 20000, 'Firebase Storage asset upload');
   }
 }
 

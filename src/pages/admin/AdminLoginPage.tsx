@@ -60,10 +60,10 @@ export const AdminLoginPage: React.FC = () => {
     try {
       const res = await loginWithGoogle();
       if (res.success) {
-        toast.success('Admin session verified successfully via Google Auth.', 'Access Granted');
+        toast.success('Admin session authenticated with Firebase via Google.', 'Access Granted');
         navigate(returnPath, { replace: true });
       } else {
-        setError(res.error || 'Google Sign-In was cancelled or failed.');
+        setError(res.error || 'Google Sign-In failed.');
       }
     } catch (err: any) {
       setError(err?.message || 'Google authentication error. Please try again.');
@@ -126,7 +126,7 @@ export const AdminLoginPage: React.FC = () => {
               </div>
             )}
 
-            {/* Google Authentication (Direct Firebase Auth) */}
+            {/* Google Authentication (Direct Firebase Auth for Full Cloud Storage & Firestore Sync) */}
             <button
               type="button"
               onClick={handleGoogleLogin}
@@ -160,8 +160,6 @@ export const AdminLoginPage: React.FC = () => {
                 or use admin credentials
               </span>
             </div>
-
-            {/* ================= LOGIN FORM ================= */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1">

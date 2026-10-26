@@ -70,11 +70,11 @@ class AdminAuthService {
         onAuthStateChanged(auth, (firebaseUser) => {
           this.authInitialized = true;
           if (firebaseUser) {
-            const adminUser = this.mapFirebaseUserToAdmin(firebaseUser);
+            const adminUser = this.mapFirebaseUserToAdmin(firebaseUser, 'super_admin');
             this.setSession(adminUser);
           } else {
-            // Only clear if we were using Firebase Auth
-            if (this.currentUser && isConfigured) {
+            // Only clear if the session belonged to a Firebase user and we are logging out
+            if (this.currentUser && this.currentUser.uid && !this.currentUser.uid.startsWith('admin_env_') && isConfigured) {
               this.clearSession();
             }
           }
@@ -90,13 +90,12 @@ class AdminAuthService {
   }
 
   private mapFirebaseUserToAdmin(user: FirebaseUser, roleOverride?: AdminRole): AdminUser {
-    // Default administrator role with configurable role overrides
-    const role: AdminRole = roleOverride || 'admin';
+    const role: AdminRole = roleOverride || 'super_admin';
     return {
       uid: user.uid,
       email: user.email || 'admin@biodatacraft.internal',
       role,
-      permissions: ROLE_PERMISSIONS[role] || [],
+      permissions: ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.super_admin,
       displayName: user.displayName || user.email?.split('@')[0] || 'Administrator',
       photoURL: user.photoURL || undefined,
       lastLoginAt: Date.now()
@@ -242,7 +241,7 @@ class AdminAuthService {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       const userCredential = await signInWithPopup(auth, provider);
-      const adminUser = this.mapFirebaseUserToAdmin(userCredential.user);
+      const adminUser = this.mapFirebaseUserToAdmin(userCredential.user, 'super_admin');
       this.setSession(adminUser);
       return { success: true, user: adminUser };
     } catch (err: any) {
