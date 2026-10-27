@@ -65,6 +65,15 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: s
   ]);
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('Failed to read image file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 /**
  * Template Service provides secure CRUD and querying for Template Metadata (Firestore)
  * and Template Assets (Firebase Storage).
@@ -450,22 +459,25 @@ class TemplateService {
       throw new Error('Firebase Storage is not configured.');
     }
 
-    const storageInstance = await getStorageInstance();
-    if (!storageInstance) {
-      throw new Error('Firebase Storage service is unavailable. Please verify Firebase project setup.');
+    try {
+      const storageInstance = await getStorageInstance();
+      if (storageInstance) {
+        const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+        const storageRef = ref(storageInstance, `template-assets/${Date.now()}_${safeName}`);
+        const snapshot = await withTimeout(
+          uploadBytes(storageRef, file, { contentType: file.type }),
+          12000,
+          'Firebase Storage asset upload'
+        );
+        return await getDownloadURL(snapshot.ref);
+      }
+    } catch (err: any) {
+      console.warn('Firebase Storage asset upload notice, falling back to persistent data URL:', err);
     }
 
-    const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-    const storageRef = ref(storageInstance, `template-assets/${Date.now()}_${safeName}`);
-
-    const uploadTask = async () => {
-      const snapshot = await uploadBytes(storageRef, file, {
-        contentType: file.type
-      });
-      return await getDownloadURL(snapshot.ref);
-    };
-
-    return await withTimeout(uploadTask(), 20000, 'Firebase Storage asset upload');
+    // Fallback: convert to persistent Base64 data URL so template thumbnail is permanently preserved
+    // and template creation never fails due to storage permissions
+    return await fileToDataUrl(file);
   }
 }
 
