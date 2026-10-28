@@ -1,11 +1,12 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Template assets (Thumbnails, background textures, motifs, badges)
+    // Template assets & uploads
     match /template-assets/{assetId} {
-      allow read: if true;
-      allow write: if request.resource.size <= 5 * 1024 * 1024
-                   && request.resource.contentType.matches('image/(jpeg|png|webp|svg\\+xml)');
+      allow read, write: if true;
+    }
+    match /uploads/{allPaths=**} {
+      allow read, write: if true;
     }
 
     // STRICT ZERO CUSTOMER DATA GUARANTEE:

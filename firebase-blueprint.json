@@ -90,6 +90,97 @@
       },
       "required": ["slug", "name", "categoryId", "isPublished", "sortOrder"]
     },
+    "Upload": {
+      "title": "Upload",
+      "description": "Template visual asset uploads and image metadata",
+      "type": "object",
+      "properties": {
+        "fileName": {
+          "type": "string",
+          "description": "Name of the uploaded asset"
+        },
+        "url": {
+          "type": "string",
+          "description": "Storage download URL or base64 data URI"
+        },
+        "mimeType": {
+          "type": "string",
+          "description": "MIME type of the asset"
+        },
+        "size": {
+          "type": "number",
+          "description": "Size in bytes"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when file was uploaded"
+        }
+      },
+      "required": ["fileName", "url", "createdAt"]
+    },
+    "BlogPost": {
+      "title": "BlogPost",
+      "description": "Editorial guides and advice articles for Indian matrimonial biodatas",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "description": "URL slug for the blog article"
+        },
+        "title": {
+          "type": "string",
+          "description": "Article headline title"
+        },
+        "excerpt": {
+          "type": "string",
+          "description": "Summary excerpt shown in previews"
+        },
+        "category": {
+          "type": "string",
+          "description": "Article topic category"
+        },
+        "publishedDate": {
+          "type": "string",
+          "description": "Readable publication date string"
+        },
+        "readTime": {
+          "type": "string",
+          "description": "Estimated reading duration"
+        },
+        "author": {
+          "type": "string",
+          "description": "Author or editorial desk attribution"
+        },
+        "featuredImage": {
+          "type": "string",
+          "description": "URL or Data URI of hero image"
+        },
+        "seoTitle": {
+          "type": "string",
+          "description": "Search engine title tag"
+        },
+        "seoDescription": {
+          "type": "string",
+          "description": "Search engine meta description"
+        },
+        "isPublished": {
+          "type": "boolean",
+          "description": "Whether the article is published and publicly visible"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp when article was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp when article was updated"
+        }
+      },
+      "required": ["slug", "title", "excerpt", "category", "isPublished"]
+    },
     "TemplateCategory": {
       "title": "TemplateCategory",
       "description": "Matrimonial biodata template category taxonomy",
@@ -163,6 +254,14 @@
     "/templates/{templateId}": {
       "schema": "Template",
       "description": "Collection of matrimonial biodata design templates"
+    },
+    "/uploads/{uploadId}": {
+      "schema": "Upload",
+      "description": "Collection of template visual assets and uploaded designs"
+    },
+    "/blog_posts/{postId}": {
+      "schema": "BlogPost",
+      "description": "Collection of matrimonial guides and advice articles"
     },
     "/categories/{categoryId}": {
       "schema": "TemplateCategory",

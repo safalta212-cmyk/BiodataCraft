@@ -15,6 +15,7 @@ import {
   TemplateFilterParams
 } from '../types/template';
 import { INITIAL_TEMPLATES, TEMPLATE_CATEGORIES } from '../data/templateData';
+import { handleFirestoreError, OperationType } from '../utils/firestoreError';
 
 const TEMPLATES_COLLECTION = 'templates';
 const CATEGORIES_COLLECTION = 'categories';
@@ -354,7 +355,14 @@ class TemplateService {
 
     // Await confirmation of actual write to Firestore - DO NOT swallow errors
     const docRef = doc(db, TEMPLATES_COLLECTION, id);
-    await withTimeout(setDoc(docRef, newTemplate), 15000, 'Firestore template creation');
+    try {
+      await withTimeout(setDoc(docRef, newTemplate), 15000, 'Firestore template creation');
+    } catch (err: any) {
+      if (err?.message?.includes('permission') || err?.code?.includes('permission')) {
+        handleFirestoreError(err, OperationType.CREATE, `${TEMPLATES_COLLECTION}/${id}`);
+      }
+      throw err;
+    }
 
     // Only after Firestore confirms the write, update cache and local state
     this.localTemplates.push(newTemplate);
@@ -377,7 +385,14 @@ class TemplateService {
     }
 
     const docRef = doc(db, TEMPLATES_COLLECTION, id);
-    await withTimeout(updateDoc(docRef, cleanUpdates), 15000, 'Firestore template update');
+    try {
+      await withTimeout(updateDoc(docRef, cleanUpdates), 15000, 'Firestore template update');
+    } catch (err: any) {
+      if (err?.message?.includes('permission') || err?.code?.includes('permission')) {
+        handleFirestoreError(err, OperationType.UPDATE, `${TEMPLATES_COLLECTION}/${id}`);
+      }
+      throw err;
+    }
 
     const idx = this.localTemplates.findIndex((t) => t.id === id);
     if (idx !== -1) {
@@ -399,7 +414,14 @@ class TemplateService {
     }
 
     const docRef = doc(db, TEMPLATES_COLLECTION, id);
-    await withTimeout(deleteDoc(docRef), 15000, 'Firestore template deletion');
+    try {
+      await withTimeout(deleteDoc(docRef), 15000, 'Firestore template deletion');
+    } catch (err: any) {
+      if (err?.message?.includes('permission') || err?.code?.includes('permission')) {
+        handleFirestoreError(err, OperationType.DELETE, `${TEMPLATES_COLLECTION}/${id}`);
+      }
+      throw err;
+    }
 
     this.localTemplates = this.localTemplates.filter((t) => t.id !== id);
     this.saveLocalCustomTemplates(this.localTemplates);
@@ -441,7 +463,7 @@ class TemplateService {
   }
 
   /**
-   * Admin Storage: Upload template visual asset to Firebase Storage
+   * Admin Storage & Uploads: Upload template visual asset to Firebase Storage & record upload metadata
    */
   async uploadTemplateAsset(file: File, assetName: string): Promise<string> {
     verifyAdminAuthorization();
@@ -459,6 +481,8 @@ class TemplateService {
       throw new Error('Firebase Storage is not configured.');
     }
 
+    let finalUrl = '';
+
     try {
       const storageInstance = await getStorageInstance();
       if (storageInstance) {
@@ -469,16 +493,43 @@ class TemplateService {
           12000,
           'Firebase Storage asset upload'
         );
-        return await getDownloadURL(snapshot.ref);
+        finalUrl = await getDownloadURL(snapshot.ref);
       }
     } catch (err: any) {
       console.warn('Firebase Storage asset upload notice, falling back to persistent data URL:', err);
     }
 
     // Fallback: convert to persistent Base64 data URL so template thumbnail is permanently preserved
-    // and template creation never fails due to storage permissions
-    return await fileToDataUrl(file);
+    if (!finalUrl) {
+      finalUrl = await fileToDataUrl(file);
+    }
+
+    // Record upload document in Firestore uploads collection
+    if (isConfigured && db) {
+      const uploadId = `upl-${Date.now()}`;
+      try {
+        await withTimeout(
+          setDoc(doc(db, 'uploads', uploadId), {
+            fileName: safeName,
+            url: finalUrl,
+            mimeType: file.type,
+            size: file.size,
+            createdAt: new Date().toISOString()
+          }),
+          8000,
+          'Firestore upload record creation'
+        );
+      } catch (err: any) {
+        if (err?.message?.includes('permission') || err?.code?.includes('permission')) {
+          handleFirestoreError(err, OperationType.CREATE, `uploads/${uploadId}`);
+        }
+        console.warn('Firestore upload tracking record notice:', err);
+      }
+    }
+
+    return finalUrl;
   }
 }
 
 export const templateService = new TemplateService();
+

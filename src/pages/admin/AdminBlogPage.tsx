@@ -24,8 +24,10 @@ import {
   FileText,
   AlertTriangle,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  Upload
 } from 'lucide-react';
+
 
 const DEFAULT_CATEGORIES = [
   'Guides',
@@ -52,6 +54,7 @@ export const AdminBlogPage: React.FC = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Destructive Delete State
   const [deleteConfirmPost, setDeleteConfirmPost] = useState<BlogPost | null>(null);
@@ -71,15 +74,45 @@ export const AdminBlogPage: React.FC = () => {
   const [isPublished, setIsPublished] = useState(true);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const loadPosts = () => {
+  const loadPosts = async () => {
     setLoading(true);
     try {
-      const allPosts = blogService.getPosts({ includeUnpublished: true });
+      const allPosts = await blogService.getPosts({ includeUnpublished: true });
       setPosts(allPosts);
     } catch {
-      toast.error('Failed to load blog articles.');
+      toast.error('Failed to load blog articles from Firestore.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+    if (!validMimes.includes(file.type.toLowerCase())) {
+      toast.error('Invalid file type. Only JPEG, PNG, WEBP, and SVG images are allowed.');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size exceeds the 5MB maximum limit.');
+      e.target.value = '';
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const url = await blogService.uploadBlogImage(file);
+      setFeaturedImage(url);
+      toast.success('Featured image uploaded successfully.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to upload image.');
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = '';
     }
   };
 
@@ -91,6 +124,7 @@ export const AdminBlogPage: React.FC = () => {
     }
     loadPosts();
   }, [navigate]);
+
 
   // Open Create Modal
   const handleOpenCreate = () => {
@@ -136,8 +170,9 @@ export const AdminBlogPage: React.FC = () => {
   };
 
   // Form Validation & Save
-  const handleSavePost = (e: React.FormEvent) => {
+  const handleSavePost = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (isSaving) return; // Prevent double-submit
 
     const errors: Record<string, string> = {};
@@ -219,15 +254,15 @@ export const AdminBlogPage: React.FC = () => {
       };
 
       if (editingPost) {
-        blogService.updatePost(editingPost.slug, postPayload);
-        toast.success(`Article "${title}" updated successfully.`);
+        await blogService.updatePost(editingPost.slug, postPayload);
+        toast.success(`Article "${title}" updated successfully in Firestore.`);
       } else {
-        blogService.createPost(postPayload);
-        toast.success(`Article "${title}" created successfully.`);
+        await blogService.createPost(postPayload);
+        toast.success(`Article "${title}" created and saved to Firestore.`);
       }
 
       setIsEditorOpen(false);
-      loadPosts();
+      await loadPosts();
     } catch (err: any) {
       toast.error(err?.message || 'Failed to save article.');
     } finally {
@@ -236,7 +271,7 @@ export const AdminBlogPage: React.FC = () => {
   };
 
   // Toggle Publication
-  const handleTogglePublish = (post: BlogPost) => {
+  const handleTogglePublish = async (post: BlogPost) => {
     const token = sessionStorage.getItem('biodatacraft_admin_token');
     if (!token) {
       toast.error('Unauthorized. Please log in as admin.');
@@ -245,13 +280,17 @@ export const AdminBlogPage: React.FC = () => {
     }
 
     const nextStatus = !post.isPublished;
-    blogService.updatePost(post.slug, { isPublished: nextStatus });
-    toast.success(nextStatus ? `Published "${post.title}".` : `Unpublished "${post.title}" (Draft).`);
-    loadPosts();
+    try {
+      await blogService.updatePost(post.slug, { isPublished: nextStatus });
+      toast.success(nextStatus ? `Published "${post.title}".` : `Unpublished "${post.title}" (Draft).`);
+      await loadPosts();
+    } catch {
+      toast.error('Failed to update publication status.');
+    }
   };
 
   // Delete Article
-  const handleDeletePost = () => {
+  const handleDeletePost = async () => {
     if (!deleteConfirmPost) return;
     const token = sessionStorage.getItem('biodatacraft_admin_token');
     if (!token) {
@@ -260,11 +299,16 @@ export const AdminBlogPage: React.FC = () => {
       return;
     }
 
-    blogService.deletePost(deleteConfirmPost.slug);
-    toast.success(`Article "${deleteConfirmPost.title}" deleted.`);
-    setDeleteConfirmPost(null);
-    loadPosts();
+    try {
+      await blogService.deletePost(deleteConfirmPost.slug);
+      toast.success(`Article "${deleteConfirmPost.title}" deleted from Firestore.`);
+      setDeleteConfirmPost(null);
+      await loadPosts();
+    } catch {
+      toast.error('Failed to delete article.');
+    }
   };
+
 
   // Filter List
   const filteredPosts = posts.filter((p) => {
@@ -596,14 +640,39 @@ export const AdminBlogPage: React.FC = () => {
                 onChange={(e) => setReadTime(e.target.value)}
               />
 
-              <Input
-                label="Featured Image URL"
-                placeholder="https://images.unsplash.com/..."
-                value={featuredImage}
-                onChange={(e) => setFeaturedImage(e.target.value)}
-                hint="Banner image URL for cards"
-              />
+              <div className="space-y-1">
+                <Input
+                  label="Featured Image URL"
+                  placeholder="https://... or upload below"
+                  value={featuredImage}
+                  onChange={(e) => setFeaturedImage(e.target.value)}
+                  hint="Banner image for article cards"
+                />
+                <div className="flex items-center gap-2 pt-1">
+                  <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-300 bg-white text-stone-700 hover:bg-stone-100 cursor-pointer font-semibold text-[11px] shadow-2xs">
+                    <Upload className="w-3.5 h-3.5 text-amber-800" />
+                    <span>{isUploadingImage ? 'Uploading Image...' : 'Upload Image'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploadingImage}
+                      onChange={handleImageUpload}
+                    />
+                  </label>
+                  {featuredImage && (
+                    <button
+                      type="button"
+                      onClick={() => setFeaturedImage('')}
+                      className="text-[11px] text-red-600 hover:underline cursor-pointer"
+                    >
+                      Clear Image
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
+
 
             {/* Excerpt */}
             <Textarea

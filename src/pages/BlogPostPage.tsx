@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { blogService } from '../services/blogService';
+import { BlogPost } from '../data/blogData';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -12,8 +13,35 @@ import { useToast } from '../context/ToastContext';
 export const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const isAdmin = typeof window !== 'undefined' && Boolean(sessionStorage.getItem('biodatacraft_admin_token'));
-  const post = slug ? blogService.getPostBySlug(slug, isAdmin) : null;
+  const [post, setPost] = useState<BlogPost | null>(() => slug ? blogService.getPostBySlugSync(slug, isAdmin) : null);
+  const [loading, setLoading] = useState<boolean>(!post);
+  const [otherPosts, setOtherPosts] = useState<BlogPost[]>(() =>
+    blogService.getPostsSync().filter((p) => (slug ? p.slug !== slug : true))
+  );
   const toast = useToast();
+
+  useEffect(() => {
+    let isMounted = true;
+    if (slug) {
+      blogService.getPostBySlug(slug, isAdmin).then((fetched) => {
+        if (isMounted) {
+          setPost(fetched);
+          setLoading(false);
+        }
+      }).catch(() => {
+        if (isMounted) setLoading(false);
+      });
+
+      blogService.getPosts().then((all) => {
+        if (isMounted) {
+          setOtherPosts(all.filter((p) => p.slug !== slug));
+        }
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [slug, isAdmin]);
 
   useSEO({
     title: post ? `${post.seoTitle || post.title} | BiodataCraft` : 'Article Not Found | BiodataCraft',
@@ -48,10 +76,9 @@ export const BlogPostPage: React.FC = () => {
     }
   };
 
-  const otherPosts = post ? blogService.getPosts().filter((p) => p.slug !== post.slug) : [];
-
   return (
     <div className="min-h-screen bg-stone-50 py-10 sm:py-16">
+
       {!post ? (
         <div className="py-16 px-4">
           <ErrorState

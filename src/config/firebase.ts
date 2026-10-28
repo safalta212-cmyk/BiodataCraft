@@ -49,6 +49,19 @@ if (isConfigured) {
     db = firebaseConfig.firestoreDatabaseId
       ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
       : getFirestore(app);
+
+    // Validate connection to Firestore on initialization
+    if (typeof window !== 'undefined') {
+      import('firebase/firestore').then(({ doc, getDocFromServer }) => {
+        if (db) {
+          getDocFromServer(doc(db, 'test', 'connection')).catch((error) => {
+            if (error instanceof Error && error.message.includes('the client is offline')) {
+              console.error('Please check your Firebase configuration.');
+            }
+          });
+        }
+      });
+    }
   } catch (error) {
     console.warn('Firebase initialization notice:', error);
   }
@@ -62,3 +75,4 @@ const getStorageInstance = async () => {
 };
 
 export { app, auth, db, getStorageInstance, isConfigured, firebaseConfig };
+
