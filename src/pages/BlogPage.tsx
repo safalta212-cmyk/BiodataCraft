@@ -24,7 +24,7 @@ export const BlogPage: React.FC = () => {
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    blogService.getPosts().then((fetched) => {
+    blogService.getPosts({ forceRefresh: true }).then((fetched) => {
       if (isMounted) {
         setPosts(fetched);
         setLoading(false);

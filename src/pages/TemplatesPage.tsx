@@ -64,7 +64,7 @@ export const TemplatesPage: React.FC = () => {
       try {
         const [cats, tmpls] = await Promise.all([
           templateService.getCategories(),
-          templateService.getTemplates()
+          templateService.getTemplates({ forceRefresh: true })
         ]);
         if (isMounted) {
           setCategories(cats);

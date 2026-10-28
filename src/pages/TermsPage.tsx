@@ -122,7 +122,7 @@ export const TermsPage: React.FC = () => {
                 <span>1. Acceptance of Terms</span>
               </div>
               <p className="text-sm text-stone-700 leading-relaxed">
-                By visiting, accessing, browsing, or using <strong>BiodataCraft</strong> (<a href="https://biodatacraft.in" className="text-amber-800 underline">https://biodatacraft.in</a>), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service and our Privacy Policy.
+                By visiting, accessing, browsing, or using <strong>BiodataCraft</strong> (<a href="https://biodata-craft.vercel.app" className="text-amber-800 underline">https://biodata-craft.vercel.app</a>), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service and our Privacy Policy.
               </p>
               <p className="text-sm text-stone-700 leading-relaxed">
                 If you do not agree to these terms in their entirety, you must immediately discontinue your use of this service.
@@ -349,7 +349,7 @@ export const TermsPage: React.FC = () => {
               </p>
               <div className="p-4 bg-white rounded-xl border border-stone-200 text-xs sm:text-sm text-stone-700 space-y-1.5">
                 <p>
-                  <strong>Platform:</strong> BiodataCraft (<a href="https://biodatacraft.in" className="text-amber-800 underline">https://biodatacraft.in</a>)
+                  <strong>Platform:</strong> BiodataCraft (<a href="https://biodata-craft.vercel.app" className="text-amber-800 underline">https://biodata-craft.vercel.app</a>)
                 </p>
                 <p>
                   <strong>Contact Desk:</strong>{' '}

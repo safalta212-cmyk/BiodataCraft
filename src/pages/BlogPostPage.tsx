@@ -60,7 +60,8 @@ export const BlogPostPage: React.FC = () => {
       ? {
           title: post.title,
           description: post.excerpt,
-          url: `https://biodatacraft.in/blog/${post.slug}`,
+          url: `https://biodata-craft.vercel.app/blog/${post.slug}`,
+
           image: post.featuredImage,
           datePublished: post.createdAt,
           dateModified: post.updatedAt,

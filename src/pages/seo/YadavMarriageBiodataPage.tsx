@@ -57,7 +57,8 @@ export const YadavMarriageBiodataPage: React.FC = () => {
     article: {
       title: 'Guide to Yadav Marriage Biodata: Gotra Rules, Ancestral Heritage & Formats',
       description: 'Cultural nuances, 4-gotra guidelines, and formatting standards for Yadav community matrimonial biodatas.',
-      url: 'https://biodatacraft.in/yadav-marriage-biodata',
+      url: 'https://biodata-craft.vercel.app/yadav-marriage-biodata',
+
       datePublished: '2026-10-02T10:00:00Z',
       dateModified: '2026-10-05T08:00:00Z',
       authorName: 'Community Heritage Desk, BiodataCraft'

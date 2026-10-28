@@ -149,7 +149,7 @@ export const AdminTemplatesPage: React.FC = () => {
     setLoading(true);
     try {
       const [tmpls, cats] = await Promise.all([
-        templateService.getTemplates({ includeUnpublished: true, status: 'all', sortBy: 'sortOrder' }),
+        templateService.getTemplates({ includeUnpublished: true, status: 'all', sortBy: 'sortOrder', forceRefresh: true }),
         templateService.getCategories()
       ]);
       setTemplates(tmpls);

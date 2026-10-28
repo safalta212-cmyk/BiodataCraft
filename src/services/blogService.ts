@@ -85,13 +85,22 @@ class BlogService {
   }
 
   private saveLocalPosts(postsList: BlogPost[]): void {
+    const customOnly = postsList.filter(
+      (p) => !BLOG_POSTS.some((init) => init.slug === p.slug || (init.id && init.id === p.id))
+    );
     try {
-      const customOnly = postsList.filter(
-        (p) => !BLOG_POSTS.some((init) => init.slug === p.slug || (init.id && init.id === p.id))
-      );
       localStorage.setItem(BLOG_STORAGE_KEY, JSON.stringify(customOnly));
     } catch {
-      // Ignore quota errors
+      // Quota exceeded: store lightweight metadata without large base64 image strings
+      try {
+        const lightweight = customOnly.map((p) => ({
+          ...p,
+          featuredImage: p.featuredImage?.startsWith('data:') ? '' : p.featuredImage
+        }));
+        localStorage.setItem(BLOG_STORAGE_KEY, JSON.stringify(lightweight));
+      } catch {
+        // Ignore if storage is completely unavailable
+      }
     }
   }
 
@@ -132,9 +141,10 @@ class BlogService {
     includeUnpublished?: boolean;
     category?: string;
     search?: string;
+    forceRefresh?: boolean;
   }): Promise<BlogPost[]> {
     const now = Date.now();
-    if (now - this.cachedTime < this.CACHE_TTL_MS && this.posts.length > 0) {
+    if (!options?.forceRefresh && now - this.cachedTime < this.CACHE_TTL_MS && this.posts.length > 0) {
       return this.applyFilters([...this.posts], options);
     }
 
@@ -144,8 +154,8 @@ class BlogService {
     if (isConfigured && db) {
       try {
         const colRef = collection(db, BLOG_COLLECTION);
-        const q = query(colRef, orderBy('createdAt', 'desc'));
-        const snapshot = await withTimeout(getDocs(q), 8000, 'Firestore blog posts query');
+        // Direct collection read avoids omitting documents with unindexed or missing fields
+        const snapshot = await withTimeout(getDocs(colRef), 15000, 'Firestore blog posts query');
 
         if (!snapshot.empty) {
           firestorePosts = snapshot.docs.map((docSnap) => {
@@ -168,13 +178,18 @@ class BlogService {
               updatedAt: data.updatedAt || new Date().toISOString()
             } as BlogPost;
           });
+
+          // Sort by createdAt descending
+          firestorePosts.sort(
+            (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+          );
         }
       } catch (err: any) {
         console.warn('Firestore blog query notice, falling back to local posts:', err);
       }
     }
 
-    // Merge: start with default & local posts, overlay Firestore records
+    // Merge: start with default & local posts, overlay Firestore records (source of truth)
     const postMap = new Map<string, BlogPost>();
     for (const p of this.posts) {
       postMap.set(p.slug, p);

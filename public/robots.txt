@@ -4,4 +4,4 @@ Disallow: /admin/
 Disallow: /admin
 
 # Sitemaps
-Sitemap: https://biodatacraft.in/sitemap.xml
+Sitemap: https://biodata-craft.vercel.app/sitemap.xml

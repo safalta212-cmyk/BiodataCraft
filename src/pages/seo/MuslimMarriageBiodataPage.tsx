@@ -57,7 +57,7 @@ export const MuslimMarriageBiodataPage: React.FC = () => {
     article: {
       title: 'Guide to Muslim Marriage Biodata: Nikah Format, Deen & Family Lineage',
       description: 'Step-by-step guide to writing a respectful and graceful Islamic matrimonial profile.',
-      url: 'https://biodatacraft.in/muslim-marriage-biodata',
+      url: 'https://biodata-craft.vercel.app/muslim-marriage-biodata',
       datePublished: '2026-10-02T10:00:00Z',
       dateModified: '2026-10-05T08:00:00Z',
       authorName: 'Islamic Matrimonial Desk, BiodataCraft'

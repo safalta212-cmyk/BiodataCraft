@@ -67,7 +67,8 @@ export const MarriageBiodataPage: React.FC = () => {
     article: {
       title: 'Complete Guide to Indian Marriage Biodata: Etiquette, Sections & Formats',
       description: 'Step-by-step masterclass on creating an auspicious and elegant Indian marriage biodata.',
-      url: 'https://biodatacraft.in/marriage-biodata',
+      url: 'https://biodata-craft.vercel.app/marriage-biodata',
+
       datePublished: '2026-10-01T10:00:00Z',
       dateModified: '2026-10-05T08:00:00Z',
       authorName: 'Cultural Matrimonial Desk, BiodataCraft'

@@ -135,15 +135,25 @@ class TemplateService {
   }
 
   private saveLocalCustomTemplates(templates: Template[]) {
+    const customOnly = templates.filter(
+      (t) => !INITIAL_TEMPLATES.some((init) => init.id === t.id)
+    );
     try {
-      const customOnly = templates.filter(
-        (t) => !INITIAL_TEMPLATES.some((init) => init.id === t.id)
-      );
       localStorage.setItem(LOCAL_STORAGE_CUSTOM_TEMPLATES, JSON.stringify(customOnly));
-      this.invalidateCache();
     } catch {
-      // Ignore
+      // Quota exceeded fallback: strip base64 image data URIs to preserve template metadata
+      try {
+        const lightweight = customOnly.map((t) => ({
+          ...t,
+          thumbnail: t.thumbnail?.startsWith('data:') ? '' : t.thumbnail,
+          previewImage: t.previewImage?.startsWith('data:') ? '' : t.previewImage
+        }));
+        localStorage.setItem(LOCAL_STORAGE_CUSTOM_TEMPLATES, JSON.stringify(lightweight));
+      } catch {
+        // Ignore if storage is completely full
+      }
     }
+    this.invalidateCache();
   }
 
   /**
@@ -158,7 +168,7 @@ class TemplateService {
     if (isConfigured && db) {
       try {
         const catCol = collection(db, CATEGORIES_COLLECTION);
-        const snapshot = await withTimeout(getDocs(catCol), 8000, 'Firestore categories query');
+        const snapshot = await withTimeout(getDocs(catCol), 10000, 'Firestore categories query');
         if (!snapshot.empty) {
           this.cachedCategories = snapshot.docs.map((doc) => doc.data() as TemplateCategory);
           this.categoriesCacheTime = now;
@@ -180,7 +190,7 @@ class TemplateService {
     let results: Template[] = [];
     const now = Date.now();
 
-    if (this.cachedAllTemplates && now - this.templatesCacheTime < this.CACHE_TTL_MS) {
+    if (!filters?.forceRefresh && this.cachedAllTemplates && now - this.templatesCacheTime < this.CACHE_TTL_MS) {
       results = [...this.cachedAllTemplates];
     } else {
       this.loadLocalCustomTemplates();
@@ -189,8 +199,8 @@ class TemplateService {
       if (isConfigured && db) {
         try {
           const templatesCol = collection(db, TEMPLATES_COLLECTION);
-          const q = query(templatesCol, orderBy('sortOrder', 'asc'));
-          const snapshot = await withTimeout(getDocs(q), 10000, 'Firestore templates query');
+          // Direct collection query avoids silently dropping documents with missing/unindexed fields
+          const snapshot = await withTimeout(getDocs(templatesCol), 15000, 'Firestore templates query');
 
           if (!snapshot.empty) {
             firestoreTemplates = snapshot.docs.map((docSnap) => ({
@@ -214,6 +224,9 @@ class TemplateService {
       }
 
       results = Array.from(templateMap.values());
+      // Sort by sortOrder ascending
+      results.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+
       this.localTemplates = [...results];
       this.cachedAllTemplates = [...results];
       this.templatesCacheTime = now;

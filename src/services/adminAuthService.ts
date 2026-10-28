@@ -31,7 +31,7 @@ function mapFirebaseAuthError(code: string): string {
     case 'auth/operation-not-allowed':
       return 'Email/Password sign-in is disabled in your Firebase project. Please enable Email/Password in Firebase Console → Authentication → Sign-in method, or use your Vercel environment admin credentials.';
     case 'auth/unauthorized-domain':
-      return 'This domain (biodatacraft.vercel.app) is not authorized in Firebase. Add it in Firebase Console → Authentication → Settings → Authorized domains.';
+      return 'This domain (biodata-craft.vercel.app) is not authorized in Firebase. Add it in Firebase Console → Authentication → Settings → Authorized domains.';
     case 'auth/api-key-not-valid':
     case 'auth/invalid-api-key':
       return 'Firebase API key is invalid. Please check VITE_FIREBASE_API_KEY in Vercel Environment Variables, or use environment admin credentials.';

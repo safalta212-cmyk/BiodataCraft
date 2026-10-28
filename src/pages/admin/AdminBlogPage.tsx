@@ -77,7 +77,7 @@ export const AdminBlogPage: React.FC = () => {
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const allPosts = await blogService.getPosts({ includeUnpublished: true });
+      const allPosts = await blogService.getPosts({ includeUnpublished: true, forceRefresh: true });
       setPosts(allPosts);
     } catch {
       toast.error('Failed to load blog articles from Firestore.');

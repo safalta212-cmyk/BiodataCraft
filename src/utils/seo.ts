@@ -46,8 +46,9 @@ export interface SEOMetadata {
   includeWebApplicationSchema?: boolean;
 }
 
-export const SITE_DOMAIN = 'https://biodatacraft.in';
+export const SITE_DOMAIN = 'https://biodata-craft.vercel.app';
 export const SITE_NAME = 'BiodataCraft';
+
 export const DEFAULT_OG_IMAGE = 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&q=80&w=1200';
 
 export const DEFAULT_SEO: SEOMetadata = {

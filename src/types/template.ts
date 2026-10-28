@@ -66,4 +66,5 @@ export interface TemplateFilterParams {
   status?: 'all' | 'published' | 'draft';
   includeUnpublished?: boolean;
   sortBy?: 'popular' | 'newest' | 'name' | 'sortOrder';
+  forceRefresh?: boolean;
 }

@@ -57,7 +57,8 @@ export const BengaliMarriageBiodataPage: React.FC = () => {
     article: {
       title: 'Bengali Marriage Biodata Guide: Gothro, Desher Baari & Matrimonial Traditions',
       description: 'Step-by-step guidance on creating a distinguished Bengali matrimonial profile with cultural grace.',
-      url: 'https://biodatacraft.in/bengali-marriage-biodata',
+      url: 'https://biodata-craft.vercel.app/bengali-marriage-biodata',
+
       datePublished: '2026-10-02T10:00:00Z',
       dateModified: '2026-10-05T08:00:00Z',
       authorName: 'Bengal Cultural Desk, BiodataCraft'

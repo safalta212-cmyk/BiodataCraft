@@ -57,7 +57,7 @@ export const HinduMarriageBiodataPage: React.FC = () => {
     article: {
       title: 'Guide to Hindu Matrimonial Biodata: Sacred Traditions, Gotra & Horoscope',
       description: 'Understanding the sacred elements of Hindu marriage biodatas including Kundali, Gotra, and Vedic blessings.',
-      url: 'https://biodatacraft.in/hindu-marriage-biodata',
+      url: 'https://biodata-craft.vercel.app/hindu-marriage-biodata',
       datePublished: '2026-10-02T10:00:00Z',
       dateModified: '2026-10-05T08:00:00Z',
       authorName: 'Vedic Traditions Desk, BiodataCraft'

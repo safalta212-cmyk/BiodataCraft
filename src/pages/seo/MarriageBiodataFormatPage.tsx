@@ -59,7 +59,7 @@ export const MarriageBiodataFormatPage: React.FC = () => {
     article: {
       title: 'Standard Indian Marriage Biodata Formats and Layout Specifications',
       description: 'Detailed analysis of matrimonial biodata layout formats and field requirements.',
-      url: 'https://biodatacraft.in/marriage-biodata-format',
+      url: 'https://biodata-craft.vercel.app/marriage-biodata-format',
       datePublished: '2026-10-02T10:00:00Z',
       dateModified: '2026-10-05T08:00:00Z',
       authorName: 'Format Architecture Team, BiodataCraft'

@@ -480,7 +480,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               </p>
               <div className="p-4 bg-white rounded-xl border border-stone-200 text-xs sm:text-sm text-stone-700 space-y-1.5">
                 <p>
-                  <strong>Platform:</strong> BiodataCraft (<a href="https://biodatacraft.in" className="text-amber-800 underline">https://biodatacraft.in</a>)
+                  <strong>Platform:</strong> BiodataCraft (<a href="https://biodata-craft.vercel.app" className="text-amber-800 underline">https://biodata-craft.vercel.app</a>)
                 </p>
                 <p>
                   <strong>Privacy Desk Email:</strong>{' '}

@@ -56,7 +56,8 @@ export const MarathiBiodataPage: React.FC = () => {
     article: {
       title: 'Marathi Lagna Biodata Guide: Devak, Kuldaivat, Patrika & Traditions',
       description: 'Comprehensive guide to writing an authentic Marathi marriage biodata in Marathi and English.',
-      url: 'https://biodatacraft.in/marathi-biodata',
+      url: 'https://biodata-craft.vercel.app/marathi-biodata',
+
       datePublished: '2026-10-02T10:00:00Z',
       dateModified: '2026-10-05T08:00:00Z',
       authorName: 'Maharashtra Cultural Desk, BiodataCraft'
