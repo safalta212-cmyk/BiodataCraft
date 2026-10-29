@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Template } from '../../types/template';
 import { Button } from '../ui/Button';
-import { Eye, Sparkles, Crown, Check } from 'lucide-react';
+import { Eye, Sparkles, Crown } from 'lucide-react';
+import { getTemplateDisplayThumbnail } from '../../utils/templateVisuals';
 
 interface TemplateCardProps {
   template: Template;
@@ -17,36 +18,46 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
 }) => {
   const { templateConfig } = template;
   const isPremium = template.isPremium;
+  const [imageError, setImageError] = useState(false);
+  const displayThumbnail = getTemplateDisplayThumbnail(template);
 
   return (
     <div className="bg-white rounded-3xl border border-stone-200/90 overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group">
-      {/* 1. Visual Card Header / Mini Preview Box */}
+      {/* 1. Visual Card Header / Image Showcase Box */}
       <div
-        className="h-44 p-4 relative flex flex-col justify-between cursor-pointer select-none overflow-hidden"
-        style={{ backgroundColor: templateConfig.accentBg || '#fffaf5' }}
+        className="h-48 relative flex flex-col justify-between cursor-pointer select-none overflow-hidden bg-stone-100"
         onClick={() => onPreview(template)}
       >
-        {/* Miniature Document Border Frame */}
-        <div
-          className="absolute inset-3 border-2 pointer-events-none rounded-lg"
-          style={{ borderColor: templateConfig.secondaryColor }}
-        >
-          <div
-            className="absolute inset-1 border pointer-events-none rounded-md"
-            style={{ borderColor: templateConfig.primaryColor, opacity: 0.6 }}
+        {/* Render Thumbnail Image */}
+        {!imageError && (
+          <img
+            src={displayThumbnail}
+            alt={template.name}
+            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+            onError={() => setImageError(true)}
+            loading="lazy"
+            decoding="async"
           />
-        </div>
+        )}
+
+        {/* Gradient Scrim for Legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/35 to-stone-950/20 pointer-events-none" />
 
         {/* Top Badges */}
-        <div className="relative z-10 flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/90 text-stone-800 shadow-2xs border border-stone-200">
-            {template.categoryName || template.categoryId}
-          </span>
+        <div className="relative z-10 p-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/95 text-stone-900 shadow-sm border border-stone-200 backdrop-blur-xs">
+              {template.categoryName || template.categoryId}
+            </span>
+            <span className="text-[9px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-black/60 text-amber-200 shadow-sm border border-white/20 backdrop-blur-xs">
+              From BiodataCraft
+            </span>
+          </div>
 
           <span
-            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-2xs flex items-center gap-1 ${
+            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 ${
               isPremium
-                ? 'bg-amber-800 text-white'
+                ? 'bg-amber-600 text-white'
                 : 'bg-emerald-600 text-white'
             }`}
           >
@@ -55,47 +66,36 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
           </span>
         </div>
 
-        {/* Center Aesthetic Preview Motif */}
-        <div className="relative z-10 text-center my-auto px-4">
-          <div
-            className="text-xs font-bold tracking-widest uppercase mb-1"
-            style={{ color: templateConfig.primaryColor }}
-          >
-            {templateConfig.defaultHeaderTitle || '॥ श्री गणेशाय नमः ॥'}
+        {/* Bottom Bar overlaying the image */}
+        <div className="relative z-10 p-3 flex items-end justify-between text-white">
+          <div>
+            <div className="text-[10px] font-bold tracking-widest uppercase text-amber-200 line-clamp-1">
+              {templateConfig?.defaultHeaderTitle || '॥ श्री गणेशाय नमः ॥'}
+            </div>
+            <div className="text-sm font-extrabold font-cinzel line-clamp-1 drop-shadow-sm text-white">
+              {template.name}
+            </div>
+            <div className="text-[10px] text-stone-200 font-medium">
+              {template.region} • {template.religion}
+            </div>
           </div>
-          <div
-            className="text-base font-extrabold font-cinzel line-clamp-1"
-            style={{ color: templateConfig.primaryColor }}
-          >
-            {template.name}
-          </div>
-          <div className="text-[10px] text-stone-500 font-medium mt-0.5">
-            {template.region} • {template.religion}
-          </div>
-        </div>
 
-        {/* Bottom Color Swatches Bar */}
-        <div className="relative z-10 flex items-center justify-between text-[11px]">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <span
               className="w-3.5 h-3.5 rounded-full border border-white shadow-xs"
-              style={{ backgroundColor: templateConfig.primaryColor }}
+              style={{ backgroundColor: templateConfig?.primaryColor || '#7a1426' }}
               title="Primary Tone"
             />
             <span
               className="w-3 h-3 rounded-full border border-white shadow-xs"
-              style={{ backgroundColor: templateConfig.secondaryColor }}
+              style={{ backgroundColor: templateConfig?.secondaryColor || '#c59b27' }}
               title="Secondary Accent"
             />
           </div>
-
-          <span className="text-[10px] text-stone-500 font-semibold bg-white/80 px-2 py-0.5 rounded">
-            A4 Print-Ready
-          </span>
         </div>
 
         {/* Hover Eye Overlay Indicator */}
-        <div className="absolute inset-0 bg-stone-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-bold text-xs backdrop-blur-2xs">
+        <div className="absolute inset-0 bg-stone-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white font-bold text-xs backdrop-blur-2xs z-20">
           <Eye className="w-4 h-4" />
           <span>Click to Full Preview</span>
         </div>

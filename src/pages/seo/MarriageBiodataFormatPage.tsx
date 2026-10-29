@@ -56,6 +56,29 @@ export const MarriageBiodataFormatPage: React.FC = () => {
     ogType: 'article',
     breadcrumbs: [{ name: 'Marriage Biodata Format', path: '/marriage-biodata-format' }],
     faqs: FAQ_ITEMS,
+    howTo: {
+      name: 'How to Format an Indian Marriage Biodata in 4 Key Sections',
+      description: 'Follow this proven 4-section layout standard to create a dignified Indian marriage biodata.',
+      totalTime: 'PT5M',
+      steps: [
+        {
+          name: '1. Personal Profile & Auspicious Header',
+          text: 'Begin with a sacred mantra (e.g. Om or Shree Ganesh) followed by Candidate Name, Date of Birth, Birth Time, Height, Complexion, and Mother Tongue.'
+        },
+        {
+          name: '2. Astrological & Kundali Alignment',
+          text: 'List Gotra (Paternal & Mosal/Maternal), Rashi, Nakshatra, and Manglik status accurately for astrological verification.'
+        },
+        {
+          name: '3. Education & Professional Credentials',
+          text: 'State highest academic degrees (e.g. B.Tech, MBA, MBBS), current employer/firm, designation, and work location.'
+        },
+        {
+          name: '4. Family Background & Ancestral Lineage',
+          text: 'Include Father occupation, Mother background, Brothers and Sisters (with marital status), Maternal Uncle (Mosal), and Native Place.'
+        }
+      ]
+    },
     article: {
       title: 'Standard Indian Marriage Biodata Formats and Layout Specifications',
       description: 'Detailed analysis of matrimonial biodata layout formats and field requirements.',

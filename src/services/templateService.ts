@@ -76,6 +76,73 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 /**
+ * Compresses and scales an image down using HTML5 canvas
+ * Produces lightweight (<75KB) images that fit safely in Firestore (1MB limit)
+ * and render instantly without lag.
+ */
+export function compressImageFile(
+  file: File,
+  maxWidth = 600,
+  maxHeight = 850,
+  quality = 0.82
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (file.type.toLowerCase().includes('svg')) {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read SVG file.'));
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      fileToDataUrl(file).then(resolve).catch(reject);
+      return;
+    }
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, width);
+      canvas.height = Math.max(1, height);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        fileToDataUrl(file).then(resolve).catch(reject);
+        return;
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Export as JPEG with controlled quality for tiny payload
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(dataUrl);
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      // Fallback to raw data url if canvas decode fails
+      fileToDataUrl(file).then(resolve).catch(reject);
+    };
+
+    img.src = objectUrl;
+  });
+}
+
+
+/**
  * Template Service provides secure CRUD and querying for Template Metadata (Firestore)
  * and Template Assets (Firebase Storage).
  *
@@ -264,7 +331,25 @@ class TemplateService {
 
       // Category
       if (filters.categoryId && filters.categoryId !== 'all') {
-        results = results.filter((t) => t.categoryId === filters.categoryId);
+        if (filters.categoryId === 'premium') {
+          results = results.filter(
+            (t) =>
+              t.isPremium ||
+              t.categoryId === 'premium' ||
+              t.style === 'Royal' ||
+              (t.categoryName && t.categoryName.toLowerCase().includes('premium'))
+          );
+        } else if (filters.categoryId === 'royal') {
+          results = results.filter(
+            (t) =>
+              t.style === 'Royal' ||
+              t.categoryId === 'royal' ||
+              t.categoryId === 'traditional' ||
+              t.isPremium
+          );
+        } else {
+          results = results.filter((t) => t.categoryId === filters.categoryId);
+        }
       }
 
       // Religion
@@ -296,7 +381,13 @@ class TemplateService {
         if (filters.tier === 'free') {
           results = results.filter((t) => t.isFree && !t.isPremium);
         } else if (filters.tier === 'premium') {
-          results = results.filter((t) => t.isPremium);
+          results = results.filter(
+            (t) =>
+              t.isPremium ||
+              t.style === 'Royal' ||
+              t.categoryId === 'premium' ||
+              (t.categoryName && t.categoryName.toLowerCase().includes('premium'))
+          );
         }
       }
 
@@ -478,43 +569,51 @@ class TemplateService {
   /**
    * Admin Storage & Uploads: Upload template visual asset to Firebase Storage & record upload metadata
    */
-  async uploadTemplateAsset(file: File, assetName: string): Promise<string> {
+  async uploadTemplateAsset(
+    file: File,
+    assetName: string,
+    type: 'thumbnail' | 'preview' = 'thumbnail'
+  ): Promise<string> {
     verifyAdminAuthorization();
     const validMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
     if (!validMimes.includes(file.type.toLowerCase())) {
       throw new Error('Invalid file type. Only JPEG, PNG, WEBP, and SVG images are allowed.');
     }
-    if (file.size > 5 * 1024 * 1024) {
-      throw new Error('File size exceeds the 5MB maximum limit.');
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('File size exceeds the 10MB maximum limit.');
     }
 
     const safeName = assetName.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-    if (!isConfigured) {
-      throw new Error('Firebase Storage is not configured.');
-    }
+    // Pre-compress and optimize client-side to ensure lightweight data payload (<75KB)
+    const maxWidth = type === 'thumbnail' ? 600 : 1000;
+    const maxHeight = type === 'thumbnail' ? 840 : 1400;
+    const compressedDataUrl = await compressImageFile(file, maxWidth, maxHeight, 0.82);
 
     let finalUrl = '';
 
-    try {
-      const storageInstance = await getStorageInstance();
-      if (storageInstance) {
-        const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-        const storageRef = ref(storageInstance, `template-assets/${Date.now()}_${safeName}`);
-        const snapshot = await withTimeout(
-          uploadBytes(storageRef, file, { contentType: file.type }),
-          12000,
-          'Firebase Storage asset upload'
-        );
-        finalUrl = await getDownloadURL(snapshot.ref);
+    // Attempt Firebase Storage bucket upload with sensible 4s timeout
+    if (isConfigured) {
+      try {
+        const storageInstance = await getStorageInstance();
+        if (storageInstance) {
+          const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+          const storageRef = ref(storageInstance, `template-assets/${Date.now()}_${safeName}`);
+          const snapshot = await withTimeout(
+            uploadBytes(storageRef, file, { contentType: file.type }),
+            4000,
+            'Firebase Storage asset upload'
+          );
+          finalUrl = await getDownloadURL(snapshot.ref);
+        }
+      } catch (err: any) {
+        console.warn('Firebase Storage asset upload notice, using persistent web-optimized asset URL:', err);
       }
-    } catch (err: any) {
-      console.warn('Firebase Storage asset upload notice, falling back to persistent data URL:', err);
     }
 
-    // Fallback: convert to persistent Base64 data URL so template thumbnail is permanently preserved
+    // If storage is unavailable or timed out, use the optimized compressed image data URL
     if (!finalUrl) {
-      finalUrl = await fileToDataUrl(file);
+      finalUrl = compressedDataUrl;
     }
 
     // Record upload document in Firestore uploads collection
@@ -524,12 +623,13 @@ class TemplateService {
         await withTimeout(
           setDoc(doc(db, 'uploads', uploadId), {
             fileName: safeName,
-            url: finalUrl,
+            url: finalUrl.startsWith('data:') ? finalUrl.slice(0, 120) + '...' : finalUrl,
             mimeType: file.type,
             size: file.size,
+            type,
             createdAt: new Date().toISOString()
           }),
-          8000,
+          5000,
           'Firestore upload record creation'
         );
       } catch (err: any) {

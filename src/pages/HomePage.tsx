@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
-import { TEMPLATES } from '../data/initialBiodata';
 import { sampleHinduBiodata, sampleHindiBiodata } from '../data/initialBiodata';
 import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
+import { templateService } from '../services/templateService';
+import { Template } from '../types/template';
+import { TemplateCard } from '../components/templates/TemplateCard';
+import { TemplatePreviewModal } from '../components/templates/TemplatePreviewModal';
 import { ResponsiveAd } from '../components/ads/ResponsiveAd';
 import {
   Sparkles,
@@ -36,6 +39,42 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
   const navigate = useNavigate();
   const isHindi = language === 'hi';
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState<boolean>(true);
+  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [selectedHomeCategory, setSelectedHomeCategory] = useState<string>('all');
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchHomeTemplates() {
+      try {
+        const liveTemplates = await templateService.getTemplates({ forceRefresh: true });
+        if (isMounted) {
+          setTemplates(liveTemplates);
+        }
+      } catch (err) {
+        console.warn('Notice loading templates for home page:', err);
+      } finally {
+        if (isMounted) setIsLoadingTemplates(false);
+      }
+    }
+    fetchHomeTemplates();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleUseTemplate = (template: Template) => {
+    analyticsService.trackTemplateSelected(template.slug, 'home_page_showcase');
+    const existing = storageService.loadLocalDraft();
+    storageService.saveLocalDraft({
+      ...existing,
+      templateId: template.slug as any,
+      themeColor: template.templateConfig?.primaryColor || existing.themeColor,
+      fontFamily: template.templateConfig?.fontFamily || existing.fontFamily
+    });
+    navigate('/create');
+  };
 
   const faqItems = [
     {
@@ -70,10 +109,40 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
       'Create elegant Hindu, Jain, Muslim & Indian matrimonial biodata PDFs in 5 minutes with Vedic mantras, kundali details, and auspicious templates. 100% free with zero customer data storage.',
     canonicalPath: '/',
     ogType: 'website',
+    ogImageAlt: 'BiodataCraft - Free Indian Marriage Biodata Maker Online',
     includeWebApplicationSchema: true,
     includeWebSiteSchema: true,
     includeOrganizationSchema: true,
-    faqs: faqItems.map((f) => ({ question: f.q, answer: f.a }))
+    faqs: faqItems.map((f) => ({ question: f.q, answer: f.a })),
+    howTo: {
+      name: isHindi
+        ? 'विवाह हेतु बायोडाटा कैसे बनाएं (सरल 3 चरण)'
+        : 'How to Create an Indian Marriage Biodata Online in 3 Easy Steps',
+      description: isHindi
+        ? 'सरल 3 चरणों में अपना प्रामाणिक और सुंदर वैवाहिक बायोडाटा बनाएं और तुरंत A4 PDF डाउनलोड करें।'
+        : 'Step-by-step master guide to designing and downloading a publication-grade Indian matrimonial biodata PDF.',
+      totalTime: 'PT5M',
+      steps: [
+        {
+          name: isHindi ? 'चरण 1: व्यक्तिगत, कुंडली व पारिवारिक विवरण दर्ज करें' : 'Step 1: Enter Personal, Kundali & Family Heritage',
+          text: isHindi
+            ? 'अपनी जन्मतिथि, समय, गोत्र, मांगलिक स्थिति, शिक्षा, पेशा और परिवार का विवरण दर्ज करें।'
+            : 'Fill in candidate profile, astrological gotra/rashi/nakshatra, career milestones, and family heritage.'
+        },
+        {
+          name: isHindi ? 'चरण 2: सांस्कृतिक या आधुनिक टेम्पलेट चुनें' : 'Step 2: Choose an Auspicious Design Layout',
+          text: isHindi
+            ? 'पारंपरिक वैदिक, राजस्थानी रॉयल, आधुनिक कॉर्पोरेट या फ्लोरल टेम्पलेट्स में से पसंदीदा शैली चुनें।'
+            : 'Pick from traditional Vedic motifs, royal mandap borders, contemporary executive layouts, or floral designs.'
+        },
+        {
+          name: isHindi ? 'चरण 3: तुरंत हाई-रेजोल्यूशन A4 PDF व WhatsApp इमेज डाउनलोड करें' : 'Step 3: Download High-Res Vector PDF & WhatsApp Image',
+          text: isHindi
+            ? 'बिना किसी लॉगिन या शुल्क के सीधे अपने मोबाइल या कंप्यूटर पर वाटरमार्क-मुक्त प्रिंट-रेडी PDF प्राप्त करें।'
+            : 'Download watermark-free, publication-grade A4 PDF ready for high-resolution printing or instant WhatsApp forwarding.'
+        }
+      ]
+    }
   });
 
   const handleStartFresh = () => {
@@ -287,67 +356,132 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
       </section>
 
       {/* 4. Template Showcase Preview */}
-      <section className="py-12 bg-stone-100/70 border-b border-stone-200">
+      <section className="py-14 bg-stone-100/70 border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-amber-800">
-                {isHindi ? 'लोकप्रिय भारतीय डिजाइन' : 'Handcrafted Cultural Layouts'}
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 mt-1 font-cinzel">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-950 text-xs font-bold mb-2 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-amber-800" />
+                <span>{isHindi ? 'लाइव टेम्पलेट कैटलॉग' : 'Live Cultural Catalog'}</span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-stone-900 font-cinzel tracking-tight">
                 {isHindi ? 'प्रीमियम वैवाहिक टेम्पलेट्स' : 'Distinguished Marriage Templates'}
               </h2>
+              <p className="text-xs sm:text-sm text-stone-600 mt-1">
+                {isHindi
+                  ? 'पारंपरिक वैदिक, राजस्थानी मांडप एवं आधुनिक डिजाइनों में से चुनें'
+                  : 'Authentic Indian designs with custom shlokas, gotra layouts, and elegant gold borders.'}
+              </p>
             </div>
             <Link
               to="/templates"
-              className="flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-900"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold shadow-sm transition-all"
             >
-              <span>{isHindi ? 'सभी टेम्पलेट्स देखें' : 'View All Templates'}</span>
+              <span>{isHindi ? 'सभी टेम्पलेट्स देखें' : 'Browse All Templates'}</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {TEMPLATES.slice(0, 3).map((tmpl) => (
-              <div
-                key={tmpl.id}
-                className="bg-white border border-stone-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span
-                      className="w-4 h-4 rounded-full border border-stone-300"
-                      style={{ backgroundColor: tmpl.primaryColor }}
-                    />
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-stone-100 text-stone-700">
-                      {tmpl.category}
-                    </span>
+          {/* Category Filter Pills on Home Page */}
+          <div className="flex flex-wrap items-center gap-2 mb-8">
+            <button
+              onClick={() => setSelectedHomeCategory('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                selectedHomeCategory === 'all'
+                  ? 'bg-amber-800 text-white shadow-xs'
+                  : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-200'
+              }`}
+            >
+              {isHindi ? 'सभी डिजाइन' : 'All Templates'} ({templates.length})
+            </button>
+            <button
+              onClick={() => setSelectedHomeCategory('traditional')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                selectedHomeCategory === 'traditional'
+                  ? 'bg-amber-800 text-white shadow-xs'
+                  : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-200'
+              }`}
+            >
+              {isHindi ? 'पारंपरिक (Traditional)' : 'Traditional Vedic'}
+            </button>
+            <button
+              onClick={() => setSelectedHomeCategory('modern')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                selectedHomeCategory === 'modern'
+                  ? 'bg-amber-800 text-white shadow-xs'
+                  : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-200'
+              }`}
+            >
+              {isHindi ? 'आधुनिक (Modern)' : 'Modern & NRI'}
+            </button>
+            <button
+              onClick={() => setSelectedHomeCategory('royal')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                selectedHomeCategory === 'royal'
+                  ? 'bg-amber-800 text-white shadow-xs'
+                  : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-200'
+              }`}
+            >
+              {isHindi ? 'शाही (Royal Heritage)' : 'Royal Heritage'}
+            </button>
+          </div>
+
+          {/* Template Cards Grid */}
+          {isLoadingTemplates ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="bg-white rounded-3xl border border-stone-200 p-4 h-80 animate-pulse flex flex-col justify-between">
+                  <div className="h-44 bg-stone-100 rounded-2xl" />
+                  <div className="space-y-2 mt-4">
+                    <div className="h-4 bg-stone-100 rounded w-3/4" />
+                    <div className="h-3 bg-stone-100 rounded w-1/2" />
                   </div>
-
-                  <h3 className="text-base font-bold text-stone-900">{tmpl.name}</h3>
-                  <p className="text-xs text-stone-500 mt-1">{tmpl.description}</p>
                 </div>
+              ))}
+            </div>
+          ) : templates.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-3xl border border-stone-200">
+              <p className="text-stone-500 text-sm">No templates found.</p>
+              <Link to="/templates" className="mt-3 inline-block text-xs font-bold text-amber-800 underline">
+                View all templates
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {templates
+                .filter((t) => {
+                  if (selectedHomeCategory === 'all') return true;
+                  if (selectedHomeCategory === 'royal') {
+                    return t.style?.toLowerCase() === 'royal' || t.categoryId === 'royal';
+                  }
+                  return t.categoryId === selectedHomeCategory;
+                })
+                .slice(0, 6)
+                .map((template) => (
+                  <TemplateCard
+                    key={template.id}
+                    template={template}
+                    onPreview={(t) => setPreviewTemplate(t)}
+                    onUseTemplate={handleUseTemplate}
+                  />
+                ))}
+            </div>
+          )}
 
-                <div className="mt-5 pt-3 border-t border-stone-100 flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-amber-900">
-                    {tmpl.popularFor}
-                  </span>
-                  <button
-                    onClick={() => {
-                      storageService.saveLocalDraft({
-                        ...sampleHinduBiodata,
-                        templateId: tmpl.id,
-                        themeColor: tmpl.primaryColor
-                      });
-                      navigate('/create');
-                    }}
-                    className="text-xs font-bold text-amber-800 hover:underline cursor-pointer"
-                  >
-                    {isHindi ? 'यह डिजाइन चुनें →' : 'Use Template →'}
-                  </button>
-                </div>
-              </div>
-            ))}
+          {/* View more CTA footer */}
+          <div className="mt-10 text-center">
+            <Link
+              to="/templates"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-stone-50 text-stone-800 font-bold text-xs sm:text-sm rounded-2xl border border-stone-300 shadow-xs transition-all hover:shadow"
+            >
+              <Palette className="w-4 h-4 text-amber-800" />
+              <span>
+                {isHindi
+                  ? `सभी ${templates.length} वैवाहिक टेम्पलेट्स देखें`
+                  : `Explore All ${templates.length} Marriage Templates`}
+              </span>
+              <ChevronRight className="w-4 h-4 text-stone-400" />
+            </Link>
           </div>
         </div>
       </section>
@@ -569,7 +703,16 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
           </div>
         </div>
       </section>
+
+      {/* Live Template Preview Modal on Home Page */}
+      <TemplatePreviewModal
+        template={previewTemplate}
+        isOpen={Boolean(previewTemplate)}
+        onClose={() => setPreviewTemplate(null)}
+        onUseTemplate={handleUseTemplate}
+      />
     </div>
   );
 };
+
 

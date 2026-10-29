@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSEO } from '../hooks/useSEO';
 import { sampleHinduBiodata, sampleHindiBiodata } from '../data/initialBiodata';
 import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
@@ -19,6 +20,17 @@ export const SamplesPage: React.FC<SamplesPageProps> = ({ language = 'en', onLan
   const navigate = useNavigate();
 
   const isHindi = language === 'hi';
+
+  useSEO({
+    title: isHindi
+      ? 'विवाह बायोडाटा नमूने (वर व वधू) | BiodataCraft'
+      : 'Marriage Biodata Samples & Previews for Groom & Bride | BiodataCraft',
+    description: isHindi
+      ? 'सुंदर हिन्दू व हिन्दी विवाह बायोडाटा के वास्तविक नमूने देखें और तुरंत एक क्लिक में संपादित करें।'
+      : 'Browse authentic Indian marriage biodata samples for groom and bride in English and Hindi. Real Kundali, Gotra, and family format examples with instant editing.',
+    canonicalPath: '/samples',
+    breadcrumbs: [{ name: 'Samples', path: '/samples' }]
+  });
 
   const currentSampleData: BiodataData =
     activeSampleTab === 'hindi' ? sampleHindiBiodata : sampleHinduBiodata;

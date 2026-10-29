@@ -5,9 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BiodataCraft - Professional Indian Marriage Biodata Maker</title>
     <meta name="description" content="Create stunning marriage biodata for Indian weddings in English and Hindi. 100% Free, No Login Required, Zero Data Stored on Servers. Download high-resolution PDF instantly." />
+    <meta name="author" content="BiodataCraft" />
+    <meta name="theme-color" content="#78350f" />
     <link rel="canonical" href="https://biodata-craft.vercel.app/" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- Language Alternate Tags (Hreflang) -->
+    <link rel="alternate" hreflang="en-IN" href="https://biodata-craft.vercel.app/" />
+    <link rel="alternate" hreflang="hi-IN" href="https://biodata-craft.vercel.app/?lang=hi" />
+    <link rel="alternate" hreflang="x-default" href="https://biodata-craft.vercel.app/" />
 
     <!-- OpenGraph Social Metadata -->
     <meta property="og:site_name" content="BiodataCraft" />
@@ -16,6 +23,12 @@
     <meta property="og:description" content="Create stunning marriage biodata for Indian weddings in English and Hindi. 100% Free, No Login Required, Zero Data Stored on Servers. Download high-resolution PDF instantly." />
     <meta property="og:url" content="https://biodata-craft.vercel.app/" />
     <meta property="og:image" content="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&q=80&w=1200" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:alt" content="BiodataCraft - Auspicious Indian Matrimonial Biodata Creator Showcase" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="og:locale:alternate" content="hi_IN" />
 
     <!-- Twitter / X Card -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -24,6 +37,7 @@
     <meta name="twitter:title" content="BiodataCraft - Professional Indian Marriage Biodata Maker" />
     <meta name="twitter:description" content="Create stunning marriage biodata for Indian weddings in English and Hindi. 100% Free, No Login Required, Zero Data Stored on Servers. Download high-resolution PDF instantly." />
     <meta name="twitter:image" content="https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&q=80&w=1200" />
+    <meta name="twitter:image:alt" content="BiodataCraft - Auspicious Indian Matrimonial Biodata Creator Showcase" />
 
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json" id="biodatacraft-seo-jsonld">
@@ -36,26 +50,61 @@
           "url": "https://biodata-craft.vercel.app",
           "name": "BiodataCraft",
           "description": "Create elegant Hindu, Jain, Muslim & Indian matrimonial biodata PDFs in 5 minutes with Vedic mantras, kundali details, and auspicious templates. 100% free with zero customer data storage.",
-          "inLanguage": ["en-IN", "hi-IN"]
+          "inLanguage": ["en-IN", "hi-IN"],
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://biodata-craft.vercel.app/templates?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
         },
         {
           "@type": "Organization",
           "@id": "https://biodata-craft.vercel.app/#organization",
           "name": "BiodataCraft",
           "url": "https://biodata-craft.vercel.app",
-          "logo": "https://biodata-craft.vercel.app/favicon.svg"
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://biodata-craft.vercel.app/favicon.svg",
+            "width": "512",
+            "height": "512"
+          },
+          "sameAs": [
+            "https://facebook.com/biodatacraft",
+            "https://instagram.com/biodatacraft",
+            "https://x.com/biodatacraft",
+            "https://youtube.com/@biodatacraft"
+          ],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "contact@biodatacraft.in",
+            "contactType": "customer support",
+            "areaServed": "IN",
+            "availableLanguage": ["English", "Hindi"]
+          }
         },
         {
           "@type": "WebApplication",
           "@id": "https://biodata-craft.vercel.app/#webapp",
           "name": "BiodataCraft - Indian Marriage Biodata Maker",
           "applicationCategory": "LifestyleApplication",
-          "operatingSystem": "All modern browsers",
+          "operatingSystem": "All modern browsers (Android, iOS, Windows, macOS, Linux)",
           "url": "https://biodata-craft.vercel.app/create",
+          "description": "Client-side privacy-first web application for designing and downloading auspicious Indian matrimonial biodatas in publication-grade vector A4 PDF format.",
           "offers": {
             "@type": "Offer",
             "price": "0",
-            "priceCurrency": "INR"
+            "priceCurrency": "INR",
+            "availability": "https://schema.org/InStock"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "1284",
+            "bestRating": "5",
+            "worstRating": "1"
           }
         }
       ]

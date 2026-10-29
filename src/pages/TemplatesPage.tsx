@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { templateService } from '../services/templateService';
 import { storageService } from '../services/storageService';
@@ -32,20 +32,37 @@ export const TemplatesPage: React.FC = () => {
   });
 
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // State
   const [templates, setTemplates] = useState<Template[]>([]);
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filters
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  // Filters initialized from URL query params or defaults
+  const paramCategory = searchParams.get('category') || 'all';
+  const paramTier = (searchParams.get('tier') as 'all' | 'free' | 'premium') || 'all';
+  const paramSearch = searchParams.get('q') || '';
+
+  const [search, setSearch] = useState(paramSearch);
+  const [selectedCategory, setSelectedCategory] = useState(paramCategory);
   const [religion, setReligion] = useState('all');
   const [region, setRegion] = useState('all');
   const [language, setLanguage] = useState('all');
-  const [tier, setTier] = useState<'all' | 'free' | 'premium'>('all');
+  const [tier, setTier] = useState<'all' | 'free' | 'premium'>(paramTier);
   const [sortBy, setSortBy] = useState<'popular' | 'newest' | 'name' | 'sortOrder'>('popular');
+
+  // Keep state in sync if URL search params change externally
+  useEffect(() => {
+    const cat = searchParams.get('category') || 'all';
+    const tr = (searchParams.get('tier') as 'all' | 'free' | 'premium') || 'all';
+    const q = searchParams.get('q') || '';
+    setSelectedCategory(cat);
+    setTier(tr);
+    if (q && q !== search) {
+      setSearch(q);
+    }
+  }, [searchParams]);
 
   // Pagination / Load more
   const [visibleCount, setVisibleCount] = useState(6);
@@ -82,6 +99,37 @@ export const TemplatesPage: React.FC = () => {
     };
   }, []);
 
+  // Real count of templates for each category pill
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: templates.length };
+    categories.forEach((cat) => {
+      if (cat.id === 'premium') {
+        counts[cat.id] = templates.filter(
+          (t) =>
+            t.isPremium ||
+            t.categoryId === 'premium' ||
+            t.style === 'Royal' ||
+            (t.categoryName && t.categoryName.toLowerCase().includes('premium'))
+        ).length;
+      } else if (cat.id === 'royal') {
+        counts[cat.id] = templates.filter(
+          (t) =>
+            t.style === 'Royal' ||
+            t.categoryId === 'royal' ||
+            t.isPremium ||
+            (t.categoryName && t.categoryName.toLowerCase().includes('royal'))
+        ).length;
+      } else {
+        counts[cat.id] = templates.filter(
+          (t) =>
+            t.categoryId === cat.id ||
+            (t.categoryName && t.categoryName.toLowerCase().includes(cat.id.toLowerCase()))
+        ).length;
+      }
+    });
+    return counts;
+  }, [templates, categories]);
+
   // Filter & Sort Logic
   const filteredTemplates = useMemo(() => {
     let result = [...templates];
@@ -93,12 +141,35 @@ export const TemplatesPage: React.FC = () => {
           t.name.toLowerCase().includes(term) ||
           t.description.toLowerCase().includes(term) ||
           t.popularFor.toLowerCase().includes(term) ||
-          t.tagline.toLowerCase().includes(term)
+          t.tagline.toLowerCase().includes(term) ||
+          (t.categoryName && t.categoryName.toLowerCase().includes(term))
       );
     }
 
     if (selectedCategory !== 'all') {
-      result = result.filter((t) => t.categoryId === selectedCategory);
+      if (selectedCategory === 'premium') {
+        result = result.filter(
+          (t) =>
+            t.isPremium ||
+            t.categoryId === 'premium' ||
+            t.style === 'Royal' ||
+            (t.categoryName && t.categoryName.toLowerCase().includes('premium'))
+        );
+      } else if (selectedCategory === 'royal') {
+        result = result.filter(
+          (t) =>
+            t.style === 'Royal' ||
+            t.categoryId === 'royal' ||
+            t.isPremium ||
+            (t.categoryName && t.categoryName.toLowerCase().includes('royal'))
+        );
+      } else {
+        result = result.filter(
+          (t) =>
+            t.categoryId === selectedCategory ||
+            (t.categoryName && t.categoryName.toLowerCase().includes(selectedCategory.toLowerCase()))
+        );
+      }
     }
 
     if (religion !== 'all') {
@@ -119,7 +190,13 @@ export const TemplatesPage: React.FC = () => {
       if (tier === 'free') {
         result = result.filter((t) => t.isFree && !t.isPremium);
       } else if (tier === 'premium') {
-        result = result.filter((t) => t.isPremium);
+        result = result.filter(
+          (t) =>
+            t.isPremium ||
+            t.style === 'Royal' ||
+            t.categoryId === 'premium' ||
+            (t.categoryName && t.categoryName.toLowerCase().includes('premium'))
+        );
       }
     }
 
@@ -143,6 +220,18 @@ export const TemplatesPage: React.FC = () => {
   const visibleTemplates = filteredTemplates.slice(0, visibleCount);
   const hasMore = visibleCount < filteredTemplates.length;
 
+  const handleSelectCategory = (catId: string) => {
+    setSelectedCategory(catId);
+    setVisibleCount(6);
+    const newParams = new URLSearchParams(searchParams);
+    if (catId === 'all') {
+      newParams.delete('category');
+    } else {
+      newParams.set('category', catId);
+    }
+    setSearchParams(newParams, { replace: true });
+  };
+
   const handleResetFilters = () => {
     setSearch('');
     setSelectedCategory('all');
@@ -152,6 +241,7 @@ export const TemplatesPage: React.FC = () => {
     setTier('all');
     setSortBy('popular');
     setVisibleCount(6);
+    setSearchParams({}, { replace: true });
   };
 
   const handleUseTemplate = (template: Template) => {
@@ -218,28 +308,41 @@ export const TemplatesPage: React.FC = () => {
           {/* Quick Category Bar */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
             <button
-              onClick={() => setSelectedCategory('all')}
+              onClick={() => handleSelectCategory('all')}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
                 selectedCategory === 'all'
-                  ? 'bg-amber-800 text-white shadow-sm'
+                  ? 'bg-amber-800 text-white shadow-sm ring-1 ring-amber-900'
                   : 'bg-white border border-stone-200 text-stone-700 hover:bg-stone-100'
               }`}
             >
               All Categories ({templates.length})
             </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
-                  selectedCategory === cat.id
-                    ? 'bg-amber-800 text-white shadow-sm'
-                    : 'bg-white border border-stone-200 text-stone-700 hover:bg-stone-100'
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
+            {categories.map((cat) => {
+              const count = categoryCounts[cat.id] ?? 0;
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => handleSelectCategory(cat.id)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap cursor-pointer transition-all flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-amber-800 text-white shadow-sm ring-1 ring-amber-900'
+                      : 'bg-white border border-stone-200 text-stone-700 hover:bg-stone-100'
+                  }`}
+                >
+                  <span>{cat.name}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      isSelected
+                        ? 'bg-amber-950/40 text-amber-100'
+                        : 'bg-stone-100 text-stone-500'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

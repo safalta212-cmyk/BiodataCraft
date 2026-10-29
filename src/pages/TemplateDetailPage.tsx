@@ -13,6 +13,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { Loading } from '../components/ui/Loading';
 import { useToast } from '../context/ToastContext';
 import { DownloadModal } from '../components/preview/DownloadModal';
+import { getTemplateDisplayThumbnail } from '../utils/templateVisuals';
 import {
   ArrowLeft,
   Sparkles,
@@ -218,7 +219,23 @@ export const TemplateDetailPage: React.FC = () => {
             <div className="lg:col-span-4 space-y-6">
               <Card>
                 <CardContent className="p-6 space-y-4">
-                  <h3 className="font-bold text-sm text-stone-900 font-cinzel uppercase tracking-wider">
+                  {/* Design Artwork Card Showcase */}
+                  <div className="rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 shadow-xs h-56 flex items-center justify-center relative group">
+                    <img
+                      src={getTemplateDisplayThumbnail(template)}
+                      alt={`${template.name} artwork`}
+                      className="w-full h-full object-cover object-top"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute bottom-2.5 left-3 right-3 text-white text-[11px] font-bold flex items-center justify-between">
+                      <span className="font-cinzel drop-shadow-sm">{template.name}</span>
+                      <span className="text-[10px] bg-black/60 px-2.5 py-0.5 rounded-full backdrop-blur-xs border border-white/20 text-amber-200 shadow-xs">
+                        From BiodataCraft
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="font-bold text-sm text-stone-900 font-cinzel uppercase tracking-wider pt-1">
                     Template Specifications
                   </h3>
 

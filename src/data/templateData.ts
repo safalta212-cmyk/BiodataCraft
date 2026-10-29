@@ -89,7 +89,7 @@ export const INITIAL_TEMPLATES: Template[] = [
       columns: 2
     },
     isFree: true,
-    isPremium: false,
+    isPremium: true,
     isPublished: true,
     sortOrder: 1,
     popularFor: 'North & West Indian Hindu/Marwari/Rajput families',
@@ -274,7 +274,7 @@ export const INITIAL_TEMPLATES: Template[] = [
       columns: 2
     },
     isFree: true,
-    isPremium: false,
+    isPremium: true,
     isPublished: true,
     sortOrder: 6,
     popularFor: 'South Indian, Gujarati, and Maharashtrian weddings',

@@ -29,10 +29,16 @@ export const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
     }
     return 0.75;
   });
+  const [modalView, setModalView] = useState<'document' | 'artwork'>('document');
 
   if (!isOpen || !template) return null;
 
   const currentSampleData = sampleType === 'groom' ? sampleHinduBiodata : sampleHindiBiodata;
+
+  const hasCustomArtwork = Boolean(
+    (template.previewImage && !template.previewImage.startsWith('/templates/')) ||
+    (template.thumbnail && !template.thumbnail.startsWith('/templates/'))
+  );
 
   return (
     <div
@@ -61,52 +67,82 @@ export const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
           </div>
         </div>
 
-        {/* Controls: Sample switcher, Zoom, Use Template CTA */}
+        {/* Controls: View Switcher, Sample switcher, Zoom, Use Template CTA */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Mode Switcher if Artwork exists */}
+          {hasCustomArtwork && (
+            <div className="bg-stone-800 p-0.5 rounded-xl flex items-center text-xs font-semibold border border-stone-700">
+              <button
+                onClick={() => setModalView('document')}
+                className={`px-2 py-1 rounded-lg cursor-pointer transition-colors ${
+                  modalView === 'document'
+                    ? 'bg-amber-800 text-white font-bold'
+                    : 'text-stone-400 hover:text-white'
+                }`}
+              >
+                Document
+              </button>
+              <button
+                onClick={() => setModalView('artwork')}
+                className={`px-2 py-1 rounded-lg cursor-pointer transition-colors ${
+                  modalView === 'artwork'
+                    ? 'bg-amber-800 text-white font-bold'
+                    : 'text-stone-400 hover:text-white'
+                }`}
+              >
+                Artwork
+              </button>
+            </div>
+          )}
+
           {/* Sample Switcher */}
-          <div className="bg-stone-800 p-0.5 rounded-xl flex items-center text-xs font-semibold border border-stone-700">
-            <button
-              onClick={() => setSampleType('groom')}
-              className={`px-2 sm:px-2.5 py-1 rounded-lg cursor-pointer transition-colors ${
-                sampleType === 'groom'
-                  ? 'bg-amber-800 text-white font-bold'
-                  : 'text-stone-400 hover:text-white'
-              }`}
-            >
-              <span className="hidden sm:inline">Groom (English)</span>
-              <span className="sm:hidden">Groom</span>
-            </button>
-            <button
-              onClick={() => setSampleType('bride')}
-              className={`px-2 sm:px-2.5 py-1 rounded-lg cursor-pointer transition-colors ${
-                sampleType === 'bride'
-                  ? 'bg-amber-800 text-white font-bold'
-                  : 'text-stone-400 hover:text-white'
-              }`}
-            >
-              <span className="hidden sm:inline">वधू (हिन्दी)</span>
-              <span className="sm:hidden">वधू</span>
-            </button>
-          </div>
+          {modalView === 'document' && (
+            <div className="bg-stone-800 p-0.5 rounded-xl flex items-center text-xs font-semibold border border-stone-700">
+              <button
+                onClick={() => setSampleType('groom')}
+                className={`px-2 sm:px-2.5 py-1 rounded-lg cursor-pointer transition-colors ${
+                  sampleType === 'groom'
+                    ? 'bg-amber-800 text-white font-bold'
+                    : 'text-stone-400 hover:text-white'
+                }`}
+              >
+                <span className="hidden sm:inline">Groom (English)</span>
+                <span className="sm:hidden">Groom</span>
+              </button>
+              <button
+                onClick={() => setSampleType('bride')}
+                className={`px-2 sm:px-2.5 py-1 rounded-lg cursor-pointer transition-colors ${
+                  sampleType === 'bride'
+                    ? 'bg-amber-800 text-white font-bold'
+                    : 'text-stone-400 hover:text-white'
+                }`}
+              >
+                <span className="hidden sm:inline">वधू (हिन्दी)</span>
+                <span className="sm:hidden">वधू</span>
+              </button>
+            </div>
+          )}
 
           {/* Zoom controls */}
-          <div className="hidden md:flex items-center gap-1.5 text-stone-400 bg-stone-800 px-2 py-1 rounded-xl text-xs">
-            <button
-              onClick={() => setScale((s) => Math.max(0.5, s - 0.05))}
-              className="p-1 hover:text-white cursor-pointer"
-              title="Zoom out"
-            >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <span className="font-mono text-[11px]">{Math.round(scale * 100)}%</span>
-            <button
-              onClick={() => setScale((s) => Math.min(1.0, s + 0.05))}
-              className="p-1 hover:text-white cursor-pointer"
-              title="Zoom in"
-            >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          {modalView === 'document' && (
+            <div className="hidden md:flex items-center gap-1.5 text-stone-400 bg-stone-800 px-2 py-1 rounded-xl text-xs">
+              <button
+                onClick={() => setScale((s) => Math.max(0.5, s - 0.05))}
+                className="p-1 hover:text-white cursor-pointer"
+                title="Zoom out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="font-mono text-[11px]">{Math.round(scale * 100)}%</span>
+              <button
+                onClick={() => setScale((s) => Math.min(1.0, s + 0.05))}
+                className="p-1 hover:text-white cursor-pointer"
+                title="Zoom in"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Use Template CTA */}
           <Button
@@ -126,12 +162,30 @@ export const TemplatePreviewModal: React.FC<TemplatePreviewModalProps> = ({
       {/* Main Document Viewer Canvas */}
       <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center items-start bg-stone-900/60">
         <div className="my-auto">
-          <BiodataTemplateView
-            data={currentSampleData}
-            templateOverride={template}
-            scale={scale}
-            id="template-modal-preview"
-          />
+          {modalView === 'artwork' && hasCustomArtwork ? (
+            <div className="max-w-2xl bg-white rounded-2xl p-4 shadow-2xl overflow-hidden border border-stone-800">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-stone-200">
+                <span className="font-bold font-cinzel text-stone-900 text-sm">
+                  {template.name} • Design Showcase
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                  From BiodataCraft
+                </span>
+              </div>
+              <img
+                src={template.previewImage || template.thumbnail}
+                alt={`${template.name} preview showcase from BiodataCraft`}
+                className="max-h-[70vh] w-auto mx-auto object-contain rounded-xl"
+              />
+            </div>
+          ) : (
+            <BiodataTemplateView
+              data={currentSampleData}
+              templateOverride={template}
+              scale={scale}
+              id="template-modal-preview"
+            />
+          )}
         </div>
       </div>
     </div>

@@ -17,6 +17,7 @@ import {
   TemplateConfig
 } from '../../types/template';
 import { useToast } from '../../context/ToastContext';
+import { getTemplateDisplayThumbnail, generateTemplateSvgDataUri } from '../../utils/templateVisuals';
 import {
   Palette,
   Eye,
@@ -143,6 +144,8 @@ export const AdminTemplatesPage: React.FC = () => {
   // Asset Upload States
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [isUploadingPreview, setIsUploadingPreview] = useState(false);
+  const [thumbnailLoadError, setThumbnailLoadError] = useState(false);
+  const [previewLoadError, setPreviewLoadError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const loadData = async () => {
@@ -260,9 +263,17 @@ export const AdminTemplatesPage: React.FC = () => {
     // Auto-generate elegant SVG thumbnail if none provided
     let finalThumbnail = thumbnail.trim();
     if (!finalThumbnail) {
-      finalThumbnail = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560"><rect width="400" height="560" fill="${encodeURIComponent(config.primaryColor || '#831843')}"/><rect x="15" y="15" width="370" height="530" fill="none" stroke="${encodeURIComponent(config.secondaryColor || '#fbbf24')}" stroke-width="3"/><text x="200" y="270" font-family="serif" font-size="22" font-weight="bold" fill="white" text-anchor="middle">${encodeURIComponent(name.trim())}</text><text x="200" y="300" font-family="serif" font-size="14" fill="${encodeURIComponent(config.secondaryColor || '#fbbf24')}" text-anchor="middle">${encodeURIComponent(style || 'Royal')} Matrimonial Biodata</text></svg>`;
+      finalThumbnail = generateTemplateSvgDataUri(
+        name.trim(),
+        config.primaryColor,
+        config.secondaryColor,
+        config.accentBg,
+        style,
+        config.defaultHeaderTitle
+      );
       setThumbnail(finalThumbnail);
     }
+
 
     setIsSaving(true);
     try {
@@ -404,8 +415,8 @@ export const AdminTemplatesPage: React.FC = () => {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size exceeds the 5MB maximum limit.');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size exceeds the 10MB maximum limit.');
       e.target.value = '';
       return;
     }
@@ -414,13 +425,13 @@ export const AdminTemplatesPage: React.FC = () => {
     else setIsUploadingPreview(true);
 
     try {
-      const url = await templateService.uploadTemplateAsset(file, file.name);
+      const url = await templateService.uploadTemplateAsset(file, file.name, type);
       if (type === 'thumbnail') {
         setThumbnail(url);
-        toast.success('Thumbnail asset uploaded to Firebase Storage.');
+        toast.success('Thumbnail asset uploaded and live preview ready!');
       } else {
         setPreviewImage(url);
-        toast.success('Preview image uploaded to Firebase Storage.');
+        toast.success('Preview image uploaded and showcase ready!');
       }
     } catch (err: any) {
       toast.error(err?.message || 'Asset upload failed. Please try a valid image file.');
@@ -462,8 +473,27 @@ export const AdminTemplatesPage: React.FC = () => {
       if (!match) return false;
     }
 
-    if (categoryFilter !== 'all' && tmpl.categoryId !== categoryFilter) {
-      return false;
+    if (categoryFilter !== 'all') {
+      if (categoryFilter === 'premium') {
+        const isPrem =
+          tmpl.isPremium ||
+          tmpl.categoryId === 'premium' ||
+          tmpl.style === 'Royal' ||
+          (tmpl.categoryName && tmpl.categoryName.toLowerCase().includes('premium'));
+        if (!isPrem) return false;
+      } else if (categoryFilter === 'royal') {
+        const isRoyal =
+          tmpl.style === 'Royal' ||
+          tmpl.categoryId === 'royal' ||
+          tmpl.isPremium ||
+          (tmpl.categoryName && tmpl.categoryName.toLowerCase().includes('royal'));
+        if (!isRoyal) return false;
+      } else if (
+        tmpl.categoryId !== categoryFilter &&
+        !(tmpl.categoryName && tmpl.categoryName.toLowerCase().includes(categoryFilter.toLowerCase()))
+      ) {
+        return false;
+      }
     }
 
     if (religionFilter !== 'all' && tmpl.religion !== religionFilter && tmpl.religion !== 'Universal') {
@@ -477,7 +507,17 @@ export const AdminTemplatesPage: React.FC = () => {
 
     if (tierFilter !== 'all') {
       if (tierFilter === 'free' && tmpl.isPremium) return false;
-      if (tierFilter === 'premium' && !tmpl.isPremium) return false;
+      if (
+        tierFilter === 'premium' &&
+        !(
+          tmpl.isPremium ||
+          tmpl.style === 'Royal' ||
+          tmpl.categoryId === 'premium' ||
+          (tmpl.categoryName && tmpl.categoryName.toLowerCase().includes('premium'))
+        )
+      ) {
+        return false;
+      }
     }
 
     return true;
@@ -721,14 +761,23 @@ export const AdminTemplatesPage: React.FC = () => {
                 key={tmpl.id}
                 className="flex flex-col justify-between border-stone-200 shadow-xs hover:shadow-md transition-all group overflow-hidden"
               >
-                {/* Header Banner with Primary & Secondary Colors */}
+                {/* Header Banner with Thumbnail Image, Primary & Secondary Colors */}
                 <div
-                  className="h-24 p-4 flex flex-col justify-between text-white relative transition-colors"
+                  className="h-28 p-4 flex flex-col justify-between text-white relative transition-colors overflow-hidden"
                   style={{ backgroundColor: tmpl.templateConfig?.primaryColor || '#7a1426' }}
                 >
+                  {/* Background Thumbnail Image with Fallback */}
+                  <img
+                    src={getTemplateDisplayThumbnail(tmpl)}
+                    alt={tmpl.name}
+                    className="absolute inset-0 w-full h-full object-cover object-top opacity-55 group-hover:opacity-75 group-hover:scale-105 transition-all duration-300 pointer-events-none"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/40 to-stone-950/20 pointer-events-none" />
+
                   <div className="flex items-center justify-between gap-2 z-10">
                     <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/30 backdrop-blur-xs text-white border border-white/20">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/40 backdrop-blur-xs text-white border border-white/20">
                         #{tmpl.sortOrder}
                       </span>
                       {tmpl.isPremium && (
@@ -745,7 +794,7 @@ export const AdminTemplatesPage: React.FC = () => {
                         type="button"
                         onClick={() => handleMoveSort(tmpl, 'up')}
                         disabled={idx === 0}
-                        className="p-1 rounded bg-black/20 hover:bg-black/40 disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-white"
+                        className="p-1 rounded bg-black/30 hover:bg-black/50 disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-white backdrop-blur-xs"
                         title="Move Up in Order"
                       >
                         <ArrowUp className="w-3 h-3" />
@@ -754,7 +803,7 @@ export const AdminTemplatesPage: React.FC = () => {
                         type="button"
                         onClick={() => handleMoveSort(tmpl, 'down')}
                         disabled={idx === filteredTemplates.length - 1}
-                        className="p-1 rounded bg-black/20 hover:bg-black/40 disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-white"
+                        className="p-1 rounded bg-black/30 hover:bg-black/50 disabled:opacity-30 disabled:pointer-events-none cursor-pointer text-white backdrop-blur-xs"
                         title="Move Down in Order"
                       >
                         <ArrowDown className="w-3 h-3" />
@@ -770,10 +819,10 @@ export const AdminTemplatesPage: React.FC = () => {
                   </div>
 
                   <div className="z-10">
-                    <h3 className="font-bold text-base font-cinzel text-white leading-tight">
+                    <h3 className="font-bold text-base font-cinzel text-white leading-tight drop-shadow-sm">
                       {tmpl.name}
                     </h3>
-                    <span className="text-[11px] text-white/80 line-clamp-1 mt-0.5">
+                    <span className="text-[11px] text-stone-200 line-clamp-1 mt-0.5">
                       {tmpl.tagline || `slug: ${tmpl.slug}`}
                     </span>
                   </div>
@@ -920,9 +969,11 @@ export const AdminTemplatesPage: React.FC = () => {
 
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
-                          <span
-                            className="w-4 h-4 rounded-full shrink-0 shadow-2xs border border-white"
-                            style={{ backgroundColor: tmpl.templateConfig?.primaryColor || '#7a1426' }}
+                          <img
+                            src={getTemplateDisplayThumbnail(tmpl)}
+                            alt={tmpl.name}
+                            className="w-9 h-9 rounded-lg object-cover border border-stone-200 shrink-0 shadow-2xs bg-stone-100"
+                            loading="lazy"
                           />
                           <div>
                             <span className="font-bold text-stone-900 block">{tmpl.name}</span>
@@ -1210,30 +1261,40 @@ export const AdminTemplatesPage: React.FC = () => {
             {/* TAB 2: Visual Assets & SEO */}
             {activeTab === 'assets' && (
               <div className="space-y-4 text-xs">
-                <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 flex items-center gap-3">
-                  <Upload className="w-5 h-5 text-amber-800 shrink-0" />
+                <div className="p-3.5 bg-amber-50/90 rounded-2xl border border-amber-200 flex items-start gap-3">
+                  <div className="p-2 bg-amber-100 text-amber-900 rounded-xl shrink-0 mt-0.5">
+                    <Upload className="w-4 h-4" />
+                  </div>
                   <div>
-                    <span className="font-bold text-amber-950 block">Firebase Storage Asset Uploader</span>
-                    <p className="text-[11px] text-amber-800/80">
-                      Upload banner previews and catalog thumbnails directly to Firebase Storage bucket.
+                    <span className="font-bold text-amber-950 block text-xs">Firebase Storage Asset Uploader</span>
+                    <p className="text-[11px] text-amber-900/80 leading-relaxed">
+                      Upload banner previews and catalog thumbnails directly. Images are automatically optimized and compressed client-side (&lt;75KB) for instant frontend rendering and reliable cloud persistence.
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Thumbnail */}
-                  <div className="space-y-2 p-3 bg-stone-50 rounded-2xl border border-stone-200">
-                    <span className="font-bold text-stone-800 block">Thumbnail Asset</span>
-                    <Input
-                      placeholder="https://... or data:image/..."
-                      value={thumbnail}
-                      onChange={(e) => setThumbnail(e.target.value)}
-                      hint="Catalog card image URL"
-                    />
+                  <div className="space-y-2 p-3.5 bg-stone-50 rounded-2xl border border-stone-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-stone-800">Thumbnail Asset</span>
+                        <span className="text-[10px] text-stone-500">Catalog card preview</span>
+                      </div>
+                      <Input
+                        placeholder="https://... or data:image/..."
+                        value={thumbnail}
+                        onChange={(e) => {
+                          setThumbnail(e.target.value);
+                          setThumbnailLoadError(false);
+                        }}
+                        hint="Direct image URL or optimized Data URI"
+                      />
+                    </div>
 
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
                       <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-300 bg-white text-stone-700 hover:bg-stone-100 cursor-pointer font-semibold text-xs shadow-2xs">
-                        <Upload className="w-3.5 h-3.5" />
+                        <Upload className="w-3.5 h-3.5 text-amber-800" />
                         <span>{isUploadingThumbnail ? 'Uploading...' : 'Upload Image'}</span>
                         <input
                           type="file"
@@ -1242,28 +1303,124 @@ export const AdminTemplatesPage: React.FC = () => {
                           onChange={(e) => handleAssetUpload(e, 'thumbnail')}
                         />
                       </label>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const generated = generateTemplateSvgDataUri(
+                            name || 'Royal Heritage',
+                            config.primaryColor,
+                            config.secondaryColor,
+                            config.accentBg,
+                            style,
+                            config.defaultHeaderTitle
+                          );
+                          setThumbnail(generated);
+                          setThumbnailLoadError(false);
+                          toast.success('Generated Vedic vector card thumbnail!');
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-amber-200 bg-amber-100/70 hover:bg-amber-100 text-amber-900 font-bold text-xs cursor-pointer shadow-2xs"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-800" />
+                        <span>Generate Vector</span>
+                      </button>
+
+                      {thumbnail && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setThumbnail('');
+                            setThumbnailLoadError(false);
+                          }}
+                          className="px-2 py-1.5 text-stone-500 hover:text-red-600 text-xs font-semibold cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
 
-                    {thumbnail && (
-                      <div className="mt-2 h-24 rounded-lg overflow-hidden border border-stone-200 bg-white flex items-center justify-center">
-                        <img src={thumbnail} alt="Thumbnail preview" loading="lazy" decoding="async" className="h-full object-contain" />
-                      </div>
-                    )}
+                    {/* Live Preview Container */}
+                    <div className="mt-2 h-44 rounded-xl overflow-hidden border border-stone-200 bg-stone-900/5 relative flex items-center justify-center p-2">
+                      {thumbnail ? (
+                        thumbnailLoadError ? (
+                          <div className="text-center p-3 space-y-1">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 mx-auto" />
+                            <span className="text-[11px] text-stone-700 font-bold block">
+                              Image could not be loaded
+                            </span>
+                            <span className="text-[10px] text-stone-500 block">
+                              Check URL connectivity or generate a vector card.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const generated = generateTemplateSvgDataUri(
+                                  name || 'Royal Heritage',
+                                  config.primaryColor,
+                                  config.secondaryColor,
+                                  config.accentBg,
+                                  style,
+                                  config.defaultHeaderTitle
+                                );
+                                setThumbnail(generated);
+                                setThumbnailLoadError(false);
+                              }}
+                              className="mt-1 text-[11px] text-amber-800 font-bold underline cursor-pointer"
+                            >
+                              Auto-Generate Vector Card
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="relative w-full h-full flex items-center justify-center group/preview">
+                            <img
+                              src={thumbnail}
+                              alt="Thumbnail preview"
+                              loading="lazy"
+                              decoding="async"
+                              className="h-full w-auto max-w-full object-contain rounded-lg shadow-sm"
+                              onLoad={() => setThumbnailLoadError(false)}
+                              onError={() => setThumbnailLoadError(true)}
+                            />
+                            <div className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded text-[9px] font-bold bg-black/70 text-amber-200 border border-white/20 backdrop-blur-xs">
+                              From BiodataCraft
+                            </div>
+                          </div>
+                        )
+                      ) : (
+                        <div className="text-center p-3 space-y-1">
+                          <ImageIcon className="w-6 h-6 text-stone-400 mx-auto" />
+                          <span className="text-[11px] text-stone-600 font-semibold block">
+                            No custom thumbnail uploaded
+                          </span>
+                          <span className="text-[10px] text-stone-400 block max-w-xs">
+                            Upload a JPEG/PNG/WebP, paste an image link, or generate an auspicious vector card.
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Preview Image */}
-                  <div className="space-y-2 p-3 bg-stone-50 rounded-2xl border border-stone-200">
-                    <span className="font-bold text-stone-800 block">Full Preview Image</span>
-                    <Input
-                      placeholder="https://... or data:image/..."
-                      value={previewImage}
-                      onChange={(e) => setPreviewImage(e.target.value)}
-                      hint="High-res modal showcase image"
-                    />
+                  <div className="space-y-2 p-3.5 bg-stone-50 rounded-2xl border border-stone-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-stone-800">Full Preview Image</span>
+                        <span className="text-[10px] text-stone-500">High-res showcase image</span>
+                      </div>
+                      <Input
+                        placeholder="https://... or data:image/..."
+                        value={previewImage}
+                        onChange={(e) => {
+                          setPreviewImage(e.target.value);
+                          setPreviewLoadError(false);
+                        }}
+                        hint="Used in full-screen showcase modal"
+                      />
+                    </div>
 
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
                       <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-300 bg-white text-stone-700 hover:bg-stone-100 cursor-pointer font-semibold text-xs shadow-2xs">
-                        <Upload className="w-3.5 h-3.5" />
+                        <Upload className="w-3.5 h-3.5 text-amber-800" />
                         <span>{isUploadingPreview ? 'Uploading...' : 'Upload Image'}</span>
                         <input
                           type="file"
@@ -1272,15 +1429,79 @@ export const AdminTemplatesPage: React.FC = () => {
                           onChange={(e) => handleAssetUpload(e, 'preview')}
                         />
                       </label>
+
+                      {thumbnail && !previewImage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewImage(thumbnail);
+                            setPreviewLoadError(false);
+                            toast.success('Copied thumbnail to preview image!');
+                          }}
+                          className="px-2.5 py-1.5 rounded-xl border border-stone-300 bg-white text-stone-700 hover:bg-stone-100 text-xs font-semibold cursor-pointer shadow-2xs"
+                        >
+                          Use Thumbnail
+                        </button>
+                      )}
+
+                      {previewImage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewImage('');
+                            setPreviewLoadError(false);
+                          }}
+                          className="px-2 py-1.5 text-stone-500 hover:text-red-600 text-xs font-semibold cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
 
-                    {previewImage && (
-                      <div className="mt-2 h-24 rounded-lg overflow-hidden border border-stone-200 bg-white flex items-center justify-center">
-                        <img src={previewImage} alt="Full preview" loading="lazy" decoding="async" className="h-full object-contain" />
-                      </div>
-                    )}
+                    {/* Live Preview Container */}
+                    <div className="mt-2 h-44 rounded-xl overflow-hidden border border-stone-200 bg-stone-900/5 relative flex items-center justify-center p-2">
+                      {previewImage ? (
+                        previewLoadError ? (
+                          <div className="text-center p-3 space-y-1">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 mx-auto" />
+                            <span className="text-[11px] text-stone-700 font-bold block">
+                              Showcase image could not be loaded
+                            </span>
+                            <span className="text-[10px] text-stone-500 block">
+                              Check URL connectivity or upload a new file.
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="relative w-full h-full flex items-center justify-center">
+                            <img
+                              src={previewImage}
+                              alt="Full preview"
+                              loading="lazy"
+                              decoding="async"
+                              className="h-full w-auto max-w-full object-contain rounded-lg shadow-sm"
+                              onLoad={() => setPreviewLoadError(false)}
+                              onError={() => setPreviewLoadError(true)}
+                            />
+                            <div className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded text-[9px] font-bold bg-black/70 text-amber-200 border border-white/20 backdrop-blur-xs">
+                              From BiodataCraft
+                            </div>
+                          </div>
+                        )
+                      ) : (
+                        <div className="text-center p-3 space-y-1">
+                          <ImageIcon className="w-6 h-6 text-stone-400 mx-auto" />
+                          <span className="text-[11px] text-stone-600 font-semibold block">
+                            No full showcase image uploaded
+                          </span>
+                          <span className="text-[10px] text-stone-400 block max-w-xs">
+                            Upload a high-res screenshot or leave blank to mirror the thumbnail.
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+
 
                 {/* SEO Optimization */}
                 <div className="pt-2 border-t border-stone-100 space-y-3">

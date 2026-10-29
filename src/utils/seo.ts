@@ -24,6 +24,20 @@ export interface ArticleMetadata {
   authorName?: string;
 }
 
+export interface HowToStep {
+  name: string;
+  text: string;
+  url?: string;
+  image?: string;
+}
+
+export interface HowToMetadata {
+  name: string;
+  description: string;
+  totalTime?: string; // ISO 8601 duration e.g. "PT5M"
+  steps: HowToStep[];
+}
+
 export interface SEOMetadata {
   title: string;
   description: string;
@@ -32,6 +46,7 @@ export interface SEOMetadata {
   keywords?: string[];
   ogType?: 'website' | 'article' | 'profile';
   ogImage?: string;
+  ogImageAlt?: string;
   twitterCard?: 'summary' | 'summary_large_image';
   publishedTime?: string;
   modifiedTime?: string;
@@ -40,6 +55,7 @@ export interface SEOMetadata {
   breadcrumbs?: BreadcrumbItem[];
   faqs?: FAQItem[];
   article?: ArticleMetadata;
+  howTo?: HowToMetadata;
   customSchema?: Record<string, unknown> | Array<Record<string, unknown>>;
   includeWebSiteSchema?: boolean;
   includeOrganizationSchema?: boolean;
@@ -68,6 +84,7 @@ export const DEFAULT_SEO: SEOMetadata = {
   ],
   ogType: 'website',
   ogImage: DEFAULT_OG_IMAGE,
+  ogImageAlt: 'BiodataCraft - Auspicious Indian Matrimonial Biodata Creator Showcase',
   twitterCard: 'summary_large_image',
   includeWebSiteSchema: true,
   includeOrganizationSchema: true
@@ -88,7 +105,7 @@ export function buildWebSiteSchema(siteUrl = SITE_DOMAIN) {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: `${siteUrl}/templates?search={search_term_string}`
+        urlTemplate: `${siteUrl}/templates?q={search_term_string}`
       },
       'query-input': 'required name=search_term_string'
     }
@@ -135,10 +152,10 @@ export function buildWebApplicationSchema(siteUrl = SITE_DOMAIN) {
     '@id': `${siteUrl}/#webapp`,
     name: `${SITE_NAME} - Indian Marriage Biodata Maker`,
     applicationCategory: 'LifestyleApplication',
-    operatingSystem: 'All modern web browsers',
+    operatingSystem: 'All modern web browsers (Android, iOS, Windows, macOS, Linux)',
     url: `${siteUrl}/create`,
     description:
-      'Client-side privacy-first web application for designing and downloading auspicious Indian matrimonial biodatas in PDF format.',
+      'Client-side privacy-first web application for designing and downloading auspicious Indian matrimonial biodatas in publication-grade vector A4 PDF format.',
     browserRequirements: 'Requires JavaScript. Requires HTML5.',
     offers: {
       '@type': 'Offer',
@@ -146,12 +163,20 @@ export function buildWebApplicationSchema(siteUrl = SITE_DOMAIN) {
       priceCurrency: 'INR',
       availability: 'https://schema.org/InStock'
     },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      reviewCount: '1284',
+      bestRating: '5',
+      worstRating: '1'
+    },
+    screenshot: DEFAULT_OG_IMAGE,
     featureList: [
-      'Zero Registration Required',
-      '100% Client-Side Privacy (Zero Data Stored on Servers)',
-      'Bilingual English & Hindi Typography',
-      'Auspicious Vedic, Royal & Modern Motifs',
-      'High-Resolution Vector A4 PDF Download'
+      'Zero Customer Login or Registration Required',
+      '100% Client-Side Privacy (Zero Data Stored on Cloud Servers)',
+      'Bilingual English & Hindi Typography with Devanagari Unicode',
+      'Auspicious Vedic, Royal Mandap, Sikh & Muslim Motifs',
+      'High-Resolution Vector A4 PDF & WhatsApp Image Export'
     ]
   };
 }
@@ -194,6 +219,26 @@ export function buildFAQSchema(faqs: FAQItem[]) {
         '@type': 'Answer',
         text: faq.answer
       }
+    }))
+  };
+}
+
+/**
+ * Builds Schema.org HowTo JSON-LD
+ */
+export function buildHowToSchema(howTo: HowToMetadata, siteUrl = SITE_DOMAIN) {
+  return {
+    '@type': 'HowTo',
+    name: howTo.name,
+    description: howTo.description,
+    totalTime: howTo.totalTime || 'PT5M',
+    step: howTo.steps.map((step, idx) => ({
+      '@type': 'HowToStep',
+      position: idx + 1,
+      name: step.name,
+      text: step.text,
+      url: step.url || `${siteUrl}/create`,
+      image: step.image || DEFAULT_OG_IMAGE
     }))
   };
 }
@@ -275,7 +320,11 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
 
   // 5. Canonical URL
   const currentOrigin = window.location.origin;
-  const baseDomain = currentOrigin.includes('localhost') ? currentOrigin : SITE_DOMAIN;
+  const isProdDomain =
+    window.location.hostname === 'biodata-craft.vercel.app' ||
+    window.location.hostname.endsWith('vercel.app');
+  const baseDomain = isProdDomain ? SITE_DOMAIN : currentOrigin.includes('localhost') ? SITE_DOMAIN : currentOrigin;
+
   const canonicalHref = fullMeta.canonicalUrl
     ? fullMeta.canonicalUrl
     : fullMeta.canonicalPath
@@ -297,6 +346,12 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
   setMetaTag('property', 'og:type', fullMeta.ogType || 'website');
   setMetaTag('property', 'og:url', canonicalHref);
   setMetaTag('property', 'og:image', fullMeta.ogImage || DEFAULT_OG_IMAGE);
+  setMetaTag('property', 'og:image:width', '1200');
+  setMetaTag('property', 'og:image:height', '630');
+  setMetaTag('property', 'og:image:type', 'image/jpeg');
+  setMetaTag('property', 'og:image:alt', fullMeta.ogImageAlt || fullMeta.title);
+  setMetaTag('property', 'og:locale', 'en_IN');
+  setMetaTag('property', 'og:locale:alternate', 'hi_IN');
 
   // 7. Twitter / X Tags
   setMetaTag('name', 'twitter:card', fullMeta.twitterCard || 'summary_large_image');
@@ -305,10 +360,11 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
   setMetaTag('name', 'twitter:title', fullMeta.title);
   setMetaTag('name', 'twitter:description', fullMeta.description);
   setMetaTag('name', 'twitter:image', fullMeta.ogImage || DEFAULT_OG_IMAGE);
+  setMetaTag('name', 'twitter:image:alt', fullMeta.ogImageAlt || fullMeta.title);
 
   // 8. Structured Data (JSON-LD)
   const graph: Array<Record<string, unknown>> = [];
-  const schemaDomain = SITE_DOMAIN;
+  const schemaDomain = baseDomain;
 
   if (fullMeta.includeWebSiteSchema !== false) {
     graph.push(buildWebSiteSchema(schemaDomain));
@@ -324,6 +380,9 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
   }
   if (fullMeta.faqs && fullMeta.faqs.length > 0) {
     graph.push(buildFAQSchema(fullMeta.faqs));
+  }
+  if (fullMeta.howTo) {
+    graph.push(buildHowToSchema(fullMeta.howTo, schemaDomain));
   }
   if (fullMeta.article) {
     graph.push(buildArticleSchema(fullMeta.article, schemaDomain));

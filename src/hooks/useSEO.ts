@@ -15,10 +15,12 @@ export function useSEO(metadata: Partial<SEOMetadata>) {
     metadata.canonicalUrl,
     metadata.ogType,
     metadata.ogImage,
+    metadata.ogImageAlt,
     metadata.noindex,
     // JSON.stringify for complex structured objects
     JSON.stringify(metadata.breadcrumbs),
     JSON.stringify(metadata.faqs),
+    JSON.stringify(metadata.howTo),
     JSON.stringify(metadata.article),
     JSON.stringify(metadata.customSchema)
   ]);
