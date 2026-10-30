@@ -62,6 +62,8 @@ export interface SEOMetadata {
   includeWebApplicationSchema?: boolean;
 }
 
+import { ALL_500_SEO_KEYWORDS, ALL_500_SEO_KEYWORDS_STRING } from '../data/seoKeywords';
+
 export const SITE_DOMAIN = 'https://biodata-craft.vercel.app';
 export const SITE_NAME = 'BiodataCraft';
 
@@ -72,16 +74,7 @@ export const DEFAULT_SEO: SEOMetadata = {
   description:
     'Create distinguished Indian matrimonial biodatas in English & Hindi. 100% Free with zero registration. Kundali, Gotra, and elegant templates with instant high-res PDF download.',
   canonicalPath: '/',
-  keywords: [
-    'marriage biodata maker',
-    'indian wedding biodata format',
-    'matrimonial biodata pdf',
-    'hindu marriage biodata',
-    'muslim marriage biodata',
-    'marathi lagna biodata',
-    'free marriage biodata maker without login',
-    'kundali biodata format'
-  ],
+  keywords: ALL_500_SEO_KEYWORDS,
   ogType: 'website',
   ogImage: DEFAULT_OG_IMAGE,
   ogImageAlt: 'BiodataCraft - Auspicious Indian Matrimonial Biodata Creator Showcase',
@@ -100,6 +93,7 @@ export function buildWebSiteSchema(siteUrl = SITE_DOMAIN) {
     url: siteUrl,
     name: SITE_NAME,
     description: DEFAULT_SEO.description,
+    keywords: ALL_500_SEO_KEYWORDS_STRING,
     inLanguage: ['en-IN', 'hi-IN'],
     potentialAction: {
       '@type': 'SearchAction',
@@ -171,6 +165,7 @@ export function buildWebApplicationSchema(siteUrl = SITE_DOMAIN) {
       worstRating: '1'
     },
     screenshot: DEFAULT_OG_IMAGE,
+    keywords: ALL_500_SEO_KEYWORDS_STRING,
     featureList: [
       'Zero Customer Login or Registration Required',
       '100% Client-Side Privacy (Zero Data Stored on Cloud Servers)',

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Lock, Award, HeartHandshake } from 'lucide-react';
 import { adminService, SiteSettings } from '../../services/adminService';
+import { KeywordDirectory } from '../common/KeywordDirectory';
 
 export const Footer: React.FC = () => {
   const [settings] = useState<SiteSettings>(() => adminService.getSettings());
@@ -228,6 +229,11 @@ export const Footer: React.FC = () => {
               </li>
             </ul>
           </div>
+        </div>
+
+        {/* 500+ Matrimonial Keywords & Regional Directory */}
+        <div className="mb-10">
+          <KeywordDirectory />
         </div>
 
         {/* Bottom Bar */}
