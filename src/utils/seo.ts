@@ -319,11 +319,7 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
   );
 
   // 5. Canonical URL
-  const currentOrigin = window.location.origin;
-  const isProdDomain =
-    window.location.hostname === 'biodata-craft.vercel.app' ||
-    window.location.hostname.endsWith('vercel.app');
-  const baseDomain = isProdDomain ? SITE_DOMAIN : currentOrigin.includes('localhost') ? SITE_DOMAIN : currentOrigin;
+  const baseDomain = SITE_DOMAIN;
 
   const canonicalHref = fullMeta.canonicalUrl
     ? fullMeta.canonicalUrl

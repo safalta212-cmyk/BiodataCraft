@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { sampleHinduBiodata, sampleHindiBiodata } from '../data/initialBiodata';
 import { storageService } from '../services/storageService';
@@ -7,7 +7,19 @@ import { analyticsService } from '../services/analyticsService';
 import { BiodataData } from '../types/biodata';
 import { BiodataTemplateView } from '../components/templates/BiodataTemplateView';
 import { DownloadModal } from '../components/preview/DownloadModal';
-import { Sparkles, Edit3, Download, Eye, FileText, Check } from 'lucide-react';
+import {
+  Sparkles,
+  Edit3,
+  Download,
+  Eye,
+  FileText,
+  Check,
+  CheckCircle2,
+  BookOpen,
+  ArrowRight,
+  ShieldCheck,
+  HeartHandshake
+} from 'lucide-react';
 
 export interface SamplesPageProps {
   language?: 'en' | 'hi' | 'bilingual';
@@ -132,6 +144,183 @@ export const SamplesPage: React.FC<SamplesPageProps> = ({ language = 'en', onLan
             </div>
           </div>
         </div>
+
+        {/* Educational Content & Guidelines Section */}
+        <section className="mt-16 max-w-5xl mx-auto space-y-12">
+          {/* Essential Pillars */}
+          <div className="bg-white border border-stone-200 rounded-3xl p-6 sm:p-10 shadow-xs">
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <span className="text-xs font-bold uppercase tracking-widest text-amber-800">
+                Matrimonial Formatting Standards
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900 font-cinzel mt-1">
+                Anatomy of an Auspicious Marriage Biodata
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-600 mt-2">
+                A well-crafted Indian matrimonial profile balances ancestral heritage, personal accomplishments, and religious respect.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-5 rounded-2xl bg-amber-50/60 border border-amber-200/60">
+                <h3 className="font-bold text-stone-900 text-sm sm:text-base font-cinzel mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-800 shrink-0" />
+                  <span>1. Personal & Astrological (Kundali) Details</span>
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Accurate Date of Birth, exact Time of Birth (with AM/PM), Birth City, Rashi (Moon Sign), Nakshatra, Charan, Gotra, and Manglik or Anshik Manglik status. These allow matching pandits to verify Guna Milan without back-and-forth phone calls.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200">
+                <h3 className="font-bold text-stone-900 text-sm sm:text-base font-cinzel mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-800 shrink-0" />
+                  <span>2. Education & Professional Credentials</span>
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Clearly state highest qualification (e.g., B.Tech, MBA, MBBS, CA), college or university name, current designation, employer organization, and workplace city. Mentioning package or salary range is optional based on family preference.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-50 border border-stone-200">
+                <h3 className="font-bold text-stone-900 text-sm sm:text-base font-cinzel mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-800 shrink-0" />
+                  <span>3. Family Lineage & Mosal / Nanihal</span>
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Father's name and occupation (business, retired officer, serviceman), Mother's name, sibling count with their marital status, and Maternal Uncle (Mama Ji / Mosal) details including village origin to verify cross-family ancestral background.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-amber-50/60 border border-amber-200/60">
+                <h3 className="font-bold text-stone-900 text-sm sm:text-base font-cinzel mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-800 shrink-0" />
+                  <span>4. Decent Photograph & Verified Contact</span>
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Use a professional studio portrait or well-lit traditional attire photograph with no heavy digital filters. Include father's or elder's mobile number, family home address, and WhatsApp contact for respectful family communication.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Steps Guide */}
+          <div className="bg-stone-900 text-stone-100 rounded-3xl p-6 sm:p-10 shadow-lg">
+            <div className="text-center max-w-xl mx-auto mb-8">
+              <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
+                Instant Process
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold font-cinzel mt-1 text-white">
+                How to Personalize Your Biodata in 3 Minutes
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+              <div className="p-5 rounded-2xl bg-stone-800/80 border border-stone-700">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center mx-auto mb-3 font-cinzel text-lg">
+                  1
+                </div>
+                <h3 className="font-bold text-sm text-white mb-1">Pick a Sample or Template</h3>
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  Click "Load & Customize This" above or choose from our 10+ cultural themes.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-800/80 border border-stone-700">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center mx-auto mb-3 font-cinzel text-lg">
+                  2
+                </div>
+                <h3 className="font-bold text-sm text-white mb-1">Fill Your Family & Bio Details</h3>
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  Type in English, Hindi, or bilingual script. Real-time preview updates live.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-stone-800/80 border border-stone-700">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center mx-auto mb-3 font-cinzel text-lg">
+                  3
+                </div>
+                <h3 className="font-bold text-sm text-white mb-1">Free PDF & WhatsApp Image</h3>
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  Download a print-ready vector A4 PDF or crisp WhatsApp image without watermarks.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-stone-800 flex flex-wrap items-center justify-center gap-4">
+              <Link
+                to="/create"
+                className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold rounded-xl text-sm transition-all shadow-md hover:scale-102 flex items-center gap-2"
+              >
+                <span>Start Creating Your Biodata</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                to="/templates"
+                className="px-6 py-3 bg-stone-800 hover:bg-stone-700 text-white font-semibold rounded-xl text-sm transition-all border border-stone-700"
+              >
+                Browse All 10+ Templates
+              </Link>
+            </div>
+          </div>
+
+          {/* Internal Links Hub */}
+          <div className="bg-stone-100 rounded-3xl p-6 sm:p-8 border border-stone-200">
+            <h3 className="text-base font-bold text-stone-900 font-cinzel mb-4 text-center">
+              Explore Community-Specific Formats & Guides
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 text-xs">
+              <Link
+                to="/marriage-biodata-format"
+                className="p-3 bg-white rounded-xl border border-stone-200 font-medium text-stone-800 hover:text-amber-800 hover:border-amber-300 transition-colors shadow-2xs"
+              >
+                Marriage Biodata Formats
+              </Link>
+              <Link
+                to="/marriage-biodata"
+                className="p-3 bg-white rounded-xl border border-stone-200 font-medium text-stone-800 hover:text-amber-800 hover:border-amber-300 transition-colors shadow-2xs"
+              >
+                Complete Biodata Guide
+              </Link>
+              <Link
+                to="/hindu-marriage-biodata"
+                className="p-3 bg-white rounded-xl border border-stone-200 font-medium text-stone-800 hover:text-amber-800 hover:border-amber-300 transition-colors shadow-2xs"
+              >
+                Hindu Marriage Biodata
+              </Link>
+              <Link
+                to="/muslim-marriage-biodata"
+                className="p-3 bg-white rounded-xl border border-stone-200 font-medium text-stone-800 hover:text-amber-800 hover:border-amber-300 transition-colors shadow-2xs"
+              >
+                Muslim Nikah Biodata
+              </Link>
+              <Link
+                to="/yadav-marriage-biodata"
+                className="p-3 bg-white rounded-xl border border-stone-200 font-medium text-stone-800 hover:text-amber-800 hover:border-amber-300 transition-colors shadow-2xs"
+              >
+                Yadav Samaj Biodata
+              </Link>
+              <Link
+                to="/marathi-biodata"
+                className="p-3 bg-white rounded-xl border border-stone-200 font-medium text-stone-800 hover:text-amber-800 hover:border-amber-300 transition-colors shadow-2xs"
+              >
+                Marathi Lagna Biodata
+              </Link>
+              <Link
+                to="/bengali-marriage-biodata"
+                className="p-3 bg-white rounded-xl border border-stone-200 font-medium text-stone-800 hover:text-amber-800 hover:border-amber-300 transition-colors shadow-2xs"
+              >
+                Bengali Matrimony Biodata
+              </Link>
+              <Link
+                to="/faq"
+                className="p-3 bg-white rounded-xl border border-stone-200 font-medium text-stone-800 hover:text-amber-800 hover:border-amber-300 transition-colors shadow-2xs"
+              >
+                Frequently Asked Questions
+              </Link>
+            </div>
+          </div>
+        </section>
       </div>
 
       <DownloadModal

@@ -171,6 +171,72 @@ export const BlogPage: React.FC = () => {
             ))}
           </div>
         )}
+
+        {/* Matrimonial Formats & Templates Linking Section */}
+        <section className="bg-white border border-stone-200 rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-800">
+              Cultural Heritage & Design
+            </span>
+            <h2 className="text-2xl font-bold text-stone-900 font-cinzel">
+              Explore Traditional & Modern Biodata Formats
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-600">
+              Review authentic formats designed to reflect your family's cultural customs, religious symbols, and astrological traditions.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <Link
+              to="/marriage-biodata-format"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors block text-center"
+            >
+              Marriage Biodata Formats
+            </Link>
+            <Link
+              to="/samples"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors block text-center"
+            >
+              Real Biodata Samples
+            </Link>
+            <Link
+              to="/hindu-marriage-biodata"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors block text-center"
+            >
+              Hindu Marriage Biodata
+            </Link>
+            <Link
+              to="/muslim-marriage-biodata"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors block text-center"
+            >
+              Muslim Nikah Biodata
+            </Link>
+            <Link
+              to="/yadav-marriage-biodata"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors block text-center"
+            >
+              Yadav Samaj Biodata
+            </Link>
+            <Link
+              to="/marathi-biodata"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors block text-center"
+            >
+              Marathi Lagna Patrika
+            </Link>
+            <Link
+              to="/bengali-marriage-biodata"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors block text-center"
+            >
+              Bengali Matrimony Biodata
+            </Link>
+            <Link
+              to="/templates"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors block text-center"
+            >
+              All 10+ Biodata Templates
+            </Link>
+          </div>
+        </section>
       </div>
     </div>
   );

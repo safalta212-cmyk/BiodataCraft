@@ -516,6 +516,194 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
         </div>
       </section>
 
+      {/* Comprehensive Matrimonial Guide & Educational Content (SEO Authority) */}
+      <section className="py-14 bg-white border-t border-stone-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-10">
+          <div className="max-w-3xl">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-800">
+              {isHindi ? 'विस्तृत मार्गदर्शिका' : 'Authoritative Matrimonial Guide'}
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 mt-1 font-cinzel leading-tight">
+              {isHindi
+                ? 'विवाह हेतु आदर्श बायोडाटा कैसे बनाएं: संपूर्ण मार्गदर्शिका'
+                : 'How to Create a Distinguished Indian Marriage Biodata: Complete Guide'}
+            </h2>
+            <p className="mt-3 text-xs sm:text-sm text-stone-600 leading-relaxed">
+              {isHindi
+                ? 'भारतीय वैवाहिक व्यवस्था में बायोडेटा मात्र एक परिचय पत्र नहीं, बल्कि दो कुलों और परिवारों के परस्पर मिलन की पहली सीढ़ी है। जानिए इसमें क्या विवरण जोड़ें और किन बातों का ध्यान रखें।'
+                : 'In Indian arranged and semi-arranged matrimony, a marriage biodata is far more than a corporate curriculum vitae. It is an auspicious document representing ancestral dignity, personal milestones, and family lineage.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Guide Card 1 */}
+            <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-sm">
+                1
+              </div>
+              <h3 className="font-bold text-base text-stone-900 font-cinzel">
+                Personal & Auspicious Details
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Start with a sacred invocation (e.g. <em>॥ श्री गणेशाय नमः ॥</em>, <em>ॐ</em>, or <em>Bismillah</em>). Include full legal name, date of birth, exact time of birth, birth city, height, complexion, and mother tongue.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/hindu-marriage-biodata"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-900"
+                >
+                  <span>Explore Vedic Sacred Headers</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Guide Card 2 */}
+            <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-sm">
+                2
+              </div>
+              <h3 className="font-bold text-base text-stone-900 font-cinzel">
+                Astrological & Horoscope Alignment
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Crucial for Kundali matching (Guna Milan). Explicitly mention self (paternal) Gotra, maternal uncle (Mosal/Nanihal) Gotra, Rashi (moon sign), Nakshatra, Charana, and Manglik status (Non-Manglik / Anshik).
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/marriage-biodata-format"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-900"
+                >
+                  <span>View Gotra & Kundali Checklist</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Guide Card 3 */}
+            <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-sm">
+                3
+              </div>
+              <h3 className="font-bold text-base text-stone-900 font-cinzel">
+                Education & Career Standing
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Highlight university degrees (e.g. B.Tech, MBA, MBBS, CA, Civil Services), current job title, corporate employer, and work location. State annual package gracefully or reserve it for personal conversation.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/samples"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-900"
+                >
+                  <span>View Professional Biodata Samples</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Guide Card 4 */}
+            <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-sm">
+                4
+              </div>
+              <h3 className="font-bold text-base text-stone-900 font-cinzel">
+                Family Heritage & Lineage
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                List Father’s occupation, Mother’s background, Siblings (with marital status: elder brother married, younger sister studying), and Maternal Uncle (Mama Ji / Mosal) details for regional verification.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/yadav-marriage-biodata"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-900"
+                >
+                  <span>Learn 4-Gotra Lineage Rules</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Guide Card 5 */}
+            <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-sm">
+                5
+              </div>
+              <h3 className="font-bold text-base text-stone-900 font-cinzel">
+                Dignified Portrait Photo
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Choose a warm, high-resolution portrait photograph in ethnic or formal attire with natural lighting. Avoid sunglasses, heavy filters, or crowded group crops to ensure a credible first impression.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/templates"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-900"
+                >
+                  <span>Browse Templates with Photo Frames</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Guide Card 6 */}
+            <div className="p-6 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-800 text-amber-100 font-bold flex items-center justify-center text-sm">
+                6
+              </div>
+              <h3 className="font-bold text-base text-stone-900 font-cinzel">
+                Print & WhatsApp Readiness
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Always ensure your final biodata fits crisply on a single A4 page for printing without awkward page breaks. BiodataCraft also provides 1-click WhatsApp image download for instant mobile sharing.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/create"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-900"
+                >
+                  <span>Start Creating Free Biodata Now</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Hub of Regional & Community Guides */}
+          <div className="p-6 rounded-2xl bg-stone-100/70 border border-stone-200">
+            <h3 className="font-bold text-sm text-stone-900 font-cinzel mb-3">
+              Regional Formats & Community Traditions
+            </h3>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <Link to="/marriage-biodata" className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-amber-400 text-stone-700 font-medium">
+                Marriage Biodata Complete Guide
+              </Link>
+              <Link to="/marriage-biodata-format" className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-amber-400 text-stone-700 font-medium">
+                1-Page vs 2-Page Format Analysis
+              </Link>
+              <Link to="/hindu-marriage-biodata" className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-amber-400 text-stone-700 font-medium">
+                Hindu Vedic Format
+              </Link>
+              <Link to="/muslim-marriage-biodata" className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-amber-400 text-stone-700 font-medium">
+                Muslim Nikah Format
+              </Link>
+              <Link to="/yadav-marriage-biodata" className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-amber-400 text-stone-700 font-medium">
+                Yadav Community Format
+              </Link>
+              <Link to="/marathi-biodata" className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-amber-400 text-stone-700 font-medium">
+                मराठी लग्न बायोडाटा
+              </Link>
+              <Link to="/bengali-marriage-biodata" className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-amber-400 text-stone-700 font-medium">
+                বাংলা বিবাহ বায়োডাটা
+              </Link>
+              <Link to="/samples" className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 hover:border-amber-400 text-stone-700 font-medium">
+                Biodata Sample Library
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 6. Why Choose Us Section */}
       <section className="py-12 bg-white border-y border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">

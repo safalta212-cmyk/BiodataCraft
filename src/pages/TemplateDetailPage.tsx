@@ -404,6 +404,67 @@ export const TemplateDetailPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Related Matrimonial Templates & Regional Formats (SEO & Internal Links) */}
+          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-stone-200 shadow-xs space-y-6">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-amber-800">
+                Alternative Matrimonial Designs
+              </span>
+              <h2 className="text-xl sm:text-2xl font-bold font-cinzel text-stone-900 mt-1">
+                Explore More Marriage Biodata Templates
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-600 mt-1">
+                Looking for a different cultural motif or color scheme? Browse our catalog of publication-grade designs.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <Link
+                to="/templates/royal-heritage"
+                className="p-4 rounded-2xl border border-stone-200 hover:border-amber-400 bg-stone-50 hover:bg-amber-50/30 transition-all block group"
+              >
+                <h3 className="font-bold text-sm text-stone-900 group-hover:text-amber-800 font-cinzel">Royal Heritage</h3>
+                <p className="text-xs text-stone-500 mt-1">Maroon & Gold Rajasthani Mandap Fluting</p>
+                <span className="text-[11px] font-bold text-amber-800 mt-2 inline-block">View Layout →</span>
+              </Link>
+
+              <Link
+                to="/templates/vedic-aura"
+                className="p-4 rounded-2xl border border-stone-200 hover:border-amber-400 bg-stone-50 hover:bg-amber-50/30 transition-all block group"
+              >
+                <h3 className="font-bold text-sm text-stone-900 group-hover:text-amber-800 font-cinzel">Vedic Aura</h3>
+                <p className="text-xs text-stone-500 mt-1">Auspicious Saffron with Kundali & Gotra focus</p>
+                <span className="text-[11px] font-bold text-amber-800 mt-2 inline-block">View Layout →</span>
+              </Link>
+
+              <Link
+                to="/templates/modern-elegance"
+                className="p-4 rounded-2xl border border-stone-200 hover:border-amber-400 bg-stone-50 hover:bg-amber-50/30 transition-all block group"
+              >
+                <h3 className="font-bold text-sm text-stone-900 group-hover:text-amber-800 font-cinzel">Modern Elegance</h3>
+                <p className="text-xs text-stone-500 mt-1">Contemporary Navy & Clean Corporate Grid</p>
+                <span className="text-[11px] font-bold text-amber-800 mt-2 inline-block">View Layout →</span>
+              </Link>
+            </div>
+
+            <div className="pt-4 border-t border-stone-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <span className="text-stone-500 font-medium">Need help formatting your matrimonial biodata?</span>
+              <div className="flex flex-wrap gap-2">
+                <Link to="/marriage-biodata-format" className="font-bold text-amber-800 hover:underline">
+                  Format Checklist
+                </Link>
+                <span>•</span>
+                <Link to="/samples" className="font-bold text-amber-800 hover:underline">
+                  Sample Biodatas
+                </Link>
+                <span>•</span>
+                <Link to="/hindu-marriage-biodata" className="font-bold text-amber-800 hover:underline">
+                  Hindu Biodata Guide
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       {template && (

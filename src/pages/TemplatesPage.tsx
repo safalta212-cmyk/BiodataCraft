@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { templateService } from '../services/templateService';
 import { storageService } from '../services/storageService';
@@ -500,6 +500,53 @@ export const TemplatesPage: React.FC = () => {
 
         {/* AdSense Placement Space */}
         <ResponsiveAd variant="horizontal-leaderboard" monetizationLevel="TEMPLATE" />
+
+        {/* Cultural Template Selection Guide (SEO & Information Architecture) */}
+        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-stone-200 space-y-6 shadow-xs mt-4">
+          <div className="max-w-3xl space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-800">
+              Design Architecture & Cultural Nuance
+            </span>
+            <h2 className="text-xl sm:text-2xl font-bold font-cinzel text-stone-900">
+              Choosing the Right Marriage Biodata Design For Your Proposal
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+              Every Indian community emphasizes unique elements during matrimonial evaluations. Our templates are architected to honor both ancestral heritage and modern career credentials.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs text-stone-600">
+            <div className="p-4 rounded-2xl bg-stone-50 border border-stone-100 space-y-2">
+              <h3 className="font-bold text-sm text-stone-900 font-cinzel">Traditional Vedic & Shloka Layouts</h3>
+              <p className="leading-relaxed">
+                Highlights sacred shlokas (॥ श्री गणेशाय नमः ॥, ॐ), temple pillar borders, Gotra (Self & Mosal), Kundali charts, Rashi, and ancestral Kuldevi/Kuldevta references.
+              </p>
+              <Link to="/hindu-marriage-biodata" className="text-amber-800 font-bold hover:underline inline-block pt-1">
+                Explore Hindu Biodata Formats →
+              </Link>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-stone-50 border border-stone-100 space-y-2">
+              <h3 className="font-bold text-sm text-stone-900 font-cinzel">Royal Mandap & Heritage Aesthetics</h3>
+              <p className="leading-relaxed">
+                Inspired by Rajasthani jharokhas, antique gold filigree, and velvet crests. Tailored for Rajput, Marwari, Yadav, and grand cultural arranged introductions.
+              </p>
+              <Link to="/yadav-marriage-biodata" className="text-amber-800 font-bold hover:underline inline-block pt-1">
+                Explore Yadav & Heritage Formats →
+              </Link>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-stone-50 border border-stone-100 space-y-2">
+              <h3 className="font-bold text-sm text-stone-900 font-cinzel">Contemporary Executive & NRI Layouts</h3>
+              <p className="leading-relaxed">
+                Clean typography, subtle double borders, and structured grids tailored for software engineers, doctors, and corporate executives in India and abroad.
+              </p>
+              <Link to="/marriage-biodata-format" className="text-amber-800 font-bold hover:underline inline-block pt-1">
+                View 1-Page vs 2-Page Checklist →
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Full Preview Modal */}

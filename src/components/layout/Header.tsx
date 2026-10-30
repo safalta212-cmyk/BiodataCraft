@@ -17,6 +17,8 @@ export const Header: React.FC = () => {
   const navLinks = [
     { to: '/', label: 'Home' },
     { to: '/templates', label: 'Templates' },
+    { to: '/samples', label: 'Samples' },
+    { to: '/marriage-biodata-format', label: 'Formats' },
     { to: '/create', label: 'Create Biodata' },
     { to: '/blog', label: 'Blog & Guides' },
     { to: '/about', label: 'About Us' },

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
-import { HelpCircle, ChevronDown, ChevronUp, Printer, Globe, Shield, Sparkles } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp, Printer, Globe, Shield, Sparkles, ArrowRight, FileText, CheckCircle2 } from 'lucide-react';
 
 interface FaqPageProps {
   language: 'en' | 'hi' | 'bilingual';
@@ -56,9 +57,12 @@ export const FaqPage: React.FC<FaqPageProps> = ({ language }) => {
   ];
 
   useSEO({
-    title: 'Frequently Asked Questions (FAQ) | BiodataCraft',
-    description:
-      'Answers to common questions about creating, printing, and downloading Indian marriage biodatas on BiodataCraft.',
+    title: isHindi
+      ? 'अक्सर पूछे जाने वाले प्रश्न (FAQ) - विवाह बायोडेटा | BiodataCraft'
+      : 'Frequently Asked Questions (FAQ) - Indian Marriage Biodata Maker | BiodataCraft',
+    description: isHindi
+      ? 'भारतीय विवाह बायोडेटा बनाने, A4 PDF प्रिंटिंग, हिन्दी टाइपिंग, गोत्र एवं गोपनीयता से संबंधित सभी प्रश्नों के उत्तर।'
+      : 'Answers to common questions regarding Indian marriage biodata creation, photo privacy, Kundali gotra fields, Mosal details, Hindi typing, and A4 PDF printing.',
     canonicalPath: '/faq',
     breadcrumbs: [{ name: 'FAQ', path: '/faq' }],
     faqs: faqs.map((f) => ({ question: f.q, answer: f.a }))
@@ -115,6 +119,46 @@ export const FaqPage: React.FC<FaqPageProps> = ({ language }) => {
               </div>
             );
           })}
+        </div>
+
+        {/* Related Guides & Internal Navigation */}
+        <div className="mt-12 bg-white border border-stone-200 rounded-3xl p-6 sm:p-8 shadow-xs">
+          <h2 className="text-lg font-bold text-stone-900 font-cinzel mb-2 text-center">
+            {isHindi ? 'संबंधित वैवाहिक संसाधन एवं प्रारूप' : 'Helpful Matrimonial Resources & Templates'}
+          </h2>
+          <p className="text-xs text-stone-500 text-center mb-6">
+            {isHindi ? 'अपने समुदाय के अनुसार आदर्श प्रारूप चुनें अथवा वास्तविक नमूने देखें' : 'Pick the right cultural format for your community or browse authentic real-world samples.'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <Link
+              to="/samples"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors flex items-center justify-between"
+            >
+              <span>{isHindi ? 'बायोडेटा के नमूने देखें' : 'View Sample Biodatas'}</span>
+              <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+            </Link>
+            <Link
+              to="/marriage-biodata-format"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors flex items-center justify-between"
+            >
+              <span>{isHindi ? 'विवाह बायोडेटा प्रारूप' : 'Marriage Biodata Formats'}</span>
+              <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+            </Link>
+            <Link
+              to="/templates"
+              className="p-3.5 bg-stone-50 hover:bg-amber-50 rounded-xl border border-stone-200 hover:border-amber-300 font-semibold text-stone-800 transition-colors flex items-center justify-between"
+            >
+              <span>{isHindi ? 'सभी १०+ टेम्पलेट्स' : 'Browse All 10+ Templates'}</span>
+              <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+            </Link>
+            <Link
+              to="/create"
+              className="p-3.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl font-bold transition-colors flex items-center justify-between"
+            >
+              <span>{isHindi ? 'नया बायोडेटा बनाएं' : 'Create Free Biodata'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>
