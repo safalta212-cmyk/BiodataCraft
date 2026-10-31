@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Lock, Award, HeartHandshake } from 'lucide-react';
 import { adminService, SiteSettings } from '../../services/adminService';
-import { KeywordDirectory } from '../common/KeywordDirectory';
 
 export const Footer: React.FC = () => {
   const [settings] = useState<SiteSettings>(() => adminService.getSettings());
@@ -125,6 +124,11 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/biodata" className="hover:text-amber-400 transition-colors">
+                  Topics Directory (500+)
+                </Link>
+              </li>
+              <li>
                 <Link to="/blog" className="hover:text-amber-400 transition-colors">
                   Guides & Articles
                 </Link>
@@ -231,10 +235,6 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* 500+ Matrimonial Keywords & Regional Directory */}
-        <div className="mb-10">
-          <KeywordDirectory />
-        </div>
 
         {/* Bottom Bar */}
         <div className="pt-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">

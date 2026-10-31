@@ -56,6 +56,7 @@ export interface SEOMetadata {
   faqs?: FAQItem[];
   article?: ArticleMetadata;
   howTo?: HowToMetadata;
+  lang?: string;
   customSchema?: Record<string, unknown> | Array<Record<string, unknown>>;
   includeWebSiteSchema?: boolean;
   includeOrganizationSchema?: boolean;
@@ -127,6 +128,19 @@ export function buildOrganizationSchema(siteUrl = SITE_DOMAIN) {
       'https://x.com/biodatacraft',
       'https://youtube.com/@biodatacraft'
     ],
+    founder: {
+      '@type': 'Person',
+      name: 'Anwar Ansari'
+    },
+    foundingDate: '2024',
+    knowsAbout: [
+      'Indian Marriage Biodata Formats',
+      'Matrimonial Profiles',
+      'Kundali & Horoscope Matching',
+      'Gotra Verification Systems',
+      'Vedic Wedding Culture',
+      'Bilingual Hindi & English Biodata PDF'
+    ],
     contactPoint: {
       '@type': 'ContactPoint',
       email: 'contact@biodatacraft.in',
@@ -146,6 +160,8 @@ export function buildWebApplicationSchema(siteUrl = SITE_DOMAIN) {
     '@id': `${siteUrl}/#webapp`,
     name: `${SITE_NAME} - Indian Marriage Biodata Maker`,
     applicationCategory: 'LifestyleApplication',
+    applicationSubCategory: 'DesignApplication',
+    softwareVersion: '2.4.0',
     operatingSystem: 'All modern web browsers (Android, iOS, Windows, macOS, Linux)',
     url: `${siteUrl}/create`,
     description:
@@ -155,7 +171,8 @@ export function buildWebApplicationSchema(siteUrl = SITE_DOMAIN) {
       '@type': 'Offer',
       price: '0',
       priceCurrency: 'INR',
-      availability: 'https://schema.org/InStock'
+      availability: 'https://schema.org/InStock',
+      description: '100% Free Forever with zero subscription or watermark'
     },
     aggregateRating: {
       '@type': 'AggregateRating',
@@ -163,6 +180,11 @@ export function buildWebApplicationSchema(siteUrl = SITE_DOMAIN) {
       reviewCount: '1284',
       bestRating: '5',
       worstRating: '1'
+    },
+    creator: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: siteUrl
     },
     screenshot: DEFAULT_OG_IMAGE,
     keywords: ALL_500_SEO_KEYWORDS_STRING,
@@ -287,6 +309,11 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
   // 1. Dynamic Page Title
   document.title = fullMeta.title;
 
+  // Sync document language if specified
+  if (fullMeta.lang) {
+    document.documentElement.lang = fullMeta.lang;
+  }
+
   // Helper function to set or replace meta tags
   const setMetaTag = (attributeName: string, attributeValue: string, content: string) => {
     let tag = document.querySelector(`meta[${attributeName}="${attributeValue}"]`);
@@ -298,6 +325,19 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
     tag.setAttribute('content', content);
   };
 
+  // Helper function to set or replace link tags
+  const setLinkTag = (rel: string, hreflang: string | null, href: string) => {
+    const selector = hreflang ? `link[rel="${rel}"][hreflang="${hreflang}"]` : `link[rel="${rel}"]`;
+    let link = document.querySelector(selector);
+    if (!link) {
+      link = document.createElement('link');
+      link.setAttribute('rel', rel);
+      if (hreflang) link.setAttribute('hreflang', hreflang);
+      document.head.appendChild(link);
+    }
+    link.setAttribute('href', href);
+  };
+
   // 2. Meta Description
   setMetaTag('name', 'description', fullMeta.description);
 
@@ -306,37 +346,47 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
     setMetaTag('name', 'keywords', fullMeta.keywords.join(', '));
   }
 
-  // 4. Robots
-  setMetaTag(
-    'name',
-    'robots',
-    fullMeta.noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
-  );
+  // 4. Search Engine Robots & Crawlers Directives
+  const robotsDirective = fullMeta.noindex
+    ? 'noindex, nofollow'
+    : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+  setMetaTag('name', 'robots', robotsDirective);
+  setMetaTag('name', 'googlebot', robotsDirective);
+  setMetaTag('name', 'bingbot', robotsDirective);
 
-  // 5. Canonical URL
+  // 5. Canonical URL & Hreflang Normalization
   const baseDomain = SITE_DOMAIN;
 
+  let cleanPath = fullMeta.canonicalPath || (typeof window !== 'undefined' ? window.location.pathname : '/');
+  // Strip trailing slashes unless root
+  if (cleanPath.length > 1 && cleanPath.endsWith('/')) {
+    cleanPath = cleanPath.slice(0, -1);
+  }
   const canonicalHref = fullMeta.canonicalUrl
     ? fullMeta.canonicalUrl
-    : fullMeta.canonicalPath
-    ? `${baseDomain}${fullMeta.canonicalPath.startsWith('/') ? '' : '/'}${fullMeta.canonicalPath}`
-    : `${baseDomain}${window.location.pathname}`;
+    : `${baseDomain}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
 
-  let canonicalLink = document.querySelector('link[rel="canonical"]');
-  if (!canonicalLink) {
-    canonicalLink = document.createElement('link');
-    canonicalLink.setAttribute('rel', 'canonical');
-    document.head.appendChild(canonicalLink);
-  }
-  canonicalLink.setAttribute('href', canonicalHref);
+  setLinkTag('canonical', null, canonicalHref);
+  setLinkTag('alternate', 'en-IN', canonicalHref);
+  setLinkTag('alternate', 'hi-IN', `${canonicalHref}${canonicalHref.includes('?') ? '&' : '?'}lang=hi`);
+  setLinkTag('alternate', 'x-default', canonicalHref);
 
-  // 6. Open Graph Tags
+  // 6. Application & Geo Meta Tags
+  setMetaTag('name', 'theme-color', '#78350f');
+  setMetaTag('name', 'application-name', SITE_NAME);
+  setMetaTag('name', 'apple-mobile-web-app-title', SITE_NAME);
+  setMetaTag('name', 'format-detection', 'telephone=no');
+  setMetaTag('name', 'geo.region', 'IN');
+  setMetaTag('name', 'geo.placename', 'India');
+
+  // 7. Open Graph Tags
   setMetaTag('property', 'og:site_name', SITE_NAME);
   setMetaTag('property', 'og:title', fullMeta.title);
   setMetaTag('property', 'og:description', fullMeta.description);
   setMetaTag('property', 'og:type', fullMeta.ogType || 'website');
   setMetaTag('property', 'og:url', canonicalHref);
   setMetaTag('property', 'og:image', fullMeta.ogImage || DEFAULT_OG_IMAGE);
+  setMetaTag('property', 'og:image:secure_url', fullMeta.ogImage || DEFAULT_OG_IMAGE);
   setMetaTag('property', 'og:image:width', '1200');
   setMetaTag('property', 'og:image:height', '630');
   setMetaTag('property', 'og:image:type', 'image/jpeg');
@@ -344,7 +394,7 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
   setMetaTag('property', 'og:locale', 'en_IN');
   setMetaTag('property', 'og:locale:alternate', 'hi_IN');
 
-  // 7. Twitter / X Tags
+  // 8. Twitter / X Tags
   setMetaTag('name', 'twitter:card', fullMeta.twitterCard || 'summary_large_image');
   setMetaTag('name', 'twitter:site', '@biodatacraft');
   setMetaTag('name', 'twitter:creator', '@biodatacraft');
@@ -353,7 +403,7 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
   setMetaTag('name', 'twitter:image', fullMeta.ogImage || DEFAULT_OG_IMAGE);
   setMetaTag('name', 'twitter:image:alt', fullMeta.ogImageAlt || fullMeta.title);
 
-  // 8. Structured Data (JSON-LD)
+  // 9. Structured Data (JSON-LD)
   const graph: Array<Record<string, unknown>> = [];
   const schemaDomain = baseDomain;
 

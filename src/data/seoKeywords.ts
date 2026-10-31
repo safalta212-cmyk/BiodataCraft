@@ -158,7 +158,7 @@ export const SEO_KEYWORD_CATEGORIES: KeywordCategory[] = [
       'bhaiband biodata',
       'kashmiri pandit biodata',
       'assamese biya biodata',
-      'odia bibaha biodata',
+      'khandayat odia marriage biodata',
       'meena samaj biodata',
       'kurmi biodata',
       'koli biodata',

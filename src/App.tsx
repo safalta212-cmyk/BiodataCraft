@@ -77,6 +77,12 @@ const MarathiBiodataPage = lazy(() =>
 const BengaliMarriageBiodataPage = lazy(() =>
   import('./pages/seo/BengaliMarriageBiodataPage').then((m) => ({ default: m.BengaliMarriageBiodataPage }))
 );
+const KeywordLandingPage = lazy(() =>
+  import('./pages/seo/KeywordLandingPage').then((m) => ({ default: m.KeywordLandingPage }))
+);
+const KeywordDirectoryPage = lazy(() =>
+  import('./pages/seo/KeywordDirectoryPage').then((m) => ({ default: m.KeywordDirectoryPage }))
+);
 
 // Admin Authentication Infrastructure (Synchronous context provider prevents mounting race conditions)
 import { AdminAuthProvider } from './context/AdminAuthContext';
@@ -289,6 +295,41 @@ export function App() {
               element={
                 <MainLayout>
                   <BengaliMarriageBiodataPage />
+                </MainLayout>
+              }
+            />
+
+            {/* 500+ Programmatic SEO Keyword Pages & Directory */}
+            <Route
+              path="/biodata"
+              element={
+                <MainLayout>
+                  <KeywordDirectoryPage />
+                </MainLayout>
+              }
+            />
+            <Route path="/topics" element={<Navigate to="/biodata" replace />} />
+            <Route
+              path="/biodata/:slug"
+              element={
+                <MainLayout>
+                  <KeywordLandingPage />
+                </MainLayout>
+              }
+            />
+            <Route
+              path="/topic/:slug"
+              element={
+                <MainLayout>
+                  <KeywordLandingPage />
+                </MainLayout>
+              }
+            />
+            <Route
+              path="/topics/:slug"
+              element={
+                <MainLayout>
+                  <KeywordLandingPage />
                 </MainLayout>
               }
             />

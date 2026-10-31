@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO_KEYWORD_CATEGORIES, ALL_500_SEO_KEYWORDS } from '../../data/seoKeywords';
+import { getSlugForKeyword } from '../../data/keywordCatalog';
 import { Search, Sparkles, ChevronDown, ChevronUp, Tag, Compass } from 'lucide-react';
 
 export const KeywordDirectory: React.FC = () => {
@@ -8,18 +9,10 @@ export const KeywordDirectory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
-  // Helper to map keyword to best internal destination
+  // Helper to map keyword to its dedicated SEO landing page
   const getKeywordDestination = (kw: string): string => {
-    const lower = kw.toLowerCase();
-    if (lower.includes('hindu') || lower.includes('हिन्दू')) return '/hindu-marriage-biodata';
-    if (lower.includes('muslim') || lower.includes('nikah') || lower.includes('निकाह')) return '/muslim-marriage-biodata';
-    if (lower.includes('yadav') || lower.includes('यादव')) return '/yadav-marriage-biodata';
-    if (lower.includes('marathi') || lower.includes('मराठी')) return '/marathi-biodata';
-    if (lower.includes('bengali') || lower.includes('बाँग्ला') || lower.includes('biye')) return '/bengali-marriage-biodata';
-    if (lower.includes('sample') || lower.includes('नमूने') || lower.includes('उदाहरण')) return '/samples';
-    if (lower.includes('format') || lower.includes('checklist') || lower.includes('प्रारूप')) return '/marriage-biodata-format';
-    if (lower.includes('guide') || lower.includes('kaise banaye')) return '/marriage-biodata';
-    return `/templates?q=${encodeURIComponent(kw)}`;
+    const slug = getSlugForKeyword(kw);
+    return `/biodata/${slug}`;
   };
 
   const filteredCategories = SEO_KEYWORD_CATEGORIES.map((cat) => {
