@@ -32,7 +32,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
         {!imageError && (
           <img
             src={displayThumbnail}
-            alt={template.name}
+            alt={`${template.name} - Matrimonial Biodata Template Design`}
             className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
             onError={() => setImageError(true)}
             loading="lazy"

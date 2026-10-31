@@ -128,7 +128,7 @@ export const BlogPage: React.FC = () => {
                   <div className="h-44 w-full overflow-hidden bg-stone-100 border-b border-stone-100">
                     <img
                       src={post.featuredImage}
-                      alt={post.title}
+                      alt={`${post.title} - BiodataCraft Guide`}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                       decoding="async"

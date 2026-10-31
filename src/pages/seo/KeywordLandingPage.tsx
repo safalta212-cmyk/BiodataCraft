@@ -7,6 +7,7 @@ import { storageService } from '../../services/storageService';
 import { analyticsService } from '../../services/analyticsService';
 import { Breadcrumbs } from '../../components/common/Breadcrumbs';
 import { DownloadModal } from '../../components/preview/DownloadModal';
+import { InternalLinkingHub } from '../../components/seo/InternalLinkingHub';
 import {
   Sparkles,
   ArrowRight,
@@ -24,6 +25,8 @@ import {
   FileText
 } from 'lucide-react';
 
+import { NotFoundPage } from '../NotFoundPage';
+
 export const KeywordLandingPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -37,7 +40,7 @@ export const KeywordLandingPage: React.FC = () => {
   const pageData: KeywordPageMetadata | undefined = getKeywordPageBySlug(slug);
 
   if (!pageData) {
-    return <Navigate to="/biodata" replace />;
+    return <NotFoundPage />;
   }
 
   // SEO configuration
@@ -290,6 +293,85 @@ export const KeywordLandingPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Platform Benefits & Features */}
+        <div className="bg-stone-900 text-stone-200 rounded-3xl p-6 sm:p-10 border border-stone-800 space-y-6">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">
+              Why Families Prefer BiodataCraft
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-cinzel">
+              Built for Auspicious Indian Matrimony
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-400">
+              Upholding candidate privacy, Vedic cultural standards, and high-resolution export for modern matchmaking.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-stone-850 border border-stone-800 space-y-2">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-white text-sm">100% Client-Side Privacy</h3>
+              <p className="text-xs text-stone-400 leading-relaxed">
+                Candidate photographs and sensitive family details stay strictly in your browser. Zero cloud database storage.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-stone-850 border border-stone-800 space-y-2">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-white text-sm">Zero Login / No OTP</h3>
+              <p className="text-xs text-stone-400 leading-relaxed">
+                No mobile number, OTP, or email required. Directly start drafting and download instantly.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-stone-850 border border-stone-800 space-y-2">
+              <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
+                <FileText className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-white text-sm">Vector Print-Ready A4</h3>
+              <p className="text-xs text-stone-400 leading-relaxed">
+                Clean margins engineered for home printing without awkward browser headers or URLs.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-stone-850 border border-stone-800 space-y-2">
+              <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-bold">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-white text-sm">WhatsApp Ready PNG</h3>
+              <p className="text-xs text-stone-400 leading-relaxed">
+                One-tap mobile image export with zero compression loss, ideal for family WhatsApp chats.
+              </p>
+            </div>
+          </div>
+
+          {/* Contextual Internal Link Graph */}
+          <div className="pt-4 border-t border-stone-800 flex flex-wrap items-center justify-between gap-3 text-xs text-stone-400">
+            <span className="font-semibold text-stone-300">Quick Navigation:</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link to="/marriage-biodata-format" className="hover:text-amber-400 transition-colors">
+                Format Checklist →
+              </Link>
+              <Link to="/templates" className="hover:text-amber-400 transition-colors">
+                10+ Auspicious Templates →
+              </Link>
+              <Link to="/samples" className="hover:text-amber-400 transition-colors">
+                Real Biodata Samples →
+              </Link>
+              <Link to="/hindu-marriage-biodata" className="hover:text-amber-400 transition-colors">
+                Hindu Traditions →
+              </Link>
+              <Link to="/biodata" className="hover:text-amber-400 transition-colors">
+                500+ Topics Directory →
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* FAQs Accordion */}
         <div className="bg-white border border-stone-200 rounded-3xl p-6 sm:p-10 shadow-xs space-y-6">
           <div className="text-center max-w-xl mx-auto space-y-1">
@@ -333,34 +415,11 @@ export const KeywordLandingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Related Keywords & Cultural Topics */}
-        {pageData.relatedSlugs.length > 0 && (
-          <div className="bg-stone-100 rounded-3xl p-6 sm:p-8 border border-stone-200 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm sm:text-base font-bold text-stone-900 font-cinzel">
-                Related Matrimonial Topics in {pageData.category}
-              </h3>
-              <Link
-                to="/biodata"
-                className="text-xs text-amber-800 hover:underline font-semibold"
-              >
-                Browse All 500+ Topics →
-              </Link>
-            </div>
-
-            <div className="flex flex-wrap gap-2 text-xs">
-              {pageData.relatedSlugs.map((item, idx) => (
-                <Link
-                  key={idx}
-                  to={`/biodata/${item.slug}`}
-                  className="px-3 py-1.5 bg-white hover:bg-amber-50 hover:text-amber-900 border border-stone-200 hover:border-amber-300 rounded-xl font-medium text-stone-700 transition-colors shadow-2xs"
-                >
-                  {item.title}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Automated Internal Linking Hub */}
+        <InternalLinkingHub
+          currentSlug={pageData.slug}
+          categoryName={pageData.category}
+        />
 
         {/* Bottom CTA Banner */}
         <div className="bg-gradient-to-r from-amber-900 via-stone-900 to-amber-950 text-white rounded-3xl p-8 sm:p-12 text-center space-y-5 shadow-lg border border-amber-800/40">

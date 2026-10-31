@@ -5,6 +5,7 @@ import { templateService } from '../services/templateService';
 import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
 import { Template, TemplateCategory, TemplateFilterParams } from '../types/template';
+import { INITIAL_TEMPLATES, TEMPLATE_CATEGORIES } from '../data/templateData';
 import { TemplateCard } from '../components/templates/TemplateCard';
 import { TemplatePreviewModal } from '../components/templates/TemplatePreviewModal';
 import { Input, Select } from '../components/ui/Form';
@@ -34,10 +35,10 @@ export const TemplatesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // State
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [categories, setCategories] = useState<TemplateCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // State initialized with synchronous template definitions to prevent CLS
+  const [templates, setTemplates] = useState<Template[]>(() => INITIAL_TEMPLATES);
+  const [categories, setCategories] = useState<TemplateCategory[]>(() => TEMPLATE_CATEGORIES);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Filters initialized from URL query params or defaults
   const paramCategory = searchParams.get('category') || 'all';

@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { AdminPermission, AdminRole } from '../../types/auth';
+import { useSEO } from '../../hooks/useSEO';
 import { ShieldAlert, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -16,6 +17,11 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   requiredPermission,
   requiredRole
 }) => {
+  useSEO({
+    title: 'Admin Console | BiodataCraft',
+    noindex: true
+  });
+
   const { isAuthenticated, isLoading, currentUser, hasPermission } = useAdminAuth();
   const location = useLocation();
 

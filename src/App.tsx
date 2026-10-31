@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { ToastProvider } from './context/ToastContext';
 import { AdProvider } from './context/AdContext';
 import { MainLayout } from './components/layout/MainLayout';
@@ -130,324 +130,331 @@ export function App() {
     <ErrorBoundary>
       <ToastProvider>
         <AdProvider>
-          <AdminAuthProvider>
-            <BrowserRouter>
-              <RouteTracker />
-              <Suspense fallback={<PageLoadingFallback />}>
-          <Routes>
-            {/* Public Routes with Global MainLayout (Header, Footer, Toast Stack) */}
-            <Route
-              path="/"
-              element={
-                <MainLayout>
-                  <HomePage language="en" />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/create"
-              element={
-                <MainLayout>
-                  <CreateBiodataPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/templates"
-              element={
-                <MainLayout>
-                  <TemplatesPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/templates/:slug"
-              element={
-                <MainLayout>
-                  <TemplateDetailPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/samples"
-              element={
-                <MainLayout>
-                  <SamplesPage language="en" />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/about"
-              element={
-                <MainLayout>
-                  <AboutPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/contact"
-              element={
-                <MainLayout>
-                  <ContactPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/blog"
-              element={
-                <MainLayout>
-                  <BlogPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/blog/:slug"
-              element={
-                <MainLayout>
-                  <BlogPostPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/privacy-policy"
-              element={
-                <MainLayout>
-                  <PrivacyPolicyPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/terms"
-              element={
-                <MainLayout>
-                  <TermsPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/refund-policy"
-              element={
-                <MainLayout>
-                  <RefundPolicyPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/faq"
-              element={
-                <MainLayout>
-                  <FaqPage language="en" />
-                </MainLayout>
-              }
-            />
+          <BrowserRouter>
+            <RouteTracker />
+            <Suspense fallback={<PageLoadingFallback />}>
+              <Routes>
+                {/* Public Routes with Global MainLayout (Header, Footer, Toast Stack) */}
+                <Route
+                  path="/"
+                  element={
+                    <MainLayout>
+                      <HomePage language="en" />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/create"
+                  element={
+                    <MainLayout>
+                      <CreateBiodataPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/templates"
+                  element={
+                    <MainLayout>
+                      <TemplatesPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/templates/:slug"
+                  element={
+                    <MainLayout>
+                      <TemplateDetailPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/samples"
+                  element={
+                    <MainLayout>
+                      <SamplesPage language="en" />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/about"
+                  element={
+                    <MainLayout>
+                      <AboutPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/contact"
+                  element={
+                    <MainLayout>
+                      <ContactPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/blog"
+                  element={
+                    <MainLayout>
+                      <BlogPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/blog/:slug"
+                  element={
+                    <MainLayout>
+                      <BlogPostPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/privacy-policy"
+                  element={
+                    <MainLayout>
+                      <PrivacyPolicyPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/terms"
+                  element={
+                    <MainLayout>
+                      <TermsPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/refund-policy"
+                  element={
+                    <MainLayout>
+                      <RefundPolicyPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/faq"
+                  element={
+                    <MainLayout>
+                      <FaqPage language="en" />
+                    </MainLayout>
+                  }
+                />
 
-            {/* SEO Pillars & Community Matrimonial Guides */}
-            <Route
-              path="/marriage-biodata"
-              element={
-                <MainLayout>
-                  <MarriageBiodataPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/marriage-biodata-format"
-              element={
-                <MainLayout>
-                  <MarriageBiodataFormatPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/hindu-marriage-biodata"
-              element={
-                <MainLayout>
-                  <HinduMarriageBiodataPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/muslim-marriage-biodata"
-              element={
-                <MainLayout>
-                  <MuslimMarriageBiodataPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/yadav-marriage-biodata"
-              element={
-                <MainLayout>
-                  <YadavMarriageBiodataPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/marathi-biodata"
-              element={
-                <MainLayout>
-                  <MarathiBiodataPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/bengali-marriage-biodata"
-              element={
-                <MainLayout>
-                  <BengaliMarriageBiodataPage />
-                </MainLayout>
-              }
-            />
+                {/* SEO Pillars & Community Matrimonial Guides */}
+                <Route
+                  path="/marriage-biodata"
+                  element={
+                    <MainLayout>
+                      <MarriageBiodataPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/marriage-biodata-format"
+                  element={
+                    <MainLayout>
+                      <MarriageBiodataFormatPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/hindu-marriage-biodata"
+                  element={
+                    <MainLayout>
+                      <HinduMarriageBiodataPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/muslim-marriage-biodata"
+                  element={
+                    <MainLayout>
+                      <MuslimMarriageBiodataPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/yadav-marriage-biodata"
+                  element={
+                    <MainLayout>
+                      <YadavMarriageBiodataPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/marathi-biodata"
+                  element={
+                    <MainLayout>
+                      <MarathiBiodataPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/bengali-marriage-biodata"
+                  element={
+                    <MainLayout>
+                      <BengaliMarriageBiodataPage />
+                    </MainLayout>
+                  }
+                />
 
-            {/* 500+ Programmatic SEO Keyword Pages & Directory */}
-            <Route
-              path="/biodata"
-              element={
-                <MainLayout>
-                  <KeywordDirectoryPage />
-                </MainLayout>
-              }
-            />
-            <Route path="/topics" element={<Navigate to="/biodata" replace />} />
-            <Route
-              path="/biodata/:slug"
-              element={
-                <MainLayout>
-                  <KeywordLandingPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/topic/:slug"
-              element={
-                <MainLayout>
-                  <KeywordLandingPage />
-                </MainLayout>
-              }
-            />
-            <Route
-              path="/topics/:slug"
-              element={
-                <MainLayout>
-                  <KeywordLandingPage />
-                </MainLayout>
-              }
-            />
+                {/* 500+ Programmatic SEO Keyword Pages & Directory */}
+                <Route
+                  path="/biodata"
+                  element={
+                    <MainLayout>
+                      <KeywordDirectoryPage />
+                    </MainLayout>
+                  }
+                />
+                <Route path="/topics" element={<Navigate to="/biodata" replace />} />
+                <Route
+                  path="/biodata/:slug"
+                  element={
+                    <MainLayout>
+                      <KeywordLandingPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/topic/:slug"
+                  element={
+                    <MainLayout>
+                      <KeywordLandingPage />
+                    </MainLayout>
+                  }
+                />
+                <Route
+                  path="/topics/:slug"
+                  element={
+                    <MainLayout>
+                      <KeywordLandingPage />
+                    </MainLayout>
+                  }
+                />
 
-            {/* Backward compatibility route aliases */}
-            <Route path="/builder" element={<Navigate to="/create" replace />} />
-            <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
+                {/* Backward compatibility route aliases */}
+                <Route path="/builder" element={<Navigate to="/create" replace />} />
+                <Route path="/privacy" element={<Navigate to="/privacy-policy" replace />} />
 
-            {/* Admin Routes with Lazy Auth Context */}
-            <Route
-              path="/admin/login"
-              element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminLoginPage />
-                </Suspense>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminProtectedRoute>
-                    <AdminOverviewPage />
-                  </AdminProtectedRoute>
-                </Suspense>
-              }
-            />
-            <Route
-              path="/admin/templates"
-              element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminProtectedRoute requiredPermission="manage_templates">
-                    <AdminTemplatesPage />
-                  </AdminProtectedRoute>
-                </Suspense>
-              }
-            />
-            <Route
-              path="/admin/categories"
-              element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminProtectedRoute requiredPermission="manage_categories">
-                    <AdminCategoriesPage />
-                  </AdminProtectedRoute>
-                </Suspense>
-              }
-            />
-            <Route
-              path="/admin/analytics"
-              element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminProtectedRoute requiredPermission="view_analytics">
-                    <AdminAnalyticsPage />
-                  </AdminProtectedRoute>
-                </Suspense>
-              }
-            />
-            <Route
-              path="/admin/blog"
-              element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminProtectedRoute requiredPermission="manage_blog">
-                    <AdminBlogPage />
-                  </AdminProtectedRoute>
-                </Suspense>
-              }
-            />
-            <Route
-              path="/admin/settings"
-              element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminProtectedRoute requiredPermission="manage_settings">
-                    <AdminSettingsPage />
-                  </AdminProtectedRoute>
-                </Suspense>
-              }
-            />
-            <Route
-              path="/admin/ads"
-              element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminProtectedRoute requiredPermission="manage_settings">
-                    <AdminAdsPage />
-                  </AdminProtectedRoute>
-                </Suspense>
-              }
-            />
-            <Route path="/admin/settings/ads" element={<Navigate to="/admin/ads" replace />} />
-            <Route path="/admin/settings/monetization" element={<Navigate to="/admin/ads" replace />} />
-            <Route
-              path="/admin/messages"
-              element={
-                <Suspense fallback={<PageLoadingFallback />}>
-                  <AdminProtectedRoute>
-                    <AdminMessagesPage />
-                  </AdminProtectedRoute>
-                </Suspense>
-              }
-            />
-            <Route path="/admin/contact" element={<Navigate to="/admin/messages" replace />} />
+                {/* Admin Routes with Isolated Auth Context (Keeps Firebase out of public bundle) */}
+                <Route
+                  path="/admin"
+                  element={
+                    <AdminAuthProvider>
+                      <Outlet />
+                    </AdminAuthProvider>
+                  }
+                >
+                  <Route
+                    path="login"
+                    element={
+                      <Suspense fallback={<PageLoadingFallback />}>
+                        <AdminLoginPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoadingFallback />}>
+                        <AdminProtectedRoute>
+                          <AdminOverviewPage />
+                        </AdminProtectedRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="templates"
+                    element={
+                      <Suspense fallback={<PageLoadingFallback />}>
+                        <AdminProtectedRoute requiredPermission="manage_templates">
+                          <AdminTemplatesPage />
+                        </AdminProtectedRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="categories"
+                    element={
+                      <Suspense fallback={<PageLoadingFallback />}>
+                        <AdminProtectedRoute requiredPermission="manage_categories">
+                          <AdminCategoriesPage />
+                        </AdminProtectedRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="analytics"
+                    element={
+                      <Suspense fallback={<PageLoadingFallback />}>
+                        <AdminProtectedRoute requiredPermission="view_analytics">
+                          <AdminAnalyticsPage />
+                        </AdminProtectedRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="blog"
+                    element={
+                      <Suspense fallback={<PageLoadingFallback />}>
+                        <AdminProtectedRoute requiredPermission="manage_blog">
+                          <AdminBlogPage />
+                        </AdminProtectedRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="settings"
+                    element={
+                      <Suspense fallback={<PageLoadingFallback />}>
+                        <AdminProtectedRoute requiredPermission="manage_settings">
+                          <AdminSettingsPage />
+                        </AdminProtectedRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="ads"
+                    element={
+                      <Suspense fallback={<PageLoadingFallback />}>
+                        <AdminProtectedRoute requiredPermission="manage_settings">
+                          <AdminAdsPage />
+                        </AdminProtectedRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route path="settings/ads" element={<Navigate to="/admin/ads" replace />} />
+                  <Route path="settings/monetization" element={<Navigate to="/admin/ads" replace />} />
+                  <Route
+                    path="messages"
+                    element={
+                      <Suspense fallback={<PageLoadingFallback />}>
+                        <AdminProtectedRoute>
+                          <AdminMessagesPage />
+                        </AdminProtectedRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route path="contact" element={<Navigate to="/admin/messages" replace />} />
+                </Route>
 
-            {/* Dedicated 404 Not Found Handling */}
-            <Route
-              path="*"
-              element={
-                <MainLayout>
-                  <NotFoundPage />
-                </MainLayout>
-              }
-            />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </AdminAuthProvider>
-  </AdProvider>
-</ToastProvider>
-</ErrorBoundary>
-);
+                {/* Dedicated 404 Not Found Handling */}
+                <Route
+                  path="*"
+                  element={
+                    <MainLayout>
+                      <NotFoundPage />
+                    </MainLayout>
+                  }
+                />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </AdProvider>
+      </ToastProvider>
+    </ErrorBoundary>
+  );
 }
 
 export default App;

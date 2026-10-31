@@ -145,9 +145,10 @@ export const BlogPostPage: React.FC = () => {
             <div className="rounded-3xl overflow-hidden border border-stone-200/80 shadow-xs bg-stone-100">
               <img
                 src={post.featuredImage}
-                alt={post.title}
+                alt={`${post.title} - BiodataCraft Matrimonial Guide`}
                 className="w-full h-64 sm:h-80 md:h-96 object-cover"
-                loading="lazy"
+                loading="eager"
+                fetchPriority="high"
                 decoding="async"
               />
             </div>

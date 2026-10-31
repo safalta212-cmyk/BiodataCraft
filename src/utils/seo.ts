@@ -174,13 +174,6 @@ export function buildWebApplicationSchema(siteUrl = SITE_DOMAIN) {
       availability: 'https://schema.org/InStock',
       description: '100% Free Forever with zero subscription or watermark'
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: '1284',
-      bestRating: '5',
-      worstRating: '1'
-    },
     creator: {
       '@type': 'Organization',
       name: SITE_NAME,
@@ -195,6 +188,54 @@ export function buildWebApplicationSchema(siteUrl = SITE_DOMAIN) {
       'Auspicious Vedic, Royal Mandap, Sikh & Muslim Motifs',
       'High-Resolution Vector A4 PDF & WhatsApp Image Export'
     ]
+  };
+}
+
+/**
+ * Builds Schema.org WebPage JSON-LD
+ */
+export function buildWebPageSchema(meta: SEOMetadata, canonicalHref: string, siteUrl = SITE_DOMAIN) {
+  return {
+    '@type': 'WebPage',
+    '@id': `${canonicalHref}#webpage`,
+    url: canonicalHref,
+    name: meta.title,
+    description: meta.description,
+    isPartOf: {
+      '@id': `${siteUrl}/#website`
+    },
+    inLanguage: ['en-IN', 'hi-IN'],
+    breadcrumb: {
+      '@id': `${canonicalHref}#breadcrumb`
+    }
+  };
+}
+
+/**
+ * Builds Schema.org Service JSON-LD
+ */
+export function buildServiceSchema(siteUrl = SITE_DOMAIN) {
+  return {
+    '@type': 'Service',
+    '@id': `${siteUrl}/#service`,
+    name: 'Indian Marriage Biodata Creation Service',
+    serviceType: 'Matrimonial Document Creation',
+    provider: {
+      '@id': `${siteUrl}/#organization`
+    },
+    areaServed: {
+      '@type': 'Country',
+      name: 'India'
+    },
+    description:
+      'Free client-side privacy-first web application for designing and downloading auspicious Indian matrimonial biodatas in publication-grade vector A4 PDF format.',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'INR',
+      availability: 'https://schema.org/InStock',
+      description: '100% Free Forever'
+    }
   };
 }
 
@@ -358,18 +399,34 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
   const baseDomain = SITE_DOMAIN;
 
   let cleanPath = fullMeta.canonicalPath || (typeof window !== 'undefined' ? window.location.pathname : '/');
+  // Strip query parameters and hash anchors, enforce lowercase
+  cleanPath = cleanPath.split('?')[0].split('#')[0].toLowerCase();
   // Strip trailing slashes unless root
   if (cleanPath.length > 1 && cleanPath.endsWith('/')) {
     cleanPath = cleanPath.slice(0, -1);
   }
   const canonicalHref = fullMeta.canonicalUrl
-    ? fullMeta.canonicalUrl
+    ? fullMeta.canonicalUrl.split('?')[0].split('#')[0]
     : `${baseDomain}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
 
-  setLinkTag('canonical', null, canonicalHref);
-  setLinkTag('alternate', 'en-IN', canonicalHref);
-  setLinkTag('alternate', 'hi-IN', `${canonicalHref}${canonicalHref.includes('?') ? '&' : '?'}lang=hi`);
-  setLinkTag('alternate', 'x-default', canonicalHref);
+  // Canonical and alternate hreflang tags are only set for indexable pages
+  if (!fullMeta.noindex) {
+    setLinkTag('canonical', null, canonicalHref);
+    setLinkTag('alternate', 'en-IN', canonicalHref);
+    setLinkTag('alternate', 'hi-IN', `${canonicalHref}${canonicalHref.includes('?') ? '&' : '?'}lang=hi`);
+    setLinkTag('alternate', 'x-default', canonicalHref);
+  } else {
+    const existingCanonical = document.querySelector('link[rel="canonical"]');
+    if (existingCanonical) {
+      existingCanonical.remove();
+    }
+    const existingEn = document.querySelector('link[rel="alternate"][hreflang="en-IN"]');
+    if (existingEn) existingEn.remove();
+    const existingHi = document.querySelector('link[rel="alternate"][hreflang="hi-IN"]');
+    if (existingHi) existingHi.remove();
+    const existingXDefault = document.querySelector('link[rel="alternate"][hreflang="x-default"]');
+    if (existingXDefault) existingXDefault.remove();
+  }
 
   // 6. Application & Geo Meta Tags
   setMetaTag('name', 'theme-color', '#78350f');
@@ -412,7 +469,9 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
   }
   if (fullMeta.includeOrganizationSchema !== false) {
     graph.push(buildOrganizationSchema(schemaDomain));
+    graph.push(buildServiceSchema(schemaDomain));
   }
+  graph.push(buildWebPageSchema(fullMeta, canonicalHref, schemaDomain));
   if (fullMeta.includeWebApplicationSchema) {
     graph.push(buildWebApplicationSchema(schemaDomain));
   }

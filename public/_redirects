@@ -1,1 +1,12 @@
-/*    /index.html   200
+# 301 Permanent Redirects for Consolidated & Legacy URLs
+/builder                     /create                 301
+/privacy                     /privacy-policy         301
+/topics                      /biodata                301
+/topic/:slug                 /biodata/:slug          301
+/topics/:slug                /biodata/:slug          301
+/admin/settings/ads          /admin/ads              301
+/admin/settings/monetization /admin/ads              301
+/admin/contact               /admin/messages         301
+
+# Single Page Application Fallback
+/*                           /index.html             200

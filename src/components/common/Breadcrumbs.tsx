@@ -15,33 +15,57 @@ interface BreadcrumbsProps {
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = '' }) => {
   return (
     <nav aria-label="Breadcrumb" className={`text-xs text-stone-500 overflow-x-auto py-1 ${className}`}>
-      <ol className="flex items-center space-x-1.5 list-none p-0 m-0">
-        <li className="flex items-center">
+      <ol
+        className="flex items-center space-x-1.5 list-none p-0 m-0"
+        itemScope
+        itemType="https://schema.org/BreadcrumbList"
+      >
+        <li
+          className="flex items-center"
+          itemProp="itemListElement"
+          itemScope
+          itemType="https://schema.org/ListItem"
+        >
           <Link
             to="/"
+            itemProp="item"
             className="inline-flex items-center gap-1 hover:text-amber-800 transition-colors shrink-0"
           >
             <Home className="w-3.5 h-3.5" />
-            <span>Home</span>
+            <span itemProp="name">Home</span>
           </Link>
+          <meta itemProp="position" content="1" />
         </li>
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
+          const position = index + 2;
           return (
-            <li key={index} className="flex items-center space-x-1.5">
+            <li
+              key={index}
+              className="flex items-center space-x-1.5"
+              itemProp="itemListElement"
+              itemScope
+              itemType="https://schema.org/ListItem"
+            >
               <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" aria-hidden="true" />
               {item.path && !isLast ? (
                 <Link
                   to={item.path}
+                  itemProp="item"
                   className="hover:text-amber-800 transition-colors shrink-0 truncate max-w-[150px] sm:max-w-none"
                 >
-                  {item.name}
+                  <span itemProp="name">{item.name}</span>
                 </Link>
               ) : (
-                <span className="font-semibold text-stone-900 shrink-0 truncate max-w-[200px] sm:max-w-none" aria-current="page">
+                <span
+                  itemProp="name"
+                  className="font-semibold text-stone-900 shrink-0 truncate max-w-[200px] sm:max-w-none"
+                  aria-current="page"
+                >
                   {item.name}
                 </span>
               )}
+              <meta itemProp="position" content={String(position)} />
             </li>
           );
         })}

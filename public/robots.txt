@@ -1,7 +1,29 @@
+# robots.txt for BiodataCraft (https://biodata-craft.vercel.app)
 User-agent: *
 Allow: /
-Disallow: /admin/
 Disallow: /admin
+Disallow: /admin/
+Disallow: /404
 
-# Sitemaps
+# Specific Crawler Directives
+User-agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /404
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /404
+
+User-agent: Applebot
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /404
+
+# Host and Canonical Sitemaps
+Host: https://biodata-craft.vercel.app
 Sitemap: https://biodata-craft.vercel.app/sitemap.xml

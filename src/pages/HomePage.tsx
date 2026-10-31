@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { sampleHinduBiodata, sampleHindiBiodata } from '../data/initialBiodata';
+import { INITIAL_TEMPLATES } from '../data/templateData';
 import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
 import { templateService } from '../services/templateService';
@@ -39,8 +40,8 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
   const navigate = useNavigate();
   const isHindi = language === 'hi';
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [isLoadingTemplates, setIsLoadingTemplates] = useState<boolean>(true);
+  const [templates, setTemplates] = useState<Template[]>(() => INITIAL_TEMPLATES.slice(0, 6));
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState<boolean>(false);
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [selectedHomeCategory, setSelectedHomeCategory] = useState<string>('all');
 

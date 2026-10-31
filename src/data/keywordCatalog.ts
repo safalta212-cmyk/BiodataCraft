@@ -376,6 +376,105 @@ export function getKeywordPageBySlug(slug: string): KeywordPageMetadata | undefi
         relatedSlugs
       };
 
+    case 'demographics-categories':
+      return {
+        slug,
+        keyword,
+        category: matchedCat.name,
+        categoryId: matchedCat.id,
+        categoryHindi: matchedCat.hindiName,
+        title: `${formattedName} - Matrimonial Format & Checklist | BiodataCraft`,
+        metaDescription: `Thoughtful and dignified ${keyword} format. Clear guidance on family background, lifestyle choices, NRI or remarriage details, and instant free A4 PDF maker.`,
+        h1: formattedName,
+        tagline: 'Respectful, Dignified & Transparent Matrimonial Profiling',
+        culturalContext: `Matrimonial alliances in special demographic or life stages—such as remarriages, late marriages, NRI cross-border alliances, or specific lifestyle preferences—demand complete transparency, emotional maturity, and mutual respect. A well-structured ${keyword} sets clear, honorable expectations from the very first conversation.`,
+        keyChecklist: [
+          {
+            title: 'Marital & Legal Clarity',
+            desc: 'For second marriage or remarriage biodatas, clearly state legal status (divorced with date of decree, annulled, or widowed) and child custody arrangements.'
+          },
+          {
+            title: 'Visa & Residency Credentials',
+            desc: 'For NRI profiles, specify current country of residence, citizenship/PR/visa type (e.g. H1-B, Green Card), and future relocation openness.'
+          },
+          {
+            title: 'Lifestyle, Dietary & Habits',
+            desc: 'State vegetarian, vegan, or Jain dietary practices, non-smoker/non-drinker status, and personal values transparently.'
+          },
+          {
+            title: 'Family Dynamics & Support',
+            desc: 'Highlight family foundation, children details (if applicable), and expectations for mutual companionship.'
+          }
+        ],
+        faqs: [
+          {
+            question: `How should legal status be stated in a ${formattedName}?`,
+            answer: "Honesty and conciseness work best. For example: 'Legally Divorced (Mutual Consent, 2023) | No Children' or 'Widowed with one daughter (living with mother)'. Direct transparency builds lasting trust."
+          },
+          {
+            question: 'What details are expected in an NRI matrimonial biodata?',
+            answer: 'Highlight highest degrees, overseas employer, country/city of residence, visa status, native Indian city, and whether parents reside in India or abroad.'
+          },
+          {
+            question: 'Can I create a biodata without adding candidate photo?',
+            answer: 'Yes! BiodataCraft allows creating complete, elegant biodatas with or without candidate photograph.'
+          }
+        ],
+        recommendedTemplateIds: ['modern-elegance', 'executive-ivory', 'royal-heritage'],
+        suggestedSample: 'modern',
+        relatedSlugs
+      };
+
+    case 'format-export-features':
+      return {
+        slug,
+        keyword,
+        category: matchedCat.name,
+        categoryId: matchedCat.id,
+        categoryHindi: matchedCat.hindiName,
+        title: `${formattedName} - Free Vector A4 PDF & WhatsApp Export | BiodataCraft`,
+        metaDescription: `Design a print-ready ${keyword} with beautiful borders, vector fonts, and instant PDF download. Zero login, zero watermark, 100% private.`,
+        h1: formattedName,
+        tagline: 'Publication-Grade Vector Typography & Clean A4 Page Margins',
+        culturalContext: `The visual elegance of a matrimonial biodata reflects the care and dignity of the family presenting it. A ${keyword} ensures balanced typography, auspicious framing motifs (golden mandap, peacock feathers, temple arches), and crisp vector rendering whether viewed on a smartphone screen or printed on A4 paper.`,
+        keyChecklist: [
+          {
+            title: 'Single-Page vs Two-Page Balance',
+            desc: 'Format candidate personal, astrological, and family details compactly so the entire introduction fits seamlessly on a single standard A4 sheet.'
+          },
+          {
+            title: 'High-Contrast Typography',
+            desc: 'Use distinguished fonts (Cinzel, Playfair Display, Noto Sans Devanagari) with clear section separation for effortless reading by family elders.'
+          },
+          {
+            title: 'Clean Print Margins',
+            desc: 'Balanced margins without awkward page breaks or clipped borders. Designed to print without browser URLs in the headers and footers.'
+          },
+          {
+            title: 'Multi-Format Export',
+            desc: 'Download both vector PDF for formal printing and high-resolution PNG image optimized for instant WhatsApp chats.'
+          }
+        ],
+        faqs: [
+          {
+            question: 'How do I print my biodata without website URLs at the top and bottom?',
+            answer: "In your browser's Print dialog (Ctrl+P or Cmd+P), expand 'More settings' and uncheck the 'Headers and footers' option before printing or saving to PDF."
+          },
+          {
+            question: 'Can I download an image format to share on WhatsApp directly?',
+            answer: "Yes! In the download modal, click 'Download WhatsApp Image (PNG)' to save a high-res image optimized for mobile chat preview."
+          },
+          {
+            question: 'Does the PDF have any BiodataCraft watermark or branding logo?',
+            answer: 'No! All downloaded PDFs and images are 100% clean and free of any watermarks or platform branding.'
+          }
+        ],
+        recommendedTemplateIds: ['royal-heritage', 'modern-elegance', 'emerald-royalty'],
+        suggestedSample: 'hindu',
+        relatedSlugs
+      };
+
+    case 'core-matrimonial':
     default:
       return {
         slug,
@@ -383,7 +482,7 @@ export function getKeywordPageBySlug(slug: string): KeywordPageMetadata | undefi
         category: matchedCat.name,
         categoryId: matchedCat.id,
         categoryHindi: matchedCat.hindiName,
-        title: `${formattedName} - Free Format & PDF Maker | BiodataCraft`,
+        title: `${formattedName} - Free Format & Instant PDF Maker | BiodataCraft`,
         metaDescription: `Design a distinguished ${keyword} in minutes. Comprehensive checklist, horoscope compatibility, elegant borders, and instant A4 PDF export with zero watermark.`,
         h1: formattedName,
         tagline: 'Auspicious, Elegant & Privacy-First Matrimonial Biodata Maker',
@@ -395,15 +494,15 @@ export function getKeywordPageBySlug(slug: string): KeywordPageMetadata | undefi
           },
           {
             title: 'Astrological Kundali Matching',
-            desc: 'Accurate birth coordinates, gotra, manglik status, and horoscope summary.'
+            desc: 'Accurate birth coordinates (time with AM/PM, place, date), gotra, manglik status, and horoscope summary.'
           },
           {
             title: 'Academic & Professional Credentials',
-            desc: 'Degrees, current job role, company name, workplace city, and package details.'
+            desc: 'Degrees, university name, current job role, employer organization, workplace city, and package details.'
           },
           {
             title: 'Ancestral Lineage & Mosal Background',
-            desc: 'Father, mother, siblings, and maternal uncle (Mama Ji) origins.'
+            desc: 'Father, mother, siblings, and maternal uncle (Mama Ji) lineage to verify family background.'
           }
         ],
         faqs: [

@@ -223,8 +223,10 @@ export const TemplateDetailPage: React.FC = () => {
                   <div className="rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 shadow-xs h-56 flex items-center justify-center relative group">
                     <img
                       src={getTemplateDisplayThumbnail(template)}
-                      alt={`${template.name} artwork`}
+                      alt={`${template.name} - Matrimonial Biodata Design Preview`}
                       className="w-full h-full object-cover object-top"
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-transparent to-transparent pointer-events-none" />
                     <div className="absolute bottom-2.5 left-3 right-3 text-white text-[11px] font-bold flex items-center justify-between">
