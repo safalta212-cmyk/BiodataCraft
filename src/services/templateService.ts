@@ -1,21 +1,17 @@
 import { db, isConfigured, getStorageInstance, auth } from '../config/firebase';
 import {
-  collection,
-  getDocs,
-  doc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  orderBy
-} from 'firebase/firestore';
-import {
   Template,
   TemplateCategory,
   TemplateFilterParams
 } from '../types/template';
 import { INITIAL_TEMPLATES, TEMPLATE_CATEGORIES } from '../data/templateData';
 import { handleFirestoreError, OperationType } from '../utils/firestoreError';
+
+// Dynamically load Firestore functions only when needed, keeping initial client bundle lightweight
+const loadFirestore = async () => {
+  const { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query, orderBy } = await import('firebase/firestore');
+  return { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query, orderBy };
+};
 
 const TEMPLATES_COLLECTION = 'templates';
 const CATEGORIES_COLLECTION = 'categories';
@@ -234,6 +230,7 @@ class TemplateService {
 
     if (isConfigured && db) {
       try {
+        const { collection, getDocs } = await loadFirestore();
         const catCol = collection(db, CATEGORIES_COLLECTION);
         const snapshot = await withTimeout(getDocs(catCol), 10000, 'Firestore categories query');
         if (!snapshot.empty) {
@@ -265,6 +262,7 @@ class TemplateService {
 
       if (isConfigured && db) {
         try {
+          const { collection, getDocs } = await loadFirestore();
           const templatesCol = collection(db, TEMPLATES_COLLECTION);
           // Direct collection query avoids silently dropping documents with missing/unindexed fields
           const snapshot = await withTimeout(getDocs(templatesCol), 15000, 'Firestore templates query');
@@ -458,6 +456,7 @@ class TemplateService {
     }
 
     // Await confirmation of actual write to Firestore - DO NOT swallow errors
+    const { doc, setDoc } = await loadFirestore();
     const docRef = doc(db, TEMPLATES_COLLECTION, id);
     try {
       await withTimeout(setDoc(docRef, newTemplate), 15000, 'Firestore template creation');
@@ -488,6 +487,7 @@ class TemplateService {
       throw new Error('Firestore database is not configured.');
     }
 
+    const { doc, updateDoc } = await loadFirestore();
     const docRef = doc(db, TEMPLATES_COLLECTION, id);
     try {
       await withTimeout(updateDoc(docRef, cleanUpdates), 15000, 'Firestore template update');
@@ -517,6 +517,7 @@ class TemplateService {
       throw new Error('Firestore database is not configured.');
     }
 
+    const { doc, deleteDoc } = await loadFirestore();
     const docRef = doc(db, TEMPLATES_COLLECTION, id);
     try {
       await withTimeout(deleteDoc(docRef), 15000, 'Firestore template deletion');
@@ -620,6 +621,7 @@ class TemplateService {
     if (isConfigured && db) {
       const uploadId = `upl-${Date.now()}`;
       try {
+        const { doc, setDoc } = await loadFirestore();
         await withTimeout(
           setDoc(doc(db, 'uploads', uploadId), {
             fileName: safeName,

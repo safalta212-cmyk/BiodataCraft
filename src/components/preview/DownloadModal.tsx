@@ -9,7 +9,6 @@ import { AdFlowService } from '../../services/adFlowService';
 import { CreationMode } from '../../types/monetization';
 import { DownloadInterstitialArea } from '../ads/DownloadInterstitialArea';
 import { analyticsService } from '../../services/analyticsService';
-import confetti from 'canvas-confetti';
 import {
   Download,
   FileText,
@@ -110,15 +109,18 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({
   const expectedPngFilename = getBiodataPngFilename(candidateName);
 
   const triggerConfetti = () => {
-    try {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 }
+    import('canvas-confetti')
+      .then((m) => {
+        const confettiFn = (m as any).default || m;
+        confettiFn({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      })
+      .catch(() => {
+        // Ignore if canvas confetti not supported
       });
-    } catch {
-      // Ignore if canvas confetti not supported
-    }
   };
 
   const handlePostDownloadCleanup = () => {

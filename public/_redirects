@@ -2,6 +2,13 @@
 /builder                     /create                 301
 /privacy                     /privacy-policy         301
 /topics                      /biodata                301
+/biodata/marriage-biodata    /marriage-biodata       301
+/biodata/marriage-biodata-format /marriage-biodata-format 301
+/biodata/hindu-marriage-biodata  /hindu-marriage-biodata  301
+/biodata/muslim-marriage-biodata /muslim-marriage-biodata 301
+/biodata/yadav-marriage-biodata  /yadav-marriage-biodata  301
+/biodata/marathi-biodata     /marathi-biodata        301
+/biodata/bengali-marriage-biodata /bengali-marriage-biodata 301
 /topic/:slug                 /biodata/:slug          301
 /topics/:slug                /biodata/:slug          301
 /admin/settings/ads          /admin/ads              301

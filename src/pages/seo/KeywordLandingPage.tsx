@@ -37,6 +37,21 @@ export const KeywordLandingPage: React.FC = () => {
     return <Navigate to="/biodata" replace />;
   }
 
+  // Canonical Pillar Redirects to prevent keyword cannibalization & duplicate content
+  const PILLAR_PAGE_REDIRECTS: Record<string, string> = {
+    'marriage-biodata': '/marriage-biodata',
+    'marriage-biodata-format': '/marriage-biodata-format',
+    'hindu-marriage-biodata': '/hindu-marriage-biodata',
+    'muslim-marriage-biodata': '/muslim-marriage-biodata',
+    'yadav-marriage-biodata': '/yadav-marriage-biodata',
+    'marathi-biodata': '/marathi-biodata',
+    'bengali-marriage-biodata': '/bengali-marriage-biodata'
+  };
+
+  if (PILLAR_PAGE_REDIRECTS[slug]) {
+    return <Navigate to={PILLAR_PAGE_REDIRECTS[slug]} replace />;
+  }
+
   const pageData: KeywordPageMetadata | undefined = getKeywordPageBySlug(slug);
 
   if (!pageData) {
