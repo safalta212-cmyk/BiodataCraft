@@ -20,10 +20,10 @@ export const HeaderSymbolSelector: React.FC<HeaderSymbolSelectorProps> = ({
 
   return (
     <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 mb-6 shadow-2xs">
-      <h4 className="font-bold text-stone-900 text-sm sm:text-base mb-1">
+      <h3 className="font-bold text-stone-900 text-sm sm:text-base mb-1">
         {isHindi ? 'शीर्ष मांगलिक मंत्र व प्रतीक (Auspicious Header)' : 'Auspicious Header & Devotional Symbol'}
-      </h4>
-      <p className="text-xs text-stone-500 mb-3">
+      </h3>
+      <p className="text-xs text-stone-600 mb-3">
         {isHindi
           ? 'बायोडेटा के शीर्ष पर शुभ मंत्र या धार्मिक वाक्य चुनें'
           : 'Choose an auspicious invocation to grace the top of your marriage biodata'}

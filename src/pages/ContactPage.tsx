@@ -172,7 +172,7 @@ export const ContactPage: React.FC = () => {
             </Card>
 
             <div className="p-5 bg-stone-100 rounded-2xl text-xs text-stone-600 space-y-2">
-              <h4 className="font-bold text-stone-800">Frequently Asked Questions</h4>
+              <h3 className="font-bold text-stone-800">Frequently Asked Questions</h3>
               <p>Looking for quick printing or photo cropping instructions?</p>
               <Link to="/faq" className="text-amber-800 font-bold hover:underline block pt-1">
                 Read FAQ Guide →

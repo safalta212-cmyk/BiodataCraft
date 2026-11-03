@@ -52,7 +52,10 @@ export const BengaliMarriageBiodataPage: React.FC = () => {
       'Create an authentic Bengali marriage biodata (পাত্র-পাত্রীর বায়োডাটা) with Gothro (গোত্র), ancestral roots (Desher Baari), Koshthi horoscope, and elegant cultural styling. 100% Free PDF.',
     canonicalPath: '/bengali-marriage-biodata',
     ogType: 'article',
-    breadcrumbs: [{ name: 'Bengali Marriage Biodata', path: '/bengali-marriage-biodata' }],
+    breadcrumbs: [
+      { name: 'Biodata', path: '/biodata' },
+      { name: 'Bengali Marriage Biodata', path: '/bengali-marriage-biodata' }
+    ],
     faqs: FAQ_ITEMS,
     article: {
       title: 'Bengali Marriage Biodata Guide: Gothro, Desher Baari & Matrimonial Traditions',
@@ -75,7 +78,12 @@ export const BengaliMarriageBiodataPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-8 sm:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-        <Breadcrumbs items={[{ name: 'Bengali Marriage Biodata' }]} />
+        <Breadcrumbs
+          items={[
+            { name: 'Biodata', path: '/biodata' },
+            { name: 'Bengali Marriage Biodata', path: '/bengali-marriage-biodata' }
+          ]}
+        />
 
         {/* Hero Section */}
         <header className="text-center space-y-4 max-w-3xl mx-auto">

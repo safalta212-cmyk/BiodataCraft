@@ -128,7 +128,9 @@ class AdSettingsService {
         }
       }
     } catch (err) {
-      console.warn('Could not read remote ad settings from Firestore, using local fallback:', err);
+      if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+        console.warn('Could not read remote ad settings from Firestore, using local fallback:', err);
+      }
     }
 
     const local = this.loadFromStorage();

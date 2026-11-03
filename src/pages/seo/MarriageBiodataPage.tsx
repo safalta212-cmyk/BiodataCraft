@@ -62,7 +62,10 @@ export const MarriageBiodataPage: React.FC = () => {
       'A comprehensive guide to writing an authentic Indian marriage biodata. Understand the 5 essential sections, horoscope etiquette, family background, and free PDF maker.',
     canonicalPath: '/marriage-biodata',
     ogType: 'article',
-    breadcrumbs: [{ name: 'Marriage Biodata Guide', path: '/marriage-biodata' }],
+    breadcrumbs: [
+      { name: 'Biodata', path: '/biodata' },
+      { name: 'Marriage Biodata Guide', path: '/marriage-biodata' }
+    ],
     faqs: FAQ_ITEMS,
     article: {
       title: 'Complete Guide to Indian Marriage Biodata: Etiquette, Sections & Formats',
@@ -90,7 +93,12 @@ export const MarriageBiodataPage: React.FC = () => {
     <div className="min-h-screen bg-stone-50 py-8 sm:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
         {/* Breadcrumb Navigation */}
-        <Breadcrumbs items={[{ name: 'Marriage Biodata Guide' }]} />
+        <Breadcrumbs
+          items={[
+            { name: 'Biodata', path: '/biodata' },
+            { name: 'Marriage Biodata Guide', path: '/marriage-biodata' }
+          ]}
+        />
 
         {/* Hero Banner */}
         <header className="text-center space-y-4 max-w-3xl mx-auto">

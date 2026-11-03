@@ -218,9 +218,9 @@ export const Step2FamilyForm: React.FC<Step2FamilyFormProps> = ({
         {/* Brothers Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-800">
               {isHindi ? 'भाई की जानकारी (Brothers)' : 'Brothers'} ({brothers.length})
-            </h4>
+            </h3>
             <button
               type="button"
               onClick={handleAddBrother}
@@ -323,9 +323,9 @@ export const Step2FamilyForm: React.FC<Step2FamilyFormProps> = ({
         {/* Sisters Section */}
         <div className="space-y-3 pt-3 border-t border-stone-100">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-stone-800">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-800">
               {isHindi ? 'बहन की जानकारी (Sisters)' : 'Sisters'} ({sisters.length})
-            </h4>
+            </h3>
             <button
               type="button"
               onClick={handleAddSister}

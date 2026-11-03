@@ -17,10 +17,10 @@ export const Footer: React.FC = () => {
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h5 className="font-bold text-white text-sm">
+              <h3 className="font-bold text-white text-sm">
                 Zero Customer Data Storage
-              </h5>
-              <p className="text-xs text-stone-400 mt-0.5 leading-relaxed">
+              </h3>
+              <p className="text-xs text-stone-300 mt-0.5 leading-relaxed">
                 Customer biodatas remain strictly within your browser. We never store personal details or family photos in any cloud database.
               </p>
             </div>
@@ -31,10 +31,10 @@ export const Footer: React.FC = () => {
               <HeartHandshake className="w-5 h-5" />
             </div>
             <div>
-              <h5 className="font-bold text-white text-sm">
+              <h3 className="font-bold text-white text-sm">
                 No Customer Accounts or Logins
-              </h5>
-              <p className="text-xs text-stone-400 mt-0.5 leading-relaxed">
+              </h3>
+              <p className="text-xs text-stone-300 mt-0.5 leading-relaxed">
                 No registration, OTP verification, or password creation required. Direct access to all Indian templates.
               </p>
             </div>
@@ -45,10 +45,10 @@ export const Footer: React.FC = () => {
               <Award className="w-5 h-5" />
             </div>
             <div>
-              <h5 className="font-bold text-white text-sm">
+              <h3 className="font-bold text-white text-sm">
                 Authentic Cultural Nuance
-              </h5>
-              <p className="text-xs text-stone-400 mt-0.5 leading-relaxed">
+              </h3>
+              <p className="text-xs text-stone-300 mt-0.5 leading-relaxed">
                 Tailored for Indian weddings with Gotra, Mama Ji (Mosal), Kundali, Rashi, Nakshatra, and sacred shlokas.
               </p>
             </div>
@@ -68,29 +68,29 @@ export const Footer: React.FC = () => {
             </p>
 
             {/* Social Media Links from Settings */}
-            <div className="flex items-center gap-3 pt-2 text-stone-400">
+            <div className="flex flex-wrap items-center gap-2 pt-2 text-stone-300">
               {social.whatsapp && (
-                <a href={social.whatsapp} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors" title="WhatsApp">
+                <a href={social.whatsapp} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-stone-800" title="WhatsApp">
                   WhatsApp
                 </a>
               )}
               {social.facebook && (
-                <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors" title="Facebook">
+                <a href={social.facebook} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-stone-800" title="Facebook">
                   Facebook
                 </a>
               )}
               {social.instagram && (
-                <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-pink-400 transition-colors" title="Instagram">
+                <a href={social.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-pink-400 transition-colors p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-stone-800" title="Instagram">
                   Instagram
                 </a>
               )}
               {social.twitter && (
-                <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="hover:text-sky-400 transition-colors" title="Twitter / X">
+                <a href={social.twitter} target="_blank" rel="noopener noreferrer" className="hover:text-sky-400 transition-colors p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-stone-800" title="Twitter / X">
                   X
                 </a>
               )}
               {social.youtube && (
-                <a href={social.youtube} target="_blank" rel="noopener noreferrer" className="hover:text-red-400 transition-colors" title="YouTube">
+                <a href={social.youtube} target="_blank" rel="noopener noreferrer" className="hover:text-red-400 transition-colors p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg hover:bg-stone-800" title="YouTube">
                   YouTube
                 </a>
               )}
@@ -99,42 +99,42 @@ export const Footer: React.FC = () => {
 
           {/* Navigation Links */}
           <div className="space-y-2.5">
-            <h6 className="font-bold text-stone-200 uppercase tracking-wider text-[11px]">
+            <p className="font-bold text-stone-200 uppercase tracking-wider text-[11px]">
               Explore
-            </h6>
-            <ul className="space-y-1.5 text-stone-400">
+            </p>
+            <ul className="space-y-1 text-stone-300">
               <li>
-                <Link to="/" className="hover:text-amber-400 transition-colors">
+                <Link to="/" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/templates" className="hover:text-amber-400 transition-colors">
+                <Link to="/templates" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   All Templates
                 </Link>
               </li>
               <li>
-                <Link to="/create" className="hover:text-amber-400 transition-colors">
+                <Link to="/create" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Create Biodata
                 </Link>
               </li>
               <li>
-                <Link to="/samples" className="hover:text-amber-400 transition-colors">
+                <Link to="/samples" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Sample Biodatas
                 </Link>
               </li>
               <li>
-                <Link to="/biodata" className="hover:text-amber-400 transition-colors">
+                <Link to="/biodata" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Topics Directory (500+)
                 </Link>
               </li>
               <li>
-                <Link to="/blog" className="hover:text-amber-400 transition-colors">
+                <Link to="/blog" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Guides & Articles
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="hover:text-amber-400 transition-colors">
+                <Link to="/faq" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   FAQ
                 </Link>
               </li>
@@ -143,42 +143,42 @@ export const Footer: React.FC = () => {
 
           {/* Formats & Community Guides */}
           <div className="space-y-2.5">
-            <h6 className="font-bold text-stone-200 uppercase tracking-wider text-[11px]">
+            <p className="font-bold text-stone-200 uppercase tracking-wider text-[11px]">
               Formats & Guides
-            </h6>
-            <ul className="space-y-1.5 text-stone-400">
+            </p>
+            <ul className="space-y-1 text-stone-300">
               <li>
-                <Link to="/marriage-biodata" className="hover:text-amber-400 transition-colors">
+                <Link to="/marriage-biodata" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Biodata Guide
                 </Link>
               </li>
               <li>
-                <Link to="/marriage-biodata-format" className="hover:text-amber-400 transition-colors">
+                <Link to="/marriage-biodata-format" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Format Checklist
                 </Link>
               </li>
               <li>
-                <Link to="/hindu-marriage-biodata" className="hover:text-amber-400 transition-colors">
+                <Link to="/hindu-marriage-biodata" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Hindu Biodata
                 </Link>
               </li>
               <li>
-                <Link to="/muslim-marriage-biodata" className="hover:text-amber-400 transition-colors">
+                <Link to="/muslim-marriage-biodata" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Muslim (Nikah) Biodata
                 </Link>
               </li>
               <li>
-                <Link to="/yadav-marriage-biodata" className="hover:text-amber-400 transition-colors">
+                <Link to="/yadav-marriage-biodata" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Yadav Biodata
                 </Link>
               </li>
               <li>
-                <Link to="/marathi-biodata" className="hover:text-amber-400 transition-colors">
+                <Link to="/marathi-biodata" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   मराठी बायोडाटा
                 </Link>
               </li>
               <li>
-                <Link to="/bengali-marriage-biodata" className="hover:text-amber-400 transition-colors">
+                <Link to="/bengali-marriage-biodata" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   বাংলা বায়োডাটা
                 </Link>
               </li>
@@ -187,23 +187,23 @@ export const Footer: React.FC = () => {
 
           {/* Company & Support */}
           <div className="space-y-2.5">
-            <h6 className="font-bold text-stone-200 uppercase tracking-wider text-[11px]">
+            <p className="font-bold text-stone-200 uppercase tracking-wider text-[11px]">
               Company
-            </h6>
-            <ul className="space-y-1.5 text-stone-400">
+            </p>
+            <ul className="space-y-1 text-stone-300">
               <li>
-                <Link to="/about" className="hover:text-amber-400 transition-colors">
+                <Link to="/about" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-amber-400 transition-colors">
+                <Link to="/contact" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Contact Support
                 </Link>
               </li>
               <li>
-                <Link to="/admin/login" className="hover:text-amber-400 transition-colors flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-stone-500" />
+                <Link to="/admin/login" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-stone-400" />
                   <span>Admin Login</span>
                 </Link>
               </li>
@@ -212,22 +212,22 @@ export const Footer: React.FC = () => {
 
           {/* Legal Policies */}
           <div className="space-y-2.5">
-            <h6 className="font-bold text-stone-200 uppercase tracking-wider text-[11px]">
+            <p className="font-bold text-stone-200 uppercase tracking-wider text-[11px]">
               Legal & Trust
-            </h6>
-            <ul className="space-y-1.5 text-stone-400">
+            </p>
+            <ul className="space-y-1 text-stone-300">
               <li>
-                <Link to="/privacy-policy" className="hover:text-amber-400 transition-colors">
+                <Link to="/privacy-policy" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="hover:text-amber-400 transition-colors">
+                <Link to="/terms" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link to="/refund-policy" className="hover:text-amber-400 transition-colors">
+                <Link to="/refund-policy" className="hover:text-amber-400 transition-colors py-1.5 min-h-[36px] inline-flex items-center">
                   Refund Policy
                 </Link>
               </li>
@@ -235,9 +235,8 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-
         {/* Bottom Bar */}
-        <div className="pt-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+        <div className="pt-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-400">
           <div>
             {settings.footerText || `© ${new Date().getFullYear()} ${settings.siteName || 'BiodataCraft'}. All rights reserved.`}
           </div>

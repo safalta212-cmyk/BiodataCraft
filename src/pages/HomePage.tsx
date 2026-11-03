@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { sampleHinduBiodata, sampleHindiBiodata } from '../data/initialBiodata';
@@ -8,8 +8,11 @@ import { analyticsService } from '../services/analyticsService';
 import { templateService } from '../services/templateService';
 import { Template } from '../types/template';
 import { TemplateCard } from '../components/templates/TemplateCard';
-import { TemplatePreviewModal } from '../components/templates/TemplatePreviewModal';
 import { ResponsiveAd } from '../components/ads/ResponsiveAd';
+
+const TemplatePreviewModal = lazy(() =>
+  import('../components/templates/TemplatePreviewModal').then((m) => ({ default: m.TemplatePreviewModal }))
+);
 import {
   Sparkles,
   ShieldCheck,
@@ -54,7 +57,9 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
           setTemplates(liveTemplates);
         }
       } catch (err) {
-        console.warn('Notice loading templates for home page:', err);
+        if (import.meta.env.DEV) {
+          console.warn('Notice loading templates for home page:', err);
+        }
       } finally {
         if (isMounted) setIsLoadingTemplates(false);
       }
@@ -281,7 +286,7 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
             <h3 className="font-bold text-base text-stone-900 mb-1">
               {isHindi ? 'पारिवारिक व व्यक्तिगत विवरण भरें' : 'Fill In Family & Education Details'}
             </h3>
-            <p className="text-xs text-stone-500 leading-relaxed">
+            <p className="text-xs text-stone-600 leading-relaxed">
               {isHindi
                 ? 'नाम, जन्म समय/स्थान, शिक्षा, पेशा, गोत्र, मामा पक्ष व संपर्क सूत्र जैसी भारतीय परंपरा के अनुकूल जानकारी।'
                 : 'Comprehensive fields for Gotra, Mosal (maternal uncle), Rashi, Nakshatra, career packages, and family values.'}
@@ -295,7 +300,7 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
             <h3 className="font-bold text-base text-stone-900 mb-1">
               {isHindi ? 'शाही या आधुनिक टेम्पलेट चुनें' : 'Select a Royal or Modern Template'}
             </h3>
-            <p className="text-xs text-stone-500 leading-relaxed">
+            <p className="text-xs text-stone-600 leading-relaxed">
               {isHindi
                 ? 'राजस्थानी मंडप, वैदिक केसरिया, एमेरल्ड ग्रीन या कॉर्पोरेट नेवी ब्लू में से मनपसंद डिजाइन चुनें।'
                 : 'Choose from culturally distinct designs featuring sacred mantras, temple arches, and gold fluting.'}
@@ -309,7 +314,7 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
             <h3 className="font-bold text-base text-stone-900 mb-1">
               {isHindi ? 'तुरंत PDF व इमेज डाउनलोड करें' : 'Download High-Res PDF Instantly'}
             </h3>
-            <p className="text-xs text-stone-500 leading-relaxed">
+            <p className="text-xs text-stone-600 leading-relaxed">
               {isHindi
                 ? 'एक क्लिक में A4 साइज PDF प्राप्त करें अथवा सीधे व्हाट्सएप पर शेयर करने हेतु इमेज डाउनलोड करें।'
                 : 'Zero waiting time. Save directly to your phone or computer, ready to print or forward on WhatsApp.'}
@@ -345,7 +350,7 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
                     {cat.count}
                   </span>
                 </div>
-                <p className="text-xs text-stone-500 leading-relaxed">{cat.desc}</p>
+                <p className="text-xs text-stone-600 leading-relaxed">{cat.desc}</p>
                 <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-amber-800 group-hover:translate-x-1 transition-transform">
                   <span>Browse Category</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -387,40 +392,40 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
           <div className="flex flex-wrap items-center gap-2 mb-8">
             <button
               onClick={() => setSelectedHomeCategory('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2 min-h-[44px] inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedHomeCategory === 'all'
                   ? 'bg-amber-800 text-white shadow-xs'
-                  : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-200'
+                  : 'bg-white text-stone-700 hover:bg-stone-50 border border-stone-200'
               }`}
             >
               {isHindi ? 'सभी डिजाइन' : 'All Templates'} ({templates.length})
             </button>
             <button
               onClick={() => setSelectedHomeCategory('traditional')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2 min-h-[44px] inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedHomeCategory === 'traditional'
                   ? 'bg-amber-800 text-white shadow-xs'
-                  : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-200'
+                  : 'bg-white text-stone-700 hover:bg-stone-50 border border-stone-200'
               }`}
             >
               {isHindi ? 'पारंपरिक (Traditional)' : 'Traditional Vedic'}
             </button>
             <button
               onClick={() => setSelectedHomeCategory('modern')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2 min-h-[44px] inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedHomeCategory === 'modern'
                   ? 'bg-amber-800 text-white shadow-xs'
-                  : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-200'
+                  : 'bg-white text-stone-700 hover:bg-stone-50 border border-stone-200'
               }`}
             >
               {isHindi ? 'आधुनिक (Modern)' : 'Modern & NRI'}
             </button>
             <button
               onClick={() => setSelectedHomeCategory('royal')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-4 py-2 min-h-[44px] inline-flex items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedHomeCategory === 'royal'
                   ? 'bg-amber-800 text-white shadow-xs'
-                  : 'bg-white text-stone-600 hover:bg-stone-50 border border-stone-200'
+                  : 'bg-white text-stone-700 hover:bg-stone-50 border border-stone-200'
               }`}
             >
               {isHindi ? 'शाही (Royal Heritage)' : 'Royal Heritage'}
@@ -510,7 +515,7 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-xs text-stone-900 truncate">{c.title}</h3>
-                <p className="text-[11px] text-stone-500 mt-0.5 leading-snug">{c.subtitle}</p>
+                <p className="text-[11px] text-stone-600 mt-0.5 leading-snug">{c.subtitle}</p>
               </div>
             </Link>
           ))}
@@ -830,18 +835,18 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
                 <button
                   type="button"
                   onClick={() => setOpenFaqIndex(openFaqIndex === i ? null : i)}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-4 text-left font-bold text-sm text-stone-900 hover:text-amber-800 transition-colors cursor-pointer"
+                  className="w-full p-4 sm:p-5 min-h-[48px] flex items-center justify-between gap-4 text-left font-bold text-sm text-stone-900 hover:text-amber-800 transition-colors cursor-pointer"
                   aria-expanded={openFaqIndex === i}
                 >
                   <span>{faq.q}</span>
                   <ChevronDown
-                    className={`w-4 h-4 text-stone-500 shrink-0 transition-transform ${
+                    className={`w-4 h-4 text-stone-600 shrink-0 transition-transform ${
                       openFaqIndex === i ? 'rotate-180 text-amber-800' : ''
                     }`}
                   />
                 </button>
                 {openFaqIndex === i && (
-                  <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-0 text-xs sm:text-sm text-stone-600 leading-relaxed border-t border-stone-100">
+                  <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-0 text-xs sm:text-sm text-stone-700 leading-relaxed border-t border-stone-100">
                     {faq.a}
                   </div>
                 )}
@@ -852,7 +857,7 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
           <div className="text-center mt-6">
             <Link
               to="/faq"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-900"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-900 min-h-[44px] py-2 px-3"
             >
               <span>View All Frequently Asked Questions</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -893,13 +898,17 @@ export const HomePage: React.FC<HomePageProps> = ({ language }) => {
         </div>
       </section>
 
-      {/* Live Template Preview Modal on Home Page */}
-      <TemplatePreviewModal
-        template={previewTemplate}
-        isOpen={Boolean(previewTemplate)}
-        onClose={() => setPreviewTemplate(null)}
-        onUseTemplate={handleUseTemplate}
-      />
+      {/* Live Template Preview Modal on Home Page (Lazy Loaded) */}
+      {previewTemplate && (
+        <Suspense fallback={null}>
+          <TemplatePreviewModal
+            template={previewTemplate}
+            isOpen={Boolean(previewTemplate)}
+            onClose={() => setPreviewTemplate(null)}
+            onUseTemplate={handleUseTemplate}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

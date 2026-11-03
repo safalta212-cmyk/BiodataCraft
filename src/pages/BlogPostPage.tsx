@@ -55,7 +55,7 @@ export const BlogPostPage: React.FC = () => {
           { name: 'Blog', path: '/blog' },
           { name: post.title, path: `/blog/${post.slug}` }
         ]
-      : [{ name: 'Blog', path: '/blog' }],
+      : undefined,
     article: post
       ? {
           title: post.title,
@@ -236,9 +236,9 @@ export const BlogPostPage: React.FC = () => {
 
               <div className="mt-8 p-6 bg-amber-50/70 border border-amber-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <h4 className="font-bold text-amber-950 font-cinzel text-base">
+                  <h3 className="font-bold text-amber-950 font-cinzel text-base">
                     Ready to put this advice into practice?
-                  </h4>
+                  </h3>
                   <p className="text-xs text-amber-900 mt-1">
                     Create your own marriage biodata with authentic Indian borders in minutes.
                   </p>

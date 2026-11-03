@@ -52,7 +52,10 @@ export const MuslimMarriageBiodataPage: React.FC = () => {
       'Create dignified Muslim Nikah biodatas with Bismillah Ar-Rahman Ar-Rahim, Maslak, Deen observance, and Mehram contact details. 100% Free, privacy-first PDF download.',
     canonicalPath: '/muslim-marriage-biodata',
     ogType: 'article',
-    breadcrumbs: [{ name: 'Muslim Marriage Biodata', path: '/muslim-marriage-biodata' }],
+    breadcrumbs: [
+      { name: 'Biodata', path: '/biodata' },
+      { name: 'Muslim Marriage Biodata', path: '/muslim-marriage-biodata' }
+    ],
     faqs: FAQ_ITEMS,
     article: {
       title: 'Guide to Muslim Marriage Biodata: Nikah Format, Deen & Family Lineage',
@@ -73,7 +76,12 @@ export const MuslimMarriageBiodataPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-8 sm:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-        <Breadcrumbs items={[{ name: 'Muslim Marriage Biodata' }]} />
+        <Breadcrumbs
+          items={[
+            { name: 'Biodata', path: '/biodata' },
+            { name: 'Muslim Marriage Biodata', path: '/muslim-marriage-biodata' }
+          ]}
+        />
 
         {/* Hero Section */}
         <header className="text-center space-y-4 max-w-3xl mx-auto">
@@ -155,36 +163,36 @@ export const MuslimMarriageBiodataPage: React.FC = () => {
             </p>
             <div className="space-y-4 pt-2 text-xs sm:text-sm text-stone-700">
               <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-200 space-y-2">
-                <h4 className="font-bold text-emerald-950 text-base">
+                <h3 className="font-bold text-emerald-950 text-base">
                   1. Islamic Heading & Greeting
-                </h4>
+                </h3>
                 <p className="leading-relaxed">
                   The header should feature <em>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</em> (In the name of Allah, Most Gracious, Most Merciful) accompanied by <em>Assalamu Alaikum wa Rahmatullahi wa Barakatuh</em>.
                 </p>
               </div>
 
               <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
-                <h4 className="font-bold text-stone-900 text-base">
+                <h3 className="font-bold text-stone-900 text-base">
                   2. Religious Orientation (Deen & Maslak)
-                </h4>
+                </h3>
                 <p className="leading-relaxed">
                   Mention Maslak / Jurisprudence (e.g. Sunni Hanafi), adherence to daily Salah, fasting, observance of Hijab (for sisters) or beard (for brothers), and family religious environment.
                 </p>
               </div>
 
               <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
-                <h4 className="font-bold text-stone-900 text-base">
+                <h3 className="font-bold text-stone-900 text-base">
                   3. Educational & Career Qualifications
-                </h4>
+                </h3>
                 <p className="leading-relaxed">
                   Academic degrees (e.g. B.Tech, MBBS, MBA, CA), employment details, location of employment, and Islamic education (e.g., Alim/Alimah or Quran Hifz if completed).
                 </p>
               </div>
 
               <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
-                <h4 className="font-bold text-stone-900 text-base">
+                <h3 className="font-bold text-stone-900 text-base">
                   4. Family Background & Wali Contact
-                </h4>
+                </h3>
                 <p className="leading-relaxed">
                   Father’s profession, mother’s background, brother and sister details, ancestral roots (e.g., Lucknow, Hyderabad, Bhopal, Kerala), and the contact number of the prospective partner\'s guardian.
                 </p>

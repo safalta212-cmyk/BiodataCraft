@@ -45,10 +45,10 @@ export const CustomFieldsManager: React.FC<CustomFieldsManagerProps> = ({
         <div className="flex items-center gap-2">
           <ListPlus className="w-5 h-5 text-amber-800" />
           <div>
-            <h4 className="font-bold text-stone-900 text-sm">
+            <h3 className="font-bold text-stone-900 text-sm">
               {isHindi ? 'अतिरिक्त कस्टम जानकारी (Custom Fields)' : 'Custom Fields & Special Attributes'}
-            </h4>
-            <p className="text-xs text-stone-500">
+            </h3>
+            <p className="text-xs text-stone-600">
               {isHindi ? 'अपनी पसंद का कोई भी नया शीर्षक व विवरण जोड़ें' : 'Add custom details like Hobbies, PR status, Property, etc.'}
             </p>
           </div>
@@ -57,7 +57,7 @@ export const CustomFieldsManager: React.FC<CustomFieldsManagerProps> = ({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-lg text-xs font-semibold shadow-xs cursor-pointer transition-all"
+          className="flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-semibold shadow-xs cursor-pointer transition-all"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>{isHindi ? 'नया फ़ील्ड जोड़ें' : 'Add Custom Field'}</span>

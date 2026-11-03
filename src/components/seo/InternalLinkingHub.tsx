@@ -62,9 +62,9 @@ export const InternalLinkingHub: React.FC<InternalLinkingHubProps> = ({
         <div className="pt-6 border-t border-stone-200 space-y-3">
           <div className="flex items-center gap-2 text-stone-800">
             <Compass className="w-4 h-4 text-amber-800" />
-            <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700">
               Cross-Category Matrimonial Discovery
-            </h4>
+            </h3>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             {linkCluster.complementaryTopics.map((item, idx) => (
@@ -85,9 +85,9 @@ export const InternalLinkingHub: React.FC<InternalLinkingHubProps> = ({
 
       {/* Core Services & Platform Hubs */}
       <div className="pt-6 border-t border-stone-200 space-y-3">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-stone-700">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700">
           Core Matrimonial Services & Tools
-        </h4>
+        </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {linkCluster.pillarHubs.map((pillar, idx) => (
             <Link

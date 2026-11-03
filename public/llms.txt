@@ -1,0 +1,23 @@
+# BiodataCraft
+
+> BiodataCraft is a privacy-first, free Indian matrimonial biodata maker web application. It enables candidates and families to create auspicious, publication-grade Hindu, Muslim, Jain, Sikh, and Christian marriage biodata PDFs in English and Hindi with zero signup and zero data storage.
+
+## Core Features
+- [Biodata Creator](https://biodata-craft.vercel.app/create): Interactive client-side matrimonial biodata builder with real-time vector preview and customizable themes.
+- [Biodata Templates](https://biodata-craft.vercel.app/templates): Cultural, traditional, modern, and royal wedding biodata templates.
+- [Sample Biodatas](https://biodata-craft.vercel.app/samples): Curated sample biodata formats with auspicious Vedic mantras, horoscope/kundali details, and family backgrounds.
+- [Marriage Biodata Guides](https://biodata-craft.vercel.app/marriage-biodata): Comprehensive format guidelines, tips, and cultural etiquette.
+- [Community Biodata Directory](https://biodata-craft.vercel.app/biodata): Over 500 regional, caste, and cultural biodata formats across India.
+
+## Knowledge & Cultural Formats
+- [Hindu Marriage Biodata](https://biodata-craft.vercel.app/hindu-marriage-biodata): Traditional Hindu biodata formats with Gotra, Rashi, Nakshatra, and Ganesh mantras.
+- [Muslim Marriage Biodata](https://biodata-craft.vercel.app/muslim-marriage-biodata): Auspicious Nikah biodata formats featuring Bismillah and Masnoon Duas.
+- [Marathi Biodata](https://biodata-craft.vercel.app/marathi-biodata): Lagna biodata formats in Marathi and English with Kula Daivat and Devak details.
+- [Bengali Marriage Biodata](https://biodata-craft.vercel.app/bengali-marriage-biodata): Traditional Patro/Patri matrimonial biodatas for Bengali families.
+- [Yadav Marriage Biodata](https://biodata-craft.vercel.app/yadav-marriage-biodata): Auspicious community biodata formats for Yadav families.
+
+## Legal & Support
+- [About Us](https://biodata-craft.vercel.app/about): Our privacy-first client-side architecture and mission.
+- [Privacy Policy](https://biodata-craft.vercel.app/privacy-policy): Guaranteed zero server-side storage of candidate photos or biodatas.
+- [Frequently Asked Questions](https://biodata-craft.vercel.app/faq): Answers regarding formats, languages, Kundali, and PDF downloads.
+- [Contact Support](https://biodata-craft.vercel.app/contact): Get in touch with our editorial and support team.

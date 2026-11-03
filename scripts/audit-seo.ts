@@ -119,12 +119,16 @@ console.log('Declares Sitemap:', robotsContent.includes('Sitemap: https://biodat
 // 6. JSON-LD SCHEMA AUDIT
 console.log('\n[6] JSON-LD SCHEMA AUDIT:');
 let schemaSuccess = true;
+let breadcrumbAuditSuccess = true;
 try {
   const ws = buildWebSiteSchema();
   const org = buildOrganizationSchema();
   const webApp = buildWebApplicationSchema();
   const srv = buildServiceSchema();
-  const bc = buildBreadcrumbSchema([{ name: 'Hindu Marriage Biodata', path: '/hindu-marriage-biodata' }]);
+  const bc = buildBreadcrumbSchema([
+    { name: 'Biodata', path: '/biodata' },
+    { name: 'Hindu Marriage Biodata Format', path: '/biodata/hindu-marriage-biodata-format' }
+  ]);
   const faq = buildFAQSchema([{ question: 'Is it free?', answer: 'Yes, 100% free.' }]);
   const page = buildWebPageSchema({ title: 'Test', description: 'Test desc' }, 'https://biodata-craft.vercel.app/test');
 
@@ -133,7 +137,20 @@ try {
     JSON.stringify(s);
     if (!s['@type']) schemaSuccess = false;
   });
-  console.log('WebSite, Organization, WebApp, Service, Breadcrumbs, FAQ, and WebPage schemas valid:', schemaSuccess);
+
+  // Verify BreadcrumbList schema specifics
+  if (bc['@type'] !== 'BreadcrumbList') breadcrumbAuditSuccess = false;
+  if (!Array.isArray(bc.itemListElement) || bc.itemListElement.length !== 3) breadcrumbAuditSuccess = false;
+  bc.itemListElement.forEach((el, index) => {
+    if (el['@type'] !== 'ListItem') breadcrumbAuditSuccess = false;
+    if (el.position !== index + 1) breadcrumbAuditSuccess = false;
+    if (!el.name || typeof el.name !== 'string') breadcrumbAuditSuccess = false;
+    if (!el.item || !el.item.startsWith('https://biodata-craft.vercel.app')) breadcrumbAuditSuccess = false;
+  });
+
+  console.log('WebSite, Organization, WebApp, Service, FAQ, and WebPage schemas valid:', schemaSuccess);
+  console.log('BreadcrumbList itemListElement, sequential positions & absolute URLs valid:', breadcrumbAuditSuccess);
+  console.log('Sample BreadcrumbList Schema:', JSON.stringify(bc, null, 2));
 } catch (e) {
   console.error('Schema validation failed:', e);
 }

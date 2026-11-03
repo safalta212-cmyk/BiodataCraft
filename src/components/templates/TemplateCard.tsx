@@ -108,12 +108,12 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
             <h3 className="font-bold text-base text-stone-900 font-cinzel group-hover:text-amber-800 transition-colors">
               <Link to={`/templates/${template.slug}`}>{template.name}</Link>
             </h3>
-            <span className="text-[11px] font-semibold text-stone-400 capitalize">
+            <span className="text-[11px] font-semibold text-stone-600 capitalize">
               {template.style}
             </span>
           </div>
 
-          <p className="text-xs text-stone-500 leading-relaxed line-clamp-2">
+          <p className="text-xs text-stone-600 leading-relaxed line-clamp-2">
             {template.description}
           </p>
         </div>

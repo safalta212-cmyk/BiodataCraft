@@ -157,7 +157,7 @@ export const BlogPage: React.FC = () => {
                   </div>
 
                   <div className="pt-4 border-t border-stone-100 flex items-center justify-between text-xs font-bold text-amber-800">
-                    <span className="text-stone-400 font-normal text-[11px]">{post.publishedDate}</span>
+                    <span className="text-stone-600 font-normal text-[11px]">{post.publishedDate}</span>
                     <Link
                       to={`/blog/${post.slug}`}
                       className="flex items-center gap-1 hover:underline cursor-pointer"

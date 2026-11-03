@@ -6,7 +6,10 @@ import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
 import { BiodataData } from '../types/biodata';
 import { BiodataTemplateView } from '../components/templates/BiodataTemplateView';
-import { DownloadModal } from '../components/preview/DownloadModal';
+
+const DownloadModal = React.lazy(() =>
+  import('../components/preview/DownloadModal').then((m) => ({ default: m.DownloadModal }))
+);
 import {
   Sparkles,
   Edit3,
@@ -221,7 +224,7 @@ export const SamplesPage: React.FC<SamplesPageProps> = ({ language = 'en', onLan
                   1
                 </div>
                 <h3 className="font-bold text-sm text-white mb-1">Pick a Sample or Template</h3>
-                <p className="text-xs text-stone-400 leading-relaxed">
+                <p className="text-xs text-stone-300 leading-relaxed">
                   Click "Load & Customize This" above or choose from our 10+ cultural themes.
                 </p>
               </div>
@@ -231,7 +234,7 @@ export const SamplesPage: React.FC<SamplesPageProps> = ({ language = 'en', onLan
                   2
                 </div>
                 <h3 className="font-bold text-sm text-white mb-1">Fill Your Family & Bio Details</h3>
-                <p className="text-xs text-stone-400 leading-relaxed">
+                <p className="text-xs text-stone-300 leading-relaxed">
                   Type in English, Hindi, or bilingual script. Real-time preview updates live.
                 </p>
               </div>
@@ -241,7 +244,7 @@ export const SamplesPage: React.FC<SamplesPageProps> = ({ language = 'en', onLan
                   3
                 </div>
                 <h3 className="font-bold text-sm text-white mb-1">Free PDF & WhatsApp Image</h3>
-                <p className="text-xs text-stone-400 leading-relaxed">
+                <p className="text-xs text-stone-300 leading-relaxed">
                   Download a print-ready vector A4 PDF or crisp WhatsApp image without watermarks.
                 </p>
               </div>
@@ -323,14 +326,18 @@ export const SamplesPage: React.FC<SamplesPageProps> = ({ language = 'en', onLan
         </section>
       </div>
 
-      <DownloadModal
-        isOpen={isDownloadOpen}
-        onClose={() => setIsDownloadOpen(false)}
-        candidateName={currentSampleData.fullName}
-        templateId={currentSampleData.templateId}
-        language={currentSampleData.language}
-        data={currentSampleData}
-      />
+      {isDownloadOpen && (
+        <React.Suspense fallback={null}>
+          <DownloadModal
+            isOpen={isDownloadOpen}
+            onClose={() => setIsDownloadOpen(false)}
+            candidateName={currentSampleData.fullName}
+            templateId={currentSampleData.templateId}
+            language={currentSampleData.language}
+            data={currentSampleData}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

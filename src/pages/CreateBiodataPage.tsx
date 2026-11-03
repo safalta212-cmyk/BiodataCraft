@@ -24,10 +24,15 @@ import { Step3ContactForm } from '../components/biodata-builder/Step3ContactForm
 import { Step4PhotoStudio } from '../components/biodata-builder/Step4PhotoStudio';
 import { Step5CustomFields } from '../components/biodata-builder/Step5CustomFields';
 
-// Preview and Download Components
+// Preview and Download Components (Lazy Loaded)
 import { BiodataTemplateView } from '../components/templates/BiodataTemplateView';
-import { DownloadModal } from '../components/preview/DownloadModal';
-import { LivePreviewModal } from '../components/preview/LivePreviewModal';
+
+const DownloadModal = React.lazy(() =>
+  import('../components/preview/DownloadModal').then((m) => ({ default: m.DownloadModal }))
+);
+const LivePreviewModal = React.lazy(() =>
+  import('../components/preview/LivePreviewModal').then((m) => ({ default: m.LivePreviewModal }))
+);
 
 // Icons
 import {
@@ -732,9 +737,9 @@ export const CreateBiodataPage: React.FC = () => {
                 <RotateCcw className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-stone-900 text-sm">
+                <h3 className="font-bold text-stone-900 text-sm">
                   {isHindi ? 'बायोडेटा खाली करें?' : 'Reset All Fields?'}
-                </h4>
+                </h3>
                 <p className="text-xs text-stone-500">
                   {isHindi
                     ? 'सभी दर्ज की गई जानकारी मिट जाएगी।'
@@ -778,9 +783,9 @@ export const CreateBiodataPage: React.FC = () => {
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-stone-900 text-sm">
+                <h3 className="font-bold text-stone-900 text-sm">
                   Load Realistic Sample Biodata
-                </h4>
+                </h3>
                 <p className="text-xs text-stone-500">
                   Instantly fills all 5 steps with realistic Indian matrimony details
                 </p>
@@ -824,35 +829,43 @@ export const CreateBiodataPage: React.FC = () => {
         </div>
       )}
 
-      {/* Live Full-Screen Preview Modal (For Mobile / Tablets) */}
-      <LivePreviewModal
-        isOpen={isLivePreviewOpen}
-        onClose={() => setIsLivePreviewOpen(false)}
-        data={data}
-        language={language}
-        onChangeTemplate={handleSelectTemplate}
-        onChangeLanguage={(l) => {
-          setLanguage(l === 'bilingual' ? 'en' : l);
-          updateFields({ language: l });
-        }}
-        onOpenDownload={() => {
-          setIsLivePreviewOpen(false);
-          setIsDownloadModalOpen(true);
-        }}
-        onPrint={() => window.print()}
-      />
+      {/* Live Full-Screen Preview Modal (For Mobile / Tablets, Lazy Loaded) */}
+      {isLivePreviewOpen && (
+        <React.Suspense fallback={null}>
+          <LivePreviewModal
+            isOpen={isLivePreviewOpen}
+            onClose={() => setIsLivePreviewOpen(false)}
+            data={data}
+            language={language}
+            onChangeTemplate={handleSelectTemplate}
+            onChangeLanguage={(l) => {
+              setLanguage(l === 'bilingual' ? 'en' : l);
+              updateFields({ language: l });
+            }}
+            onOpenDownload={() => {
+              setIsLivePreviewOpen(false);
+              setIsDownloadModalOpen(true);
+            }}
+            onPrint={() => window.print()}
+          />
+        </React.Suspense>
+      )}
 
-      {/* High-Resolution Download & Print Modal */}
-      <DownloadModal
-        isOpen={isDownloadModalOpen}
-        onClose={() => setIsDownloadModalOpen(false)}
-        candidateName={data.fullName || 'Candidate'}
-        templateId={data.templateId}
-        language={language}
-        creationMode={AdFlowService.detectCreationMode(data)}
-        onClearSession={handleClearSessionAfterDownload}
-        data={data}
-      />
+      {/* High-Resolution Download & Print Modal (Lazy Loaded) */}
+      {isDownloadModalOpen && (
+        <React.Suspense fallback={null}>
+          <DownloadModal
+            isOpen={isDownloadModalOpen}
+            onClose={() => setIsDownloadModalOpen(false)}
+            candidateName={data.fullName || 'Candidate'}
+            templateId={data.templateId}
+            language={language}
+            creationMode={AdFlowService.detectCreationMode(data)}
+            onClearSession={handleClearSessionAfterDownload}
+            data={data}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

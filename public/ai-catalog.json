@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "BiodataCraft",
+  "version": "1.0.0",
+  "description": "Privacy-first Indian marriage biodata maker providing client-side PDF generation, cultural templates, and multi-language support (English & Hindi) with zero customer data retention.",
+  "url": "https://biodata-craft.vercel.app",
+  "provider": {
+    "name": "BiodataCraft",
+    "url": "https://biodata-craft.vercel.app",
+    "email": "contact@biodatacraft.in"
+  },
+  "capabilities": [
+    {
+      "id": "marriage-biodata-builder",
+      "name": "Marriage Biodata Generator",
+      "description": "Build auspicious Indian matrimonial biodatas in English or Hindi with instant client-side vector PDF download.",
+      "category": "lifestyle",
+      "entrypoint": "https://biodata-craft.vercel.app/create"
+    },
+    {
+      "id": "template-catalog",
+      "name": "Biodata Template Catalog",
+      "description": "Browse and customize traditional, modern, executive, and royal matrimonial biodata templates.",
+      "category": "templates",
+      "entrypoint": "https://biodata-craft.vercel.app/templates"
+    },
+    {
+      "id": "format-directory",
+      "name": "Regional & Community Biodata Directory",
+      "description": "Directory of 500+ Indian regional, community, and religion-specific biodata formats and guides.",
+      "category": "directory",
+      "entrypoint": "https://biodata-craft.vercel.app/biodata"
+    }
+  ],
+  "supportedLanguages": [
+    "en-IN",
+    "hi-IN"
+  ],
+  "license": "MIT",
+  "privacyPolicy": "https://biodata-craft.vercel.app/privacy-policy",
+  "termsOfService": "https://biodata-craft.vercel.app/terms"
+}

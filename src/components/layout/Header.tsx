@@ -51,7 +51,7 @@ export const Header: React.FC = () => {
                   100% Free
                 </span>
               </div>
-              <p className="text-[10px] text-stone-500 font-medium -mt-1 hidden sm:block truncate">
+              <p className="text-[10px] text-stone-600 font-medium -mt-1 hidden sm:block truncate">
                 Indian Marriage Biodata Maker • No Login Required
               </p>
             </div>
@@ -65,10 +65,10 @@ export const Header: React.FC = () => {
               to={link.to}
               end={link.to === '/'}
               className={({ isActive }) =>
-                `text-xs font-semibold transition-colors py-1 whitespace-nowrap ${
+                `text-xs font-semibold transition-colors py-2 px-1 min-h-[44px] inline-flex items-center whitespace-nowrap ${
                   isActive
                     ? 'text-amber-800 font-bold border-b-2 border-amber-800'
-                    : 'text-stone-600 hover:text-stone-950'
+                    : 'text-stone-700 hover:text-stone-950'
                 }`
               }
             >
@@ -79,14 +79,14 @@ export const Header: React.FC = () => {
 
         {/* Action Controls & Mobile Button */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 font-medium">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-full border border-emerald-200 font-medium min-h-[36px]">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
             <span className="whitespace-nowrap">Zero-Storage Privacy</span>
           </div>
 
           <Link
             to="/create"
-            className="hidden sm:inline-flex items-center justify-center font-semibold rounded-xl transition-all cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-offset-1 text-xs px-3 py-1.5 gap-1.5 min-h-[36px] bg-amber-800 text-white hover:bg-amber-900 focus:ring-amber-800/50 shadow-sm shadow-amber-900/20 border border-amber-900/20 active:scale-[0.98] whitespace-nowrap"
+            className="hidden sm:inline-flex items-center justify-center font-semibold rounded-xl transition-all cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-offset-1 text-xs px-3.5 py-2 gap-1.5 min-h-[44px] bg-amber-800 text-white hover:bg-amber-900 focus:ring-amber-800/50 shadow-sm shadow-amber-900/20 border border-amber-900/20 active:scale-[0.98] whitespace-nowrap"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-200" />
             <span>Create Biodata</span>
@@ -96,7 +96,7 @@ export const Header: React.FC = () => {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-stone-600 hover:text-stone-900 rounded-xl hover:bg-stone-100 cursor-pointer transition-colors p-2"
+            className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-stone-700 hover:text-stone-900 rounded-xl hover:bg-stone-100 cursor-pointer transition-colors p-2"
             aria-label="Toggle mobile menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -138,7 +138,7 @@ export const Header: React.FC = () => {
 
             <Link
               to="/admin/login"
-              className="text-center text-xs text-stone-600 hover:text-stone-700 py-2 min-h-[36px] flex items-center justify-center"
+              className="text-center text-xs text-stone-600 hover:text-stone-900 py-3 min-h-[44px] flex items-center justify-center font-medium"
             >
               Admin Portal
             </Link>

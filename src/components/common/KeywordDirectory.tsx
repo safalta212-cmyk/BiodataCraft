@@ -38,9 +38,9 @@ export const KeywordDirectory: React.FC = () => {
             <Compass className="w-4 h-4" />
             <span>Matrimonial Topic & Search Index (500+ Keywords)</span>
           </div>
-          <h4 className="text-base sm:text-lg font-bold text-white font-cinzel mt-1">
+          <h3 className="text-base sm:text-lg font-bold text-white font-cinzel mt-1">
             Explore Indian Communities, Astrological & Biodata Formats
-          </h4>
+          </h3>
           <p className="text-xs text-stone-400 mt-1 max-w-2xl leading-relaxed">
             Find tailored marriage biodata templates, regional caste traditions, Kundali gotra formats, and bilingual samples across India.
           </p>
@@ -49,7 +49,7 @@ export const KeywordDirectory: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors shrink-0"
+          className="px-4 py-2 min-h-[44px] bg-stone-800 hover:bg-stone-700 text-amber-300 border border-stone-700 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors shrink-0"
         >
           <span>{isExpanded ? 'Collapse Keyword Index' : 'Browse All 500+ Keywords'}</span>
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

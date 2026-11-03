@@ -52,7 +52,10 @@ export const HinduMarriageBiodataPage: React.FC = () => {
       'Design authentic Hindu marriage biodatas with Shree Ganesh Shlokas, Gotra (Self & Mosal), Kundali horoscope details, and sacred Vedic styling. 100% Free PDF.',
     canonicalPath: '/hindu-marriage-biodata',
     ogType: 'article',
-    breadcrumbs: [{ name: 'Hindu Marriage Biodata', path: '/hindu-marriage-biodata' }],
+    breadcrumbs: [
+      { name: 'Biodata', path: '/biodata' },
+      { name: 'Hindu Marriage Biodata', path: '/hindu-marriage-biodata' }
+    ],
     faqs: FAQ_ITEMS,
     article: {
       title: 'Guide to Hindu Matrimonial Biodata: Sacred Traditions, Gotra & Horoscope',
@@ -74,7 +77,12 @@ export const HinduMarriageBiodataPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-8 sm:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-        <Breadcrumbs items={[{ name: 'Hindu Marriage Biodata' }]} />
+        <Breadcrumbs
+          items={[
+            { name: 'Biodata', path: '/biodata' },
+            { name: 'Hindu Marriage Biodata', path: '/hindu-marriage-biodata' }
+          ]}
+        />
 
         {/* Hero Banner */}
         <header className="text-center space-y-4 max-w-3xl mx-auto">

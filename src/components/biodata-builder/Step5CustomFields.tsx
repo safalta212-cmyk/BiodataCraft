@@ -311,9 +311,9 @@ export const Step5CustomFields: React.FC<Step5CustomFieldsProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <FileCheck2 className="w-5 h-5 text-amber-900" />
-            <h4 className="text-sm font-bold text-amber-950">
+            <h3 className="text-sm font-bold text-amber-950">
               {isHindi ? 'आपका बायोडेटा डाउनलोड हेतु पूर्ण रूप से तैयार है!' : 'Your Biodata Document is Ready!'}
-            </h4>
+            </h3>
           </div>
           <p className="text-xs text-stone-600 mt-1">
             {isHindi

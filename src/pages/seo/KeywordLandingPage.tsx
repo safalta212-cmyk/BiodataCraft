@@ -6,8 +6,11 @@ import { TEMPLATES, sampleHinduBiodata, sampleHindiBiodata } from '../../data/in
 import { storageService } from '../../services/storageService';
 import { analyticsService } from '../../services/analyticsService';
 import { Breadcrumbs } from '../../components/common/Breadcrumbs';
-import { DownloadModal } from '../../components/preview/DownloadModal';
 import { InternalLinkingHub } from '../../components/seo/InternalLinkingHub';
+
+const DownloadModal = React.lazy(() =>
+  import('../../components/preview/DownloadModal').then((m) => ({ default: m.DownloadModal }))
+);
 import {
   Sparkles,
   ArrowRight,
@@ -65,7 +68,7 @@ export const KeywordLandingPage: React.FC = () => {
     canonicalPath: `/biodata/${pageData.slug}`,
     ogType: 'article',
     breadcrumbs: [
-      { name: 'Matrimonial Topics', path: '/biodata' },
+      { name: 'Biodata', path: '/biodata' },
       { name: pageData.h1, path: `/biodata/${pageData.slug}` }
     ],
     faqs: pageData.faqs.map((f) => ({ question: f.question, answer: f.answer })),
@@ -102,8 +105,7 @@ export const KeywordLandingPage: React.FC = () => {
         {/* Breadcrumbs */}
         <Breadcrumbs
           items={[
-            { name: 'Topics', path: '/biodata' },
-            { name: pageData.category, path: '/biodata' },
+            { name: 'Biodata', path: '/biodata' },
             { name: pageData.h1, path: `/biodata/${pageData.slug}` }
           ]}
         />
@@ -272,9 +274,9 @@ export const KeywordLandingPage: React.FC = () => {
                     <span className="font-rozha text-xs opacity-60" style={{ color: template.primaryColor }}>
                       ॐ श्री गणेशाय नमः
                     </span>
-                    <h4 className="font-bold text-sm font-cinzel line-clamp-1" style={{ color: template.primaryColor }}>
+                    <h3 className="font-bold text-sm font-cinzel line-clamp-1" style={{ color: template.primaryColor }}>
                       {template.name}
-                    </h4>
+                    </h3>
                     <p className="text-[11px] text-stone-500 line-clamp-1">
                       {template.tagline}
                     </p>
@@ -466,15 +468,19 @@ export const KeywordLandingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Instant Download Sample Modal */}
-      <DownloadModal
-        isOpen={isDownloadOpen}
-        onClose={() => setIsDownloadOpen(false)}
-        candidateName={sampleData.fullName}
-        templateId={pageData.recommendedTemplateIds[0] || 'royal-heritage'}
-        language={sampleData.language}
-        data={sampleData}
-      />
+      {/* Instant Download Sample Modal (Lazy Loaded) */}
+      {isDownloadOpen && (
+        <React.Suspense fallback={null}>
+          <DownloadModal
+            isOpen={isDownloadOpen}
+            onClose={() => setIsDownloadOpen(false)}
+            candidateName={sampleData.fullName}
+            templateId={pageData.recommendedTemplateIds[0] || 'royal-heritage'}
+            language={sampleData.language}
+            data={sampleData}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

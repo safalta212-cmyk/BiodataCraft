@@ -15,7 +15,7 @@ export const KeywordDirectoryPage: React.FC = () => {
     description:
       'Explore 500+ matrimonial biodata formats across Indian communities, Vedic astrology, castes, professions, and regional languages. 100% free with instant PDF download.',
     canonicalPath: '/biodata',
-    breadcrumbs: [{ name: 'Matrimonial Topics', path: '/biodata' }]
+    breadcrumbs: [{ name: 'Biodata', path: '/biodata' }]
   });
 
   const filteredCategories = useMemo(() => {
@@ -38,7 +38,7 @@ export const KeywordDirectoryPage: React.FC = () => {
     <div className="min-h-screen bg-stone-50 py-10 sm:py-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
         {/* Breadcrumbs */}
-        <Breadcrumbs items={[{ name: 'Topics Directory', path: '/biodata' }]} />
+        <Breadcrumbs items={[{ name: 'Biodata', path: '/biodata' }]} />
 
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -120,7 +120,7 @@ export const KeywordDirectoryPage: React.FC = () => {
                       <Tag className="w-4 h-4 text-amber-800" />
                       <span>{category.name}</span>
                     </h2>
-                    <span className="text-xs text-stone-500 font-medium">
+                    <span className="text-xs text-stone-600 font-medium">
                       {category.hindiName}
                     </span>
                   </div>
@@ -136,10 +136,10 @@ export const KeywordDirectoryPage: React.FC = () => {
                       <Link
                         key={idx}
                         to={`/biodata/${slug}`}
-                        className="p-3 bg-stone-50 hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-stone-200/80 hover:border-amber-300 rounded-xl transition-all font-medium flex items-center justify-between group shadow-2xs"
+                        className="p-3 min-h-[44px] bg-stone-50 hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-stone-200/80 hover:border-amber-300 rounded-xl transition-all font-medium flex items-center justify-between group shadow-2xs"
                       >
                         <span className="truncate pr-2">{kw}</span>
-                        <ArrowRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-amber-800 group-hover:translate-x-0.5 transition-all shrink-0" />
+                        <ArrowRight className="w-3.5 h-3.5 text-stone-500 group-hover:text-amber-800 group-hover:translate-x-0.5 transition-all shrink-0" />
                       </Link>
                     );
                   })}
@@ -149,13 +149,13 @@ export const KeywordDirectoryPage: React.FC = () => {
 
           {totalFiltered === 0 && (
             <div className="bg-white border border-stone-200 rounded-3xl p-12 text-center space-y-3">
-              <p className="text-stone-500 text-sm">
+              <p className="text-stone-600 text-sm">
                 No matching topics found for &quot;{searchQuery}&quot;.
               </p>
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="text-xs font-bold text-amber-800 hover:underline"
+                className="text-xs font-bold text-amber-800 hover:underline min-h-[44px] inline-flex items-center"
               >
                 Clear Search Filter
               </button>

@@ -51,7 +51,10 @@ export const MarathiBiodataPage: React.FC = () => {
       'मराठी लग्न बायोडाटा (Marathi Lagna Biodata) format: Devak, Kuldaivat, Gan, Nadi, Mama details, and Paithani-inspired templates with free PDF maker.',
     canonicalPath: '/marathi-biodata',
     ogType: 'article',
-    breadcrumbs: [{ name: 'Marathi Lagna Biodata', path: '/marathi-biodata' }],
+    breadcrumbs: [
+      { name: 'Biodata', path: '/biodata' },
+      { name: 'Marathi Lagna Biodata', path: '/marathi-biodata' }
+    ],
     faqs: FAQ_ITEMS,
     article: {
       title: 'Marathi Lagna Biodata Guide: Devak, Kuldaivat, Patrika & Traditions',
@@ -74,7 +77,12 @@ export const MarathiBiodataPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-8 sm:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-        <Breadcrumbs items={[{ name: 'Marathi Lagna Biodata' }]} />
+        <Breadcrumbs
+          items={[
+            { name: 'Biodata', path: '/biodata' },
+            { name: 'Marathi Lagna Biodata', path: '/marathi-biodata' }
+          ]}
+        />
 
         {/* Hero Banner */}
         <header className="text-center space-y-4 max-w-3xl mx-auto">

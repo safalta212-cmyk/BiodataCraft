@@ -240,22 +240,43 @@ export function buildServiceSchema(siteUrl = SITE_DOMAIN) {
 }
 
 /**
- * Builds Schema.org BreadcrumbList JSON-LD
+ * Builds Schema.org BreadcrumbList JSON-LD strictly compliant with Google Rich Results guidelines.
+ * Guarantees a fully-populated itemListElement array containing:
+ * - @type: "ListItem"
+ * - position: 1-indexed sequential integer
+ * - name: string label
+ * - item: fully qualified absolute URL
  */
 export function buildBreadcrumbSchema(items: BreadcrumbItem[], siteUrl = SITE_DOMAIN) {
+  const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
+
+  const validItems = (items || []).filter(
+    (item) => item && typeof item.name === 'string' && item.name.trim().length > 0
+  );
+
   const elements = [
     {
       '@type': 'ListItem',
       position: 1,
       name: 'Home',
-      item: siteUrl
+      item: `${cleanSiteUrl}/`
     },
-    ...items.map((item, idx) => ({
-      '@type': 'ListItem',
-      position: idx + 2,
-      name: item.name,
-      item: item.path.startsWith('http') ? item.path : `${siteUrl}${item.path}`
-    }))
+    ...validItems.map((item, idx) => {
+      const rawPath = item.path ? item.path.trim() : '';
+      let fullUrl: string;
+      if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+        fullUrl = rawPath;
+      } else {
+        const cleanPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+        fullUrl = `${cleanSiteUrl}${cleanPath}`;
+      }
+      return {
+        '@type': 'ListItem',
+        position: idx + 2,
+        name: item.name.trim(),
+        item: fullUrl
+      };
+    })
   ];
 
   return {
@@ -476,7 +497,10 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
     graph.push(buildWebApplicationSchema(schemaDomain));
   }
   if (fullMeta.breadcrumbs && fullMeta.breadcrumbs.length > 0) {
-    graph.push(buildBreadcrumbSchema(fullMeta.breadcrumbs, schemaDomain));
+    const breadcrumbSchema = buildBreadcrumbSchema(fullMeta.breadcrumbs, schemaDomain);
+    if (breadcrumbSchema && Array.isArray(breadcrumbSchema.itemListElement) && breadcrumbSchema.itemListElement.length >= 2) {
+      graph.push(breadcrumbSchema);
+    }
   }
   if (fullMeta.faqs && fullMeta.faqs.length > 0) {
     graph.push(buildFAQSchema(fullMeta.faqs));

@@ -330,10 +330,10 @@ export const Step4PhotoStudio: React.FC<Step4PhotoStudioProps> = ({
                 <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-900 flex items-center justify-center mb-3 shadow-inner">
                   <Upload className="w-8 h-8" />
                 </div>
-                <h4 className="text-sm font-bold text-stone-800">
+                <h3 className="text-sm font-bold text-stone-800">
                   {isHindi ? 'अपनी फोटो चुनें' : 'Upload Candidate Photo'}
-                </h4>
-                <p className="text-xs text-stone-500 mt-1 max-w-xs">
+                </h3>
+                <p className="text-xs text-stone-600 mt-1 max-w-xs">
                   {isHindi
                     ? 'क्लिक करें या फोटो ड्रैग करें (JPG, PNG, WEBP, अधिकतम 5MB)'
                     : 'Click or drag photo here. Supports JPG, PNG, WEBP up to 5MB'}
@@ -540,10 +540,10 @@ export const Step4PhotoStudio: React.FC<Step4PhotoStudioProps> = ({
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-stone-900 text-sm">
+                <h3 className="font-bold text-stone-900 text-sm">
                   {isHindi ? 'फोटो हटाएं?' : 'Remove Photo?'}
-                </h4>
-                <p className="text-xs text-stone-500">
+                </h3>
+                <p className="text-xs text-stone-600">
                   {isHindi
                     ? 'यह फोटो आपके बायोडेटा से हटा दी जाएगी।'
                     : 'This photo will be removed from your biodata.'}

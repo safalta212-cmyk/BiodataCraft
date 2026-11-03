@@ -12,8 +12,11 @@ import { Button } from '../components/ui/Button';
 import { ErrorState } from '../components/ui/ErrorState';
 import { Loading } from '../components/ui/Loading';
 import { useToast } from '../context/ToastContext';
-import { DownloadModal } from '../components/preview/DownloadModal';
 import { getTemplateDisplayThumbnail } from '../utils/templateVisuals';
+
+const DownloadModal = React.lazy(() =>
+  import('../components/preview/DownloadModal').then((m) => ({ default: m.DownloadModal }))
+);
 import {
   ArrowLeft,
   Sparkles,
@@ -121,7 +124,7 @@ export const TemplateDetailPage: React.FC = () => {
           { name: 'Templates', path: '/templates' },
           { name: template.name, path: `/templates/${template.slug}` }
         ]
-      : [{ name: 'Templates', path: '/templates' }]
+      : undefined
   });
 
   return (
@@ -469,19 +472,21 @@ export const TemplateDetailPage: React.FC = () => {
           </div>
         </div>
       )}
-      {template && (
-        <DownloadModal
-          isOpen={isDownloadModalOpen}
-          onClose={() => setIsDownloadModalOpen(false)}
-          candidateName={currentSampleData.fullName}
-          templateId={template.id}
-          language={currentSampleData.language}
-          data={{
-            ...currentSampleData,
-            templateId: template.id as any,
-            themeColor: template.templateConfig?.primaryColor || currentSampleData.themeColor
-          }}
-        />
+      {template && isDownloadModalOpen && (
+        <React.Suspense fallback={null}>
+          <DownloadModal
+            isOpen={isDownloadModalOpen}
+            onClose={() => setIsDownloadModalOpen(false)}
+            candidateName={currentSampleData.fullName}
+            templateId={template.id}
+            language={currentSampleData.language}
+            data={{
+              ...currentSampleData,
+              templateId: template.id as any,
+              themeColor: template.templateConfig?.primaryColor || currentSampleData.themeColor
+            }}
+          />
+        </React.Suspense>
       )}
     </div>
   );

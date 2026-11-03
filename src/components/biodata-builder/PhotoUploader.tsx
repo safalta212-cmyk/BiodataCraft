@@ -63,9 +63,9 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-800" />
-            <h4 className="font-bold text-stone-900 text-sm sm:text-base">
+            <h3 className="font-bold text-stone-900 text-sm sm:text-base">
               {isHindi ? 'वर/वधू की तस्वीर (ऐच्छिक)' : 'Candidate Photograph (Optional)'}
-            </h4>
+            </h3>
           </div>
           <p className="text-xs text-stone-600 mt-0.5">
             {isHindi

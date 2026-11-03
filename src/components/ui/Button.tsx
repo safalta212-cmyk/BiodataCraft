@@ -31,11 +31,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const baseClass =
       'inline-flex items-center justify-center font-semibold rounded-xl transition-all cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]';
 
-    // Size styles with mobile touch ergonomics
+    // Size styles with mobile & desktop touch ergonomics (WCAG 44px minimum)
     const sizeClasses: Record<ButtonSize, string> = {
-      sm: 'text-xs px-3 py-1.5 gap-1.5 min-h-[36px] sm:min-h-0 sm:h-8',
-      md: 'text-sm px-4 py-2 gap-2 min-h-[44px] sm:h-10',
-      lg: 'text-base px-6 py-3 gap-2.5 min-h-[48px] sm:h-12'
+      sm: 'text-xs px-3.5 py-2 gap-1.5 min-h-[44px]',
+      md: 'text-sm px-4 py-2.5 gap-2 min-h-[44px]',
+      lg: 'text-base px-6 py-3.5 gap-2.5 min-h-[48px]'
     };
 
     // Variant styles

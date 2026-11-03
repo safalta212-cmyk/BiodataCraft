@@ -26,7 +26,9 @@ export const AdProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       const fetched = await adSettingsService.fetchSettings(true);
       setSettings(fetched);
     } catch (err) {
-      console.warn('Failed to refresh ad settings:', err);
+      if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
+        console.warn('Failed to refresh ad settings:', err);
+      }
     } finally {
       setIsLoading(false);
     }

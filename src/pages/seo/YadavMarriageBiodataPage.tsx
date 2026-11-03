@@ -52,7 +52,10 @@ export const YadavMarriageBiodataPage: React.FC = () => {
       'Authentic Yadav marriage biodata guide: 4-Gotra rules, native village details (Paitrik Gaon), Jai Shree Krishna headers, and royal templates with free PDF maker.',
     canonicalPath: '/yadav-marriage-biodata',
     ogType: 'article',
-    breadcrumbs: [{ name: 'Yadav Marriage Biodata', path: '/yadav-marriage-biodata' }],
+    breadcrumbs: [
+      { name: 'Biodata', path: '/biodata' },
+      { name: 'Yadav Marriage Biodata', path: '/yadav-marriage-biodata' }
+    ],
     faqs: FAQ_ITEMS,
     article: {
       title: 'Guide to Yadav Marriage Biodata: Gotra Rules, Ancestral Heritage & Formats',
@@ -75,7 +78,12 @@ export const YadavMarriageBiodataPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-8 sm:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-        <Breadcrumbs items={[{ name: 'Yadav Marriage Biodata' }]} />
+        <Breadcrumbs
+          items={[
+            { name: 'Biodata', path: '/biodata' },
+            { name: 'Yadav Marriage Biodata', path: '/yadav-marriage-biodata' }
+          ]}
+        />
 
         {/* Hero Banner */}
         <header className="text-center space-y-4 max-w-3xl mx-auto">
@@ -156,7 +164,7 @@ export const YadavMarriageBiodataPage: React.FC = () => {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 text-xs sm:text-sm text-stone-800">
               <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200 space-y-2">
-                <h4 className="font-bold text-amber-950">Gotra Architecture</h4>
+                <h3 className="font-bold text-amber-950">Gotra Architecture</h3>
                 <ul className="space-y-1.5 list-disc list-inside text-xs text-stone-700">
                   <li><strong>Self / Pita Gotra:</strong> E.g., Rao, Kosaliya, Nimoria, Khoriya</li>
                   <li><strong>Mata (Mosal) Gotra:</strong> Maternal Uncle\'s gotra</li>
@@ -166,7 +174,7 @@ export const YadavMarriageBiodataPage: React.FC = () => {
               </div>
 
               <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
-                <h4 className="font-bold text-stone-900">Ancestral Roots</h4>
+                <h3 className="font-bold text-stone-900">Ancestral Roots</h3>
                 <ul className="space-y-1.5 list-disc list-inside text-xs text-stone-700">
                   <li><strong>Paitrik Gaon (Native Village):</strong> Original ancestral village</li>
                   <li><strong>Tehsil & District:</strong> Administrative division</li>

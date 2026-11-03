@@ -50,20 +50,22 @@ if (isConfigured) {
       ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
       : getFirestore(app);
 
-    // Validate connection to Firestore on initialization
-    if (typeof window !== 'undefined') {
+    // Validate connection to Firestore on initialization only in development environment
+    if (typeof window !== 'undefined' && env.DEV) {
       import('firebase/firestore').then(({ doc, getDocFromServer }) => {
         if (db) {
           getDocFromServer(doc(db, 'test', 'connection')).catch((error) => {
             if (error instanceof Error && error.message.includes('the client is offline')) {
-              console.error('Please check your Firebase configuration.');
+              console.warn('Firebase connection notice (offline).');
             }
           });
         }
-      });
+      }).catch(() => {});
     }
   } catch (error) {
-    console.warn('Firebase initialization notice:', error);
+    if (env.DEV) {
+      console.warn('Firebase initialization notice:', error);
+    }
   }
 }
 

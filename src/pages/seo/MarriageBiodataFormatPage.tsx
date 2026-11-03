@@ -54,7 +54,10 @@ export const MarriageBiodataFormatPage: React.FC = () => {
       'Discover standard Indian marriage biodata formats, 1-page vs 2-page layouts, field-by-field checklist in English & Hindi, and download printable PDF biodatas.',
     canonicalPath: '/marriage-biodata-format',
     ogType: 'article',
-    breadcrumbs: [{ name: 'Marriage Biodata Format', path: '/marriage-biodata-format' }],
+    breadcrumbs: [
+      { name: 'Biodata', path: '/biodata' },
+      { name: 'Marriage Biodata Format', path: '/marriage-biodata-format' }
+    ],
     faqs: FAQ_ITEMS,
     howTo: {
       name: 'How to Format an Indian Marriage Biodata in 4 Key Sections',
@@ -101,7 +104,12 @@ export const MarriageBiodataFormatPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-8 sm:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
-        <Breadcrumbs items={[{ name: 'Marriage Biodata Format' }]} />
+        <Breadcrumbs
+          items={[
+            { name: 'Biodata', path: '/biodata' },
+            { name: 'Marriage Biodata Format', path: '/marriage-biodata-format' }
+          ]}
+        />
 
         {/* Hero Section */}
         <header className="text-center space-y-4 max-w-3xl mx-auto">

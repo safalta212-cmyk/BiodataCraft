@@ -43,10 +43,10 @@ export const DesignCustomizer: React.FC<DesignCustomizerProps> = ({
         <div className="flex items-center gap-2 mb-3">
           <Globe className="w-5 h-5 text-amber-800" />
           <div>
-            <h4 className="font-bold text-stone-900 text-sm sm:text-base">
+            <h3 className="font-bold text-stone-900 text-sm sm:text-base">
               {isHindi ? 'बायोडेटा की भाषा चुनें (Language)' : 'Biodata Language Selection'}
-            </h4>
-            <p className="text-xs text-stone-500">
+            </h3>
+            <p className="text-xs text-stone-600">
               {isHindi
                 ? 'अंग्रेजी अथवा शुद्ध हिन्दी में बायोडेटा तैयार करें'
                 : 'Generate your biodata in English or authentic Hindi Unicode'}
@@ -65,7 +65,7 @@ export const DesignCustomizer: React.FC<DesignCustomizerProps> = ({
             }`}
           >
             <div className="text-sm font-bold">English (Standard)</div>
-            <span className="text-[11px] text-stone-500">Global & Pan-India</span>
+            <span className="text-[11px] text-stone-600">Global & Pan-India</span>
           </button>
 
           <button
@@ -78,7 +78,7 @@ export const DesignCustomizer: React.FC<DesignCustomizerProps> = ({
             }`}
           >
             <div className="text-sm font-bold">हिन्दी (Hindi Devanagari)</div>
-            <span className="text-[11px] text-stone-500">पारंपरिक व सुसंस्कृत</span>
+            <span className="text-[11px] text-stone-600">पारंपरिक व सुसंस्कृत</span>
           </button>
         </div>
       </div>
@@ -88,10 +88,10 @@ export const DesignCustomizer: React.FC<DesignCustomizerProps> = ({
         <div className="flex items-center gap-2 mb-3">
           <Palette className="w-5 h-5 text-amber-800" />
           <div>
-            <h4 className="font-bold text-stone-900 text-sm sm:text-base">
+            <h3 className="font-bold text-stone-900 text-sm sm:text-base">
               {isHindi ? 'डिजाइन एवं टेम्पलेट चयन (Templates)' : 'Design Templates (6 Authentic Themes)'}
-            </h4>
-            <p className="text-xs text-stone-500">
+            </h3>
+            <p className="text-xs text-stone-600">
               {isHindi
                 ? 'राजपूती, वैदिक, कॉर्पोरेट या आधुनिक शैली में से एक चुनें'
                 : 'Select an authentic Indian cultural design layout'}
@@ -220,10 +220,10 @@ export const DesignCustomizer: React.FC<DesignCustomizerProps> = ({
         <div className="flex items-center gap-2 mb-3">
           <Eye className="w-5 h-5 text-amber-800" />
           <div>
-            <h4 className="font-bold text-stone-900 text-sm">
+            <h3 className="font-bold text-stone-900 text-sm">
               {isHindi ? 'भाग छिपाएं या दिखाएं (Section Toggles)' : 'Section Visibility Control'}
-            </h4>
-            <p className="text-xs text-stone-500">
+            </h3>
+            <p className="text-xs text-stone-600">
               {isHindi
                 ? 'यदि आप ज्योतिष, कुंडली या अपेक्षाएं नहीं जोड़ना चाहते तो टॉगल बंद करें'
                 : 'Turn sections on or off to tailor your biodata format'}
