@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
+import { Breadcrumbs } from '../components/common/Breadcrumbs';
 import { blogService } from '../services/blogService';
 import { BlogPost } from '../data/blogData';
 import { Card, CardContent } from '../components/ui/Card';
@@ -58,6 +59,9 @@ export const BlogPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-12 sm:py-16">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 space-y-10">
+        {/* Navigation Breadcrumb */}
+        <Breadcrumbs items={[{ name: 'Blog', path: '/blog' }]} />
+
         {/* Header */}
         <div className="text-center space-y-3">
           <span className="text-xs font-bold uppercase tracking-widest text-amber-800">

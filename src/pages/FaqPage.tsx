@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
+import { Breadcrumbs } from '../components/common/Breadcrumbs';
 import { HelpCircle, ChevronDown, ChevronUp, Printer, Globe, Shield, Sparkles, ArrowRight, FileText, CheckCircle2 } from 'lucide-react';
 
 interface FaqPageProps {
@@ -70,7 +71,10 @@ export const FaqPage: React.FC<FaqPageProps> = ({ language }) => {
 
   return (
     <div className="min-h-screen bg-stone-50 py-12 sm:py-16">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-8">
+        {/* Navigation Breadcrumb */}
+        <Breadcrumbs items={[{ name: 'FAQ', path: '/faq' }]} />
+
         {/* Header */}
         <div className="text-center mb-10">
           <div className="w-12 h-12 bg-amber-100 text-amber-900 rounded-2xl flex items-center justify-center mx-auto mb-3">

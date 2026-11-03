@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSEO } from '../hooks/useSEO';
+import { Breadcrumbs } from '../components/common/Breadcrumbs';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Link } from 'react-router-dom';
@@ -25,6 +26,9 @@ export const AboutPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-12 sm:py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-12">
+        {/* Navigation Breadcrumb */}
+        <Breadcrumbs items={[{ name: 'About Us', path: '/about' }]} />
+
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-950 text-xs font-bold">

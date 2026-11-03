@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
+import { Breadcrumbs } from '../components/common/Breadcrumbs';
 import { blogService } from '../services/blogService';
 import { BlogPost } from '../data/blogData';
 import { Card, CardContent } from '../components/ui/Card';
@@ -91,13 +92,21 @@ export const BlogPostPage: React.FC = () => {
       ) : (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-8">
           {/* Navigation Breadcrumb */}
-          <Link
-            to="/blog"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-900 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to All Articles</span>
-          </Link>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <Breadcrumbs
+              items={[
+                { name: 'Blog', path: '/blog' },
+                { name: post.title }
+              ]}
+            />
+            <Link
+              to="/blog"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-900 transition-colors shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to All Articles</span>
+            </Link>
+          </div>
 
           {/* Article Header Card */}
           <div className="bg-white border border-stone-200 rounded-3xl p-6 sm:p-10 shadow-xs space-y-4">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
+import { Breadcrumbs } from '../components/common/Breadcrumbs';
 import { sampleHinduBiodata, sampleHindiBiodata } from '../data/initialBiodata';
 import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
@@ -61,7 +62,10 @@ export const SamplesPage: React.FC<SamplesPageProps> = ({ language = 'en', onLan
 
   return (
     <div className="min-h-screen bg-stone-50 py-10 sm:py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
+        {/* Navigation Breadcrumb */}
+        <Breadcrumbs items={[{ name: isHindi ? 'नमूने' : 'Samples', path: '/samples' }]} />
+
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <span className="text-xs font-bold uppercase tracking-widest text-amber-800">

@@ -125,31 +125,96 @@ try {
   const org = buildOrganizationSchema();
   const webApp = buildWebApplicationSchema();
   const srv = buildServiceSchema();
-  const bc = buildBreadcrumbSchema([
-    { name: 'Biodata', path: '/biodata' },
-    { name: 'Hindu Marriage Biodata Format', path: '/biodata/hindu-marriage-biodata-format' }
-  ]);
+  const bc = buildBreadcrumbSchema(
+    [
+      { name: 'Biodata', path: '/biodata' },
+      { name: 'Hindu Marriage Biodata Format', path: '/biodata/hindu-marriage-biodata-format' }
+    ],
+    'https://biodata-craft.vercel.app',
+    'https://biodata-craft.vercel.app/biodata/hindu-marriage-biodata-format'
+  );
   const faq = buildFAQSchema([{ question: 'Is it free?', answer: 'Yes, 100% free.' }]);
-  const page = buildWebPageSchema({ title: 'Test', description: 'Test desc' }, 'https://biodata-craft.vercel.app/test');
+  const pageWithBc = buildWebPageSchema(
+    { title: 'Test', description: 'Test desc' },
+    'https://biodata-craft.vercel.app/biodata/hindu-marriage-biodata-format',
+    'https://biodata-craft.vercel.app',
+    true
+  );
+  const pageWithoutBc = buildWebPageSchema(
+    { title: 'Home', description: 'Home desc' },
+    'https://biodata-craft.vercel.app/',
+    'https://biodata-craft.vercel.app',
+    false
+  );
 
-  const allSchemas = [ws, org, webApp, srv, bc, faq, page];
+  const allSchemas = [ws, org, webApp, srv, bc, faq, pageWithBc, pageWithoutBc];
   allSchemas.forEach((s) => {
+    if (!s) {
+      schemaSuccess = false;
+      return;
+    }
     JSON.stringify(s);
     if (!s['@type']) schemaSuccess = false;
   });
 
   // Verify BreadcrumbList schema specifics
-  if (bc['@type'] !== 'BreadcrumbList') breadcrumbAuditSuccess = false;
-  if (!Array.isArray(bc.itemListElement) || bc.itemListElement.length !== 3) breadcrumbAuditSuccess = false;
-  bc.itemListElement.forEach((el, index) => {
-    if (el['@type'] !== 'ListItem') breadcrumbAuditSuccess = false;
-    if (el.position !== index + 1) breadcrumbAuditSuccess = false;
-    if (!el.name || typeof el.name !== 'string') breadcrumbAuditSuccess = false;
-    if (!el.item || !el.item.startsWith('https://biodata-craft.vercel.app')) breadcrumbAuditSuccess = false;
+  if (!bc || bc['@type'] !== 'BreadcrumbList') breadcrumbAuditSuccess = false;
+  if (!bc || !bc['@id'] || bc['@id'] !== 'https://biodata-craft.vercel.app/biodata/hindu-marriage-biodata-format#breadcrumb') {
+    breadcrumbAuditSuccess = false;
+  }
+  if (!bc || !Array.isArray(bc.itemListElement) || bc.itemListElement.length !== 3) breadcrumbAuditSuccess = false;
+  if (bc) {
+    bc.itemListElement.forEach((el, index) => {
+      if (el['@type'] !== 'ListItem') breadcrumbAuditSuccess = false;
+      if (el.position !== index + 1) breadcrumbAuditSuccess = false;
+      if (!el.name || typeof el.name !== 'string' || !el.name.trim()) breadcrumbAuditSuccess = false;
+      if (!el.item || !el.item.startsWith('https://biodata-craft.vercel.app')) breadcrumbAuditSuccess = false;
+    });
+  }
+
+  // Verify WebPage breadcrumb linking
+  const pageBc = pageWithBc.breadcrumb as { '@id': string } | undefined;
+  if (!pageBc || pageBc['@id'] !== bc?.['@id']) {
+    breadcrumbAuditSuccess = false;
+  }
+  // Verify HomePage WebPage schema does NOT contain breadcrumb
+  if (pageWithoutBc.breadcrumb !== undefined) {
+    breadcrumbAuditSuccess = false;
+  }
+
+  // Audit all 500+ SEO keyword routes for breadcrumb validity
+  let keywordBreadcrumbsValid = true;
+  ALL_KEYWORD_SLUGS.forEach((slug) => {
+    const pageData = getKeywordPageBySlug(slug);
+    if (!pageData) return;
+    const kwCanonical = `https://biodata-craft.vercel.app/biodata/${slug}`;
+    const kwBc = buildBreadcrumbSchema(
+      [
+        { name: 'Biodata', path: '/biodata' },
+        { name: pageData.h1, path: `/biodata/${slug}` }
+      ],
+      'https://biodata-craft.vercel.app',
+      kwCanonical
+    );
+
+    if (!kwBc || kwBc['@type'] !== 'BreadcrumbList') keywordBreadcrumbsValid = false;
+    if (!kwBc || kwBc['@id'] !== `${kwCanonical}#breadcrumb`) keywordBreadcrumbsValid = false;
+    if (!kwBc || !Array.isArray(kwBc.itemListElement) || kwBc.itemListElement.length !== 3) {
+      keywordBreadcrumbsValid = false;
+    } else {
+      kwBc.itemListElement.forEach((item, idx) => {
+        if (item['@type'] !== 'ListItem' || item.position !== idx + 1 || !item.name || !item.item) {
+          keywordBreadcrumbsValid = false;
+        }
+      });
+      if (kwBc.itemListElement[0].item !== 'https://biodata-craft.vercel.app/') keywordBreadcrumbsValid = false;
+      if (kwBc.itemListElement[2].item !== kwCanonical) keywordBreadcrumbsValid = false;
+    }
   });
 
   console.log('WebSite, Organization, WebApp, Service, FAQ, and WebPage schemas valid:', schemaSuccess);
   console.log('BreadcrumbList itemListElement, sequential positions & absolute URLs valid:', breadcrumbAuditSuccess);
+  console.log('All 500+ Keyword Landing Pages BreadcrumbList schemas valid:', keywordBreadcrumbsValid);
   console.log('Sample BreadcrumbList Schema:', JSON.stringify(bc, null, 2));
 } catch (e) {
   console.error('Schema validation failed:', e);

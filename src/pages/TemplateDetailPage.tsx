@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
+import { Breadcrumbs } from '../components/common/Breadcrumbs';
 import { templateService } from '../services/templateService';
 import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
@@ -144,22 +145,30 @@ export const TemplateDetailPage: React.FC = () => {
       ) : (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
           {/* Navigation Breadcrumb */}
-          <div className="flex items-center justify-between">
-            <Link
-              to="/templates"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-900 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to All Templates</span>
-            </Link>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <Breadcrumbs
+              items={[
+                { name: 'Templates', path: '/templates' },
+                { name: template.name }
+              ]}
+            />
+            <div className="flex items-center gap-3 shrink-0">
+              <Link
+                to="/templates"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>All Templates</span>
+              </Link>
 
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 bg-white px-3 py-1.5 rounded-xl border border-stone-200 cursor-pointer shadow-2xs"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Share Design</span>
-            </button>
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900 bg-white px-3 py-1.5 rounded-xl border border-stone-200 cursor-pointer shadow-2xs"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share Design</span>
+              </button>
+            </div>
           </div>
 
           {/* Hero Banner Header */}

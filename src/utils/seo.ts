@@ -194,8 +194,13 @@ export function buildWebApplicationSchema(siteUrl = SITE_DOMAIN) {
 /**
  * Builds Schema.org WebPage JSON-LD
  */
-export function buildWebPageSchema(meta: SEOMetadata, canonicalHref: string, siteUrl = SITE_DOMAIN) {
-  return {
+export function buildWebPageSchema(
+  meta: SEOMetadata,
+  canonicalHref: string,
+  siteUrl = SITE_DOMAIN,
+  hasBreadcrumbs = false
+) {
+  const schema: Record<string, unknown> = {
     '@type': 'WebPage',
     '@id': `${canonicalHref}#webpage`,
     url: canonicalHref,
@@ -204,11 +209,18 @@ export function buildWebPageSchema(meta: SEOMetadata, canonicalHref: string, sit
     isPartOf: {
       '@id': `${siteUrl}/#website`
     },
-    inLanguage: ['en-IN', 'hi-IN'],
-    breadcrumb: {
-      '@id': `${canonicalHref}#breadcrumb`
-    }
+    inLanguage: ['en-IN', 'hi-IN']
   };
+
+  // Google Search Console strictly requires breadcrumb reference ONLY when
+  // a corresponding BreadcrumbList schema with itemListElement is provided in @graph.
+  if (hasBreadcrumbs) {
+    schema.breadcrumb = {
+      '@id': `${canonicalHref}#breadcrumb`
+    };
+  }
+
+  return schema;
 }
 
 /**
@@ -240,47 +252,187 @@ export function buildServiceSchema(siteUrl = SITE_DOMAIN) {
 }
 
 /**
+ * Automatically infers breadcrumb hierarchy for any route path
+ */
+export function generateDynamicBreadcrumbs(path: string, pageTitle?: string): BreadcrumbItem[] {
+  const clean = path.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '');
+  if (!clean) return [];
+
+  const segments = clean.split('/');
+  const crumbs: BreadcrumbItem[] = [];
+
+  const formatSlug = (slug: string) => {
+    return slug
+      .replace(/[-_]+/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase())
+      .trim();
+  };
+
+  const cleanTitle = (raw?: string) => {
+    if (!raw) return undefined;
+    return raw.split('|')[0].split(' - ')[0].trim();
+  };
+
+  const currentTitle = cleanTitle(pageTitle);
+
+  if (segments[0] === 'biodata') {
+    crumbs.push({ name: 'Biodata', path: '/biodata' });
+    if (segments.length > 1) {
+      crumbs.push({
+        name: currentTitle || formatSlug(segments[1]),
+        path: `/biodata/${segments[1]}`
+      });
+    }
+  } else if (segments[0] === 'templates') {
+    crumbs.push({ name: 'Templates', path: '/templates' });
+    if (segments.length > 1) {
+      crumbs.push({
+        name: currentTitle || formatSlug(segments[1]),
+        path: `/templates/${segments[1]}`
+      });
+    }
+  } else if (segments[0] === 'blog') {
+    crumbs.push({ name: 'Blog', path: '/blog' });
+    if (segments.length > 1) {
+      crumbs.push({
+        name: currentTitle || formatSlug(segments[1]),
+        path: `/blog/${segments[1]}`
+      });
+    }
+  } else if (
+    [
+      'hindu-marriage-biodata',
+      'muslim-marriage-biodata',
+      'marathi-biodata',
+      'bengali-marriage-biodata',
+      'yadav-marriage-biodata',
+      'marriage-biodata',
+      'marriage-biodata-format'
+    ].includes(segments[0])
+  ) {
+    crumbs.push({ name: 'Biodata', path: '/biodata' });
+    crumbs.push({
+      name: currentTitle || formatSlug(segments[0]),
+      path: `/${segments[0]}`
+    });
+  } else {
+    let accumulatedPath = '';
+    segments.forEach((seg, idx) => {
+      accumulatedPath += `/${seg}`;
+      const isLast = idx === segments.length - 1;
+      crumbs.push({
+        name: isLast && currentTitle ? currentTitle : formatSlug(seg),
+        path: accumulatedPath
+      });
+    });
+  }
+
+  return crumbs;
+}
+
+/**
  * Builds Schema.org BreadcrumbList JSON-LD strictly compliant with Google Rich Results guidelines.
  * Guarantees a fully-populated itemListElement array containing:
  * - @type: "ListItem"
- * - position: 1-indexed sequential integer
+ * - position: 1-indexed sequential integer starting at 1
  * - name: string label
- * - item: fully qualified absolute URL
+ * - item: fully qualified absolute canonical URL
+ *
+ * Links with WebPage schema via @id: `${canonicalHref}#breadcrumb`
  */
-export function buildBreadcrumbSchema(items: BreadcrumbItem[], siteUrl = SITE_DOMAIN) {
+export function buildBreadcrumbSchema(
+  items: BreadcrumbItem[],
+  siteUrl = SITE_DOMAIN,
+  canonicalHref?: string
+): {
+  '@type': 'BreadcrumbList';
+  '@id': string;
+  itemListElement: Array<{
+    '@type': 'ListItem';
+    position: number;
+    name: string;
+    item: string;
+  }>;
+} | null {
   const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
 
-  const validItems = (items || []).filter(
+  if (!items || !Array.isArray(items)) {
+    return null;
+  }
+
+  // Filter out any nullish or empty names
+  const validItems = items.filter(
     (item) => item && typeof item.name === 'string' && item.name.trim().length > 0
   );
 
-  const elements = [
+  // If first item explicitly passed is Home or points to root /, remove to prevent duplication
+  let filteredItems = [...validItems];
+  if (
+    filteredItems.length > 0 &&
+    (filteredItems[0].name.trim().toLowerCase() === 'home' ||
+      filteredItems[0].path === '/' ||
+      filteredItems[0].path === cleanSiteUrl ||
+      filteredItems[0].path === `${cleanSiteUrl}/`)
+  ) {
+    filteredItems.shift();
+  }
+
+  // Google requires at least 2 items in a BreadcrumbList (Home + at least 1 destination)
+  if (filteredItems.length === 0) {
+    return null;
+  }
+
+  const cleanCanonical = canonicalHref
+    ? canonicalHref.split('?')[0].split('#')[0]
+    : undefined;
+
+  const elements: Array<{
+    '@type': 'ListItem';
+    position: number;
+    name: string;
+    item: string;
+  }> = [
     {
       '@type': 'ListItem',
       position: 1,
       name: 'Home',
       item: `${cleanSiteUrl}/`
-    },
-    ...validItems.map((item, idx) => {
-      const rawPath = item.path ? item.path.trim() : '';
-      let fullUrl: string;
-      if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
-        fullUrl = rawPath;
-      } else {
-        const cleanPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
-        fullUrl = `${cleanSiteUrl}${cleanPath}`;
-      }
-      return {
-        '@type': 'ListItem',
-        position: idx + 2,
-        name: item.name.trim(),
-        item: fullUrl
-      };
-    })
+    }
   ];
+
+  filteredItems.forEach((item, idx) => {
+    const isTerminal = idx === filteredItems.length - 1;
+    const rawPath = item.path ? item.path.trim() : '';
+    let fullUrl: string;
+
+    if (isTerminal && cleanCanonical) {
+      fullUrl = cleanCanonical;
+    } else if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+      fullUrl = rawPath.split('?')[0].split('#')[0];
+    } else if (rawPath.length > 0) {
+      const cleanPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
+      fullUrl = `${cleanSiteUrl}${cleanPath.split('?')[0].split('#')[0]}`;
+    } else if (cleanCanonical) {
+      fullUrl = cleanCanonical;
+    } else {
+      fullUrl = `${cleanSiteUrl}/`;
+    }
+
+    elements.push({
+      '@type': 'ListItem',
+      position: idx + 2,
+      name: item.name.trim(),
+      item: fullUrl
+    });
+  });
+
+  const breadcrumbId = cleanCanonical
+    ? `${cleanCanonical}#breadcrumb`
+    : `${elements[elements.length - 1].item}#breadcrumb`;
 
   return {
     '@type': 'BreadcrumbList',
+    '@id': breadcrumbId,
     itemListElement: elements
   };
 }
@@ -492,15 +644,40 @@ export function updateDocumentSEO(meta: Partial<SEOMetadata>) {
     graph.push(buildOrganizationSchema(schemaDomain));
     graph.push(buildServiceSchema(schemaDomain));
   }
-  graph.push(buildWebPageSchema(fullMeta, canonicalHref, schemaDomain));
+
+  // Breadcrumbs: Google Rich Results prohibits BreadcrumbList on root homepage (/)
+  // Only non-home, indexable pages should generate BreadcrumbList schema
+  const isHomePage =
+    cleanPath === '' ||
+    cleanPath === '/' ||
+    canonicalHref === `${schemaDomain}/` ||
+    canonicalHref === schemaDomain;
+
+  let breadcrumbSchema: ReturnType<typeof buildBreadcrumbSchema> = null;
+
+  if (!isHomePage && !fullMeta.noindex) {
+    const rawCrumbs =
+      fullMeta.breadcrumbs && fullMeta.breadcrumbs.length > 0
+        ? fullMeta.breadcrumbs
+        : generateDynamicBreadcrumbs(cleanPath, fullMeta.title);
+
+    breadcrumbSchema = buildBreadcrumbSchema(rawCrumbs, schemaDomain, canonicalHref);
+  }
+
+  const hasBreadcrumbs = Boolean(
+    breadcrumbSchema &&
+      Array.isArray(breadcrumbSchema.itemListElement) &&
+      breadcrumbSchema.itemListElement.length >= 2
+  );
+
+  graph.push(buildWebPageSchema(fullMeta, canonicalHref, schemaDomain, hasBreadcrumbs));
+
   if (fullMeta.includeWebApplicationSchema) {
     graph.push(buildWebApplicationSchema(schemaDomain));
   }
-  if (fullMeta.breadcrumbs && fullMeta.breadcrumbs.length > 0) {
-    const breadcrumbSchema = buildBreadcrumbSchema(fullMeta.breadcrumbs, schemaDomain);
-    if (breadcrumbSchema && Array.isArray(breadcrumbSchema.itemListElement) && breadcrumbSchema.itemListElement.length >= 2) {
-      graph.push(breadcrumbSchema);
-    }
+
+  if (hasBreadcrumbs && breadcrumbSchema) {
+    graph.push(breadcrumbSchema);
   }
   if (fullMeta.faqs && fullMeta.faqs.length > 0) {
     graph.push(buildFAQSchema(fullMeta.faqs));

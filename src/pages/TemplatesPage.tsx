@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
+import { Breadcrumbs } from '../components/common/Breadcrumbs';
 import { templateService } from '../services/templateService';
 import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
@@ -260,6 +261,9 @@ export const TemplatesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-50 py-10 sm:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-10">
+        {/* Navigation Breadcrumb */}
+        <Breadcrumbs items={[{ name: 'Templates', path: '/templates' }]} />
+
         {/* Page Hero */}
         <div className="text-center max-w-3xl mx-auto space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-950 text-xs font-bold shadow-2xs">
