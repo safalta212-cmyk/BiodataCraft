@@ -39,8 +39,14 @@ export const Header: React.FC = () => {
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-700 via-amber-800 to-amber-950 flex items-center justify-center text-white shadow-md shadow-amber-900/20 group-hover:scale-105 transition-transform shrink-0">
-              <span className="font-rozha text-lg sm:text-xl font-bold text-amber-200">ॐ</span>
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-md shadow-amber-900/10 group-hover:scale-105 transition-transform shrink-0 bg-white border border-stone-200">
+              <img
+                src={settings.logo || '/logo.png'}
+                alt={settings.siteName || 'BiodataCraft'}
+                className="w-full h-full object-contain p-0.5"
+                width={40}
+                height={40}
+              />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">

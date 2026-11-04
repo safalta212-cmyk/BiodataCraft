@@ -1,6 +1,6 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, Firestore } from 'firebase/firestore';
 import appletConfig from '../../firebase-applet-config.json';
 
 /**
@@ -45,21 +45,32 @@ if (isConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     auth = getAuth(app);
-    // Connect to named Firestore database when provided in configuration
-    db = firebaseConfig.firestoreDatabaseId
-      ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-      : getFirestore(app);
 
-    // Validate connection to Firestore on initialization only in development environment
-    if (typeof window !== 'undefined' && env.DEV) {
+    // Initialize Firestore with auto-detect long polling to avoid 10s WebChannel stream timeouts in browser/iframe environments
+    const firestoreSettings = {
+      experimentalAutoDetectLongPolling: true,
+      ignoreUndefinedProperties: true
+    };
+
+    try {
+      db = firebaseConfig.firestoreDatabaseId
+        ? initializeFirestore(app, firestoreSettings, firebaseConfig.firestoreDatabaseId)
+        : initializeFirestore(app, firestoreSettings);
+    } catch {
+      db = firebaseConfig.firestoreDatabaseId
+        ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+        : getFirestore(app);
+    }
+
+    // Validate connection to Firestore on initial boot as required by Firestore integration skill
+    if (typeof window !== 'undefined' && db) {
+      const activeDb = db;
       import('firebase/firestore').then(({ doc, getDocFromServer }) => {
-        if (db) {
-          getDocFromServer(doc(db, 'test', 'connection')).catch((error) => {
-            if (error instanceof Error && error.message.includes('the client is offline')) {
-              console.warn('Firebase connection notice (offline).');
-            }
-          });
-        }
+        getDocFromServer(doc(activeDb, 'test', 'connection')).catch((error) => {
+          if (error instanceof Error && error.message.includes('the client is offline')) {
+            console.error('Please check your Firebase configuration.');
+          }
+        });
       }).catch(() => {});
     }
   } catch (error) {

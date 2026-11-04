@@ -118,7 +118,7 @@ export function buildOrganizationSchema(siteUrl = SITE_DOMAIN) {
     url: siteUrl,
     logo: {
       '@type': 'ImageObject',
-      url: `${siteUrl}/favicon.svg`,
+      url: `${siteUrl}/logo.png`,
       width: '512',
       height: '512'
     },
@@ -354,7 +354,25 @@ export function buildBreadcrumbSchema(
     item: string;
   }>;
 } | null {
-  const cleanSiteUrl = siteUrl.replace(/\/+$/, '');
+  let cleanSiteUrl = (siteUrl || SITE_DOMAIN).replace(/\/+$/, '');
+  let cleanCanonical = canonicalHref
+    ? canonicalHref.split('?')[0].split('#')[0].replace(/\/+$/, '')
+    : undefined;
+
+  // Resilient handling if 2nd parameter was passed as canonicalHref (e.g. 'https://.../terms')
+  if (siteUrl && siteUrl.startsWith('http')) {
+    try {
+      const parsed = new URL(siteUrl);
+      if (parsed.pathname && parsed.pathname !== '/') {
+        if (!cleanCanonical) {
+          cleanCanonical = siteUrl.split('?')[0].split('#')[0].replace(/\/+$/, '');
+        }
+        cleanSiteUrl = parsed.origin;
+      }
+    } catch {
+      // Ignore
+    }
+  }
 
   if (!items || !Array.isArray(items)) {
     return null;
@@ -382,10 +400,6 @@ export function buildBreadcrumbSchema(
     return null;
   }
 
-  const cleanCanonical = canonicalHref
-    ? canonicalHref.split('?')[0].split('#')[0]
-    : undefined;
-
   const elements: Array<{
     '@type': 'ListItem';
     position: number;
@@ -408,14 +422,15 @@ export function buildBreadcrumbSchema(
     if (isTerminal && cleanCanonical) {
       fullUrl = cleanCanonical;
     } else if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
-      fullUrl = rawPath.split('?')[0].split('#')[0];
+      fullUrl = rawPath.split('?')[0].split('#')[0].replace(/\/+$/, '');
     } else if (rawPath.length > 0) {
       const cleanPath = rawPath.startsWith('/') ? rawPath : `/${rawPath}`;
-      fullUrl = `${cleanSiteUrl}${cleanPath.split('?')[0].split('#')[0]}`;
+      fullUrl = `${cleanSiteUrl}${cleanPath.split('?')[0].split('#')[0].replace(/\/+$/, '')}`;
     } else if (cleanCanonical) {
       fullUrl = cleanCanonical;
     } else {
-      fullUrl = `${cleanSiteUrl}/`;
+      const itemSlug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      fullUrl = `${cleanSiteUrl}/${itemSlug}`;
     }
 
     elements.push({
@@ -426,14 +441,32 @@ export function buildBreadcrumbSchema(
     });
   });
 
+  // Deduplicate any consecutive elements that resolve to the same URL
+  const dedupedElements: typeof elements = [];
+  elements.forEach((el) => {
+    if (dedupedElements.length === 0 || dedupedElements[dedupedElements.length - 1].item !== el.item) {
+      dedupedElements.push(el);
+    }
+  });
+
+  // Re-index positions strictly 1..N
+  const finalElements = dedupedElements.map((el, i) => ({
+    ...el,
+    position: i + 1
+  }));
+
+  if (finalElements.length < 2) {
+    return null;
+  }
+
   const breadcrumbId = cleanCanonical
     ? `${cleanCanonical}#breadcrumb`
-    : `${elements[elements.length - 1].item}#breadcrumb`;
+    : `${finalElements[finalElements.length - 1].item}#breadcrumb`;
 
   return {
     '@type': 'BreadcrumbList',
     '@id': breadcrumbId,
-    itemListElement: elements
+    itemListElement: finalElements
   };
 }
 
@@ -494,7 +527,7 @@ export function buildArticleSchema(article: ArticleMetadata, siteUrl = SITE_DOMA
       name: SITE_NAME,
       logo: {
         '@type': 'ImageObject',
-        url: `${siteUrl}/favicon.svg`
+        url: `${siteUrl}/logo.png`
       }
     },
     mainEntityOfPage: {

@@ -55,7 +55,13 @@ export const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children 
           </button>
 
           <Link to="/admin" className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <span className="font-rozha text-lg text-amber-400 shrink-0">ॐ</span>
+            <img
+              src="/logo.png"
+              alt="BiodataCraft"
+              className="w-6 h-6 rounded-md object-contain bg-white p-0.5 shrink-0"
+              width={24}
+              height={24}
+            />
             <span className="font-bold text-xs sm:text-base font-cinzel tracking-wide truncate max-w-[120px] xs:max-w-none">
               BiodataCraft <span className="text-amber-500 font-sans text-xs">Admin</span>
             </span>

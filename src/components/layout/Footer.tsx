@@ -59,8 +59,16 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-6 sm:gap-8 mb-10 text-xs">
           {/* Brand Column */}
           <div className="col-span-1 sm:col-span-2 space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="font-rozha text-xl text-amber-400 font-bold">ॐ</span>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-white p-0.5 shadow-xs shrink-0">
+                <img
+                  src={settings.logo || '/logo.png'}
+                  alt={settings.siteName || 'BiodataCraft'}
+                  className="w-full h-full object-contain"
+                  width={32}
+                  height={32}
+                />
+              </div>
               <span className="font-bold text-base text-white font-cinzel">{settings.siteName || 'BiodataCraft'}</span>
             </div>
             <p className="text-stone-400 leading-relaxed text-xs max-w-sm">

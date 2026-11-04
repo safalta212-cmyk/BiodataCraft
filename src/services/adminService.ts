@@ -60,8 +60,8 @@ const SITE_SETTINGS_KEY = 'biodatacraft_site_settings_v1';
 
 const defaultSiteSettings: SiteSettings = {
   siteName: 'BiodataCraft',
-  logo: '/favicon.svg',
-  favicon: '/favicon.svg',
+  logo: '/logo.png',
+  favicon: '/favicon-32x32.png',
   contactEmail: 'contact@biodatacraft.in',
   contactPhone: '+91 98765 43210',
   socialLinks: {
