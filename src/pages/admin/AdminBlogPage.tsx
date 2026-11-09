@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useTransition } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { AdminLayout } from '../../components/layout/AdminLayout';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
-import { Input, Select, Textarea } from '../../components/ui/Form';
 import { blogService } from '../../services/blogService';
 import { BlogPost } from '../../data/blogData';
 import { useToast } from '../../context/ToastContext';
+import { CreateArticleEditor } from '../../components/admin/CreateArticleEditor';
 import {
   BookOpen,
   Plus,
@@ -28,7 +28,6 @@ import {
   Upload
 } from 'lucide-react';
 
-
 const DEFAULT_CATEGORIES = [
   'Guides',
   'Culture & Tradition',
@@ -39,6 +38,7 @@ const DEFAULT_CATEGORIES = [
 
 export const AdminBlogPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
   const [, startTransition] = useTransition();
 
@@ -50,29 +50,12 @@ export const AdminBlogPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Published' | 'Draft'>('All');
 
-  // Modal States
+  // Studio Editor View State
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Destructive Delete State
   const [deleteConfirmPost, setDeleteConfirmPost] = useState<BlogPost | null>(null);
-
-  // Form Fields State
-  const [title, setTitle] = useState('');
-  const [slug, setSlug] = useState('');
-  const [excerpt, setExcerpt] = useState('');
-  const [category, setCategory] = useState('Guides');
-  const [customCategory, setCustomCategory] = useState('');
-  const [author, setAuthor] = useState('Editorial Team');
-  const [readTime, setReadTime] = useState('5 min read');
-  const [featuredImage, setFeaturedImage] = useState('');
-  const [contentBody, setContentBody] = useState('');
-  const [seoTitle, setSeoTitle] = useState('');
-  const [seoDescription, setSeoDescription] = useState('');
-  const [isPublished, setIsPublished] = useState(true);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const loadPosts = async () => {
     setLoading(true);
@@ -86,36 +69,6 @@ export const AdminBlogPage: React.FC = () => {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const validMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
-    if (!validMimes.includes(file.type.toLowerCase())) {
-      toast.error('Invalid file type. Only JPEG, PNG, WEBP, and SVG images are allowed.');
-      e.target.value = '';
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size exceeds the 5MB maximum limit.');
-      e.target.value = '';
-      return;
-    }
-
-    setIsUploadingImage(true);
-    try {
-      const url = await blogService.uploadBlogImage(file);
-      setFeaturedImage(url);
-      toast.success('Featured image uploaded successfully.');
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to upload image.');
-    } finally {
-      setIsUploadingImage(false);
-      e.target.value = '';
-    }
-  };
-
   useEffect(() => {
     const token = sessionStorage.getItem('biodatacraft_admin_token');
     if (!token) {
@@ -125,149 +78,49 @@ export const AdminBlogPage: React.FC = () => {
     loadPosts();
   }, [navigate]);
 
+  // Synchronize URL search params (e.g. /admin/blog?action=create or /admin/blog?edit=slug)
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const editSlug = searchParams.get('edit');
+    if (action === 'create' || action === 'new') {
+      setEditingPost(null);
+      setIsEditorOpen(true);
+    } else if (editSlug && posts.length > 0) {
+      const match = posts.find((p) => p.slug === editSlug);
+      if (match) {
+        setEditingPost(match);
+        setIsEditorOpen(true);
+      }
+    }
+  }, [searchParams, posts]);
 
-  // Open Create Modal
+  // Open Create Studio
   const handleOpenCreate = () => {
     setEditingPost(null);
-    setTitle('');
-    setSlug('');
-    setExcerpt('');
-    setCategory('Guides');
-    setCustomCategory('');
-    setAuthor('Editorial Team');
-    setReadTime('5 min read');
-    setFeaturedImage('');
-    setContentBody('');
-    setSeoTitle('');
-    setSeoDescription('');
-    setIsPublished(true);
-    setFormErrors({});
     setIsEditorOpen(true);
+    setSearchParams({ action: 'create' });
   };
 
-  // Open Edit Modal
+  // Open Edit Studio
   const handleOpenEdit = (post: BlogPost) => {
     setEditingPost(post);
-    setTitle(post.title);
-    setSlug(post.slug);
-    setExcerpt(post.excerpt);
-    if (DEFAULT_CATEGORIES.includes(post.category)) {
-      setCategory(post.category);
-      setCustomCategory('');
-    } else {
-      setCategory('Custom');
-      setCustomCategory(post.category);
-    }
-    setAuthor(post.author || 'Editorial Team');
-    setReadTime(post.readTime || '5 min read');
-    setFeaturedImage(post.featuredImage || '');
-    setContentBody(Array.isArray(post.content) ? post.content.join('\n\n') : String(post.content || ''));
-    setSeoTitle(post.seoTitle || post.title);
-    setSeoDescription(post.seoDescription || post.excerpt);
-    setIsPublished(post.isPublished !== false);
-    setFormErrors({});
     setIsEditorOpen(true);
+    setSearchParams({ edit: post.slug });
   };
 
-  // Form Validation & Save
-  const handleSavePost = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Close Studio and return to catalog
+  const handleCloseEditor = () => {
+    setIsEditorOpen(false);
+    setEditingPost(null);
+    setSearchParams({});
+  };
 
-    if (isSaving) return; // Prevent double-submit
-
-    const errors: Record<string, string> = {};
-
-    if (!title.trim()) {
-      errors.title = 'Article title is required.';
-    }
-
-    const cleanSlug = slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
-    if (!cleanSlug) {
-      errors.slug = 'Slug identifier is required.';
-    } else if (!/^[a-z0-9-]+$/.test(cleanSlug)) {
-      errors.slug = 'Slug can only contain lowercase letters, numbers, and hyphens.';
-    } else {
-      const duplicate = posts.find(
-        (p) => p.slug === cleanSlug && (!editingPost || p.id !== editingPost.id)
-      );
-      if (duplicate) {
-        errors.slug = `Slug "${cleanSlug}" is already in use by article "${duplicate.title}". Please choose a unique slug.`;
-      }
-    }
-
-    if (!contentBody.trim()) {
-      errors.content = 'Article content is required and cannot be empty.';
-    }
-
-    if (featuredImage.trim()) {
-      const isHttp = /^https?:\/\/.+/i.test(featuredImage.trim());
-      const isDataImg = /^data:image\/(jpeg|png|webp|svg\+xml);base64,/i.test(featuredImage.trim());
-      const isPath = /^\/[a-zA-Z0-9_\-\.\/]+$/i.test(featuredImage.trim());
-      if (!isHttp && !isDataImg && !isPath) {
-        errors.featuredImage = 'Featured image must be a valid http(s) URL, image data URI, or asset path.';
-      }
-      if (/javascript:/i.test(featuredImage) || /<script/i.test(featuredImage)) {
-        errors.featuredImage = 'Security error: Malicious image URI detected.';
-      }
-    }
-
-    const finalCategory = category === 'Custom' ? customCategory.trim() || 'General' : category;
-
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      toast.error('Please fix validation errors before saving.');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Clean script tags or dangerous schemes from body
-      const cleanBody = contentBody
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-        .replace(/javascript\s*:/gi, '')
-        .replace(/on\w+\s*=/gi, '');
-
-      // Split content by blank lines into structured paragraphs
-      const paragraphs = cleanBody
-        .split('\n\n')
-        .map((p) => p.trim())
-        .filter(Boolean);
-
-      const wordCount = cleanBody.trim().split(/\s+/).length;
-      const estimatedMinutes = Math.max(1, Math.round(wordCount / 180));
-      const computedReadTime = `${estimatedMinutes} min read`;
-
-      const postPayload: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'> = {
-        title: title.trim(),
-        slug: cleanSlug,
-        excerpt: excerpt.trim() || paragraphs[0]?.slice(0, 160) + '...',
-        category: finalCategory,
-        author: author.trim() || 'Editorial Team',
-        readTime: readTime || computedReadTime,
-        publishedDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-        featuredImage: featuredImage.trim(),
-        content: paragraphs.length > 0 ? paragraphs : [cleanBody],
-        seoTitle: seoTitle.trim() || `${title} | BiodataCraft Guides`,
-        seoDescription: seoDescription.trim() || excerpt.trim().slice(0, 160),
-        isPublished
-      };
-
-      if (editingPost) {
-        await blogService.updatePost(editingPost.slug, postPayload);
-        toast.success(`Article "${title}" updated successfully in Firestore.`);
-      } else {
-        await blogService.createPost(postPayload);
-        toast.success(`Article "${title}" created and saved to Firestore.`);
-      }
-
-      setIsEditorOpen(false);
-      await loadPosts();
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to save article.');
-    } finally {
-      setIsSaving(false);
-    }
+  // On Save/Publish Success
+  const handleSaveSuccess = () => {
+    setIsEditorOpen(false);
+    setEditingPost(null);
+    setSearchParams({});
+    loadPosts();
   };
 
   // Toggle Publication
@@ -333,6 +186,20 @@ export const AdminBlogPage: React.FC = () => {
   });
 
   const allCategories = ['All', ...Array.from(new Set([...DEFAULT_CATEGORIES, ...posts.map((p) => p.category)]))];
+
+  // If in create or edit mode, display the full professional article editor studio
+  if (isEditorOpen) {
+    return (
+      <AdminLayout>
+        <CreateArticleEditor
+          initialPost={editingPost}
+          existingPosts={posts}
+          onBack={handleCloseEditor}
+          onSaveSuccess={handleSaveSuccess}
+        />
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -535,217 +402,6 @@ export const AdminBlogPage: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* ============================================================== */}
-      {/* ARTICLE EDITOR MODAL (Create & Edit) */}
-      {/* ============================================================== */}
-      {isEditorOpen && (
-        <Modal
-          isOpen={isEditorOpen}
-          onClose={() => setIsEditorOpen(false)}
-          title={editingPost ? `Edit Article: ${title}` : 'Create New Article'}
-          description="Craft matrimonial guides, configure SEO metadata, and add featured imagery."
-          maxWidth="xl"
-          footer={
-            <div className="flex items-center justify-between w-full">
-              <Button
-                size="sm"
-                variant="outline"
-                type="button"
-                onClick={() => setIsEditorOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={handleSavePost}
-                isLoading={isSaving}
-              >
-                {editingPost ? 'Save Article' : 'Publish Article'}
-              </Button>
-            </div>
-          }
-        >
-          <div className="space-y-4 text-xs">
-            {/* Title & Slug */}
-            <div className="space-y-3">
-              <Input
-                label="Article Title"
-                placeholder="e.g. How to Format Astrological Details in Matrimonial Biodata"
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  if (!editingPost) {
-                    setSlug(e.target.value.toLowerCase().trim().replace(/[^a-z0-9]/g, '-'));
-                  }
-                }}
-                error={formErrors.title}
-                required
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Slug (URL Path)"
-                  placeholder="e.g. format-astrological-details"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  hint="Used in the browser URL (/blog/[slug])"
-                  error={formErrors.slug}
-                  required
-                />
-
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full text-xs py-2 px-3 rounded-xl border border-stone-200 bg-white focus:ring-1 focus:ring-amber-500"
-                  >
-                    {DEFAULT_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                    <option value="Custom">+ Custom Category</option>
-                  </select>
-                </div>
-              </div>
-
-              {category === 'Custom' && (
-                <Input
-                  label="Custom Category Name"
-                  placeholder="e.g. Kundali & Astrological Guides"
-                  value={customCategory}
-                  onChange={(e) => setCustomCategory(e.target.value)}
-                />
-              )}
-            </div>
-
-            {/* Author, Read Time, Image */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Input
-                label="Author"
-                placeholder="e.g. Editorial Team"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-              />
-
-              <Input
-                label="Estimated Read Time"
-                placeholder="e.g. 5 min read"
-                value={readTime}
-                onChange={(e) => setReadTime(e.target.value)}
-              />
-
-              <div className="space-y-1">
-                <Input
-                  label="Featured Image URL"
-                  placeholder="https://... or upload below"
-                  value={featuredImage}
-                  onChange={(e) => setFeaturedImage(e.target.value)}
-                  hint="Banner image for article cards"
-                />
-                <div className="flex items-center gap-2 pt-1">
-                  <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-300 bg-white text-stone-700 hover:bg-stone-100 cursor-pointer font-semibold text-[11px] shadow-2xs">
-                    <Upload className="w-3.5 h-3.5 text-amber-800" />
-                    <span>{isUploadingImage ? 'Uploading Image...' : 'Upload Image'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      disabled={isUploadingImage}
-                      onChange={handleImageUpload}
-                    />
-                  </label>
-                  {featuredImage && (
-                    <button
-                      type="button"
-                      onClick={() => setFeaturedImage('')}
-                      className="text-[11px] text-red-600 hover:underline cursor-pointer"
-                    >
-                      Clear Image
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-
-            {/* Excerpt */}
-            <Textarea
-              label="Article Excerpt (Catalog Summary)"
-              placeholder="Short 2-3 sentence overview shown in the blog directory..."
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              rows={2}
-            />
-
-            {/* Content Body */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-stone-700">
-                  Article Body (Separate paragraphs with blank lines)
-                </label>
-                <span className="text-[10px] text-stone-400 font-mono">
-                  {contentBody.trim() ? contentBody.trim().split(/\s+/).length : 0} words
-                </span>
-              </div>
-              <Textarea
-                placeholder="Write the full educational guide here. Separate each paragraph with a blank double enter..."
-                value={contentBody}
-                onChange={(e) => setContentBody(e.target.value)}
-                rows={8}
-                error={formErrors.content}
-                required
-              />
-            </div>
-
-            {/* SEO Optimization Box */}
-            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
-              <h4 className="font-bold text-stone-900 flex items-center gap-1.5 text-xs font-cinzel">
-                <FileText className="w-3.5 h-3.5 text-amber-800" />
-                <span>Search Engine Optimization (SEO) Metadata</span>
-              </h4>
-
-              <Input
-                label="SEO Title Tag"
-                placeholder="e.g. Complete Guide to Indian Marriage Biodata | BiodataCraft"
-                value={seoTitle}
-                onChange={(e) => setSeoTitle(e.target.value)}
-                hint="Displayed in Google search result headers (50-60 characters recommended)"
-              />
-
-              <Textarea
-                label="SEO Meta Description"
-                placeholder="e.g. Master the art of Indian marriage biodata writing with step-by-step instructions on Kundali, education, and family etiquette..."
-                value={seoDescription}
-                onChange={(e) => setSeoDescription(e.target.value)}
-                rows={2}
-                hint="Search snippet text shown under title (120-160 characters recommended)"
-              />
-            </div>
-
-            {/* Publication Status Checkbox */}
-            <div className="pt-1">
-              <label className="flex items-center gap-2 cursor-pointer text-stone-700">
-                <input
-                  type="checkbox"
-                  checked={isPublished}
-                  onChange={(e) => setIsPublished(e.target.checked)}
-                  className="rounded border-stone-300 text-amber-800 focus:ring-amber-500"
-                />
-                <span className="font-bold text-xs">Publish Article Immediately</span>
-              </label>
-              <p className="text-[11px] text-stone-400 ml-6">
-                When checked, this article will be publicly indexed and visible on /blog.
-              </p>
-            </div>
-          </div>
-        </Modal>
-      )}
 
       {/* ============================================================== */}
       {/* DELETE CONFIRMATION MODAL */}

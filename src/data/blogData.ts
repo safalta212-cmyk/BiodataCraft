@@ -9,8 +9,11 @@ export interface BlogPost {
   author: string;
   content: string[];
   featuredImage?: string;
+  featuredImageAlt?: string;
   seoTitle?: string;
   seoDescription?: string;
+  canonicalUrl?: string;
+  enableTableOfContents?: boolean;
   isPublished?: boolean;
   createdAt?: string;
   updatedAt?: string;

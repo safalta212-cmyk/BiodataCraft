@@ -46,9 +46,9 @@ if (isConfigured) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     auth = getAuth(app);
 
-    // Initialize Firestore with auto-detect long polling to avoid 10s WebChannel stream timeouts in browser/iframe environments
+    // Initialize Firestore with force long polling to prevent 10s WebChannel stream timeouts in browser/iframe environments
     const firestoreSettings = {
-      experimentalAutoDetectLongPolling: true,
+      experimentalForceLongPolling: true,
       ignoreUndefinedProperties: true
     };
 
@@ -66,10 +66,8 @@ if (isConfigured) {
     if (typeof window !== 'undefined' && db) {
       const activeDb = db;
       import('firebase/firestore').then(({ doc, getDocFromServer }) => {
-        getDocFromServer(doc(activeDb, 'test', 'connection')).catch((error) => {
-          if (error instanceof Error && error.message.includes('the client is offline')) {
-            console.error('Please check your Firebase configuration.');
-          }
+        getDocFromServer(doc(activeDb, 'test', 'connection')).catch(() => {
+          // Gracefully operates with offline cache if network connection is delayed
         });
       }).catch(() => {});
     }
