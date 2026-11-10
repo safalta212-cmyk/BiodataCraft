@@ -159,6 +159,9 @@ export const BlogPostPage: React.FC = () => {
                 loading="eager"
                 fetchPriority="high"
                 decoding="async"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                }}
               />
             </div>
           )}

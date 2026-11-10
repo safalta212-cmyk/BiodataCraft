@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BlogPost, BLOG_POSTS } from '../../data/blogData';
-import { blogService } from '../../services/blogService';
+import { blogService, isAdminAuthorized } from '../../services/blogService';
 import { useToast } from '../../context/ToastContext';
+import DOMPurify from 'dompurify';
 import { Button } from '../ui/Button';
 import {
   ArrowLeft,
@@ -26,6 +27,7 @@ import {
   RotateCcw,
   Heading2,
   Heading3,
+  Heading4,
   Bold,
   Italic,
   Quote,
@@ -49,8 +51,26 @@ import {
   ExternalLink,
   Bookmark,
   ShieldCheck,
-  X
+  X,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Maximize2,
+  Minimize2,
+  History,
+  BookOpen,
+  Layers,
+  Link2,
+  Code,
+  ChevronDown
 } from 'lucide-react';
+
+import { InternalLinkModal } from './article-editor/InternalLinkModal';
+import { ArticleStructureModal } from './article-editor/ArticleStructureModal';
+import { VersionHistoryModal, ArticleVersionSnapshot } from './article-editor/VersionHistoryModal';
+import { MediaManagerModal, ManagedImageItem } from './article-editor/MediaManagerModal';
+import { ArticleQualityAssistant } from './article-editor/ArticleQualityAssistant';
+import { PrePublishReviewModal } from './article-editor/PrePublishReviewModal';
 
 const DRAFT_STORAGE_KEY = 'biodatacraft_article_editor_draft_v1';
 
@@ -127,7 +147,7 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
 
   // Editor View Modes: 'editor' | 'split' | 'preview'
   const [viewMode, setViewMode] = useState<'editor' | 'split' | 'preview'>('editor');
-  const [sidebarTab, setSidebarTab] = useState<'publish' | 'seo' | 'media' | 'social'>('publish');
+  const [sidebarTab, setSidebarTab] = useState<'publish' | 'seo' | 'quality' | 'media' | 'social'>('publish');
   const [serpDevice, setSerpDevice] = useState<'desktop' | 'mobile'>('desktop');
 
   // Form State
@@ -162,18 +182,24 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
   const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Automatically extract image dimensions when featuredImage updates
+  const [imageLoadError, setImageLoadError] = useState(false);
+
+  // Automatically extract image dimensions when featuredImage updates (Phase 6 & 18)
   useEffect(() => {
     if (!featuredImage) {
       setImageDimensions(null);
+      setImageLoadError(false);
       return;
     }
+    setImageLoadError(false);
     const img = new Image();
     img.onload = () => {
       setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+      setImageLoadError(false);
     };
     img.onerror = () => {
       setImageDimensions(null);
+      setImageLoadError(true);
     };
     img.src = featuredImage;
   }, [featuredImage]);
@@ -245,6 +271,56 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [hasAutosaveDraft, setHasAutosaveDraft] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+
+  // Advanced Features State (Sections 1-11)
+  const [isFullWidthEditor, setIsFullWidthEditor] = useState(false);
+  const [showHeadingMenu, setShowHeadingMenu] = useState(false);
+  const [showInternalLinkModal, setShowInternalLinkModal] = useState(false);
+  const [showStructureModal, setShowStructureModal] = useState(false);
+  const [showMediaManagerModal, setShowMediaManagerModal] = useState(false);
+  const [showVersionHistoryModal, setShowVersionHistoryModal] = useState(false);
+  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+
+  // Media Library Session items (seeded with initial featured image & Auspicious presets)
+  const [sessionMediaList, setSessionMediaList] = useState<ManagedImageItem[]>(() => {
+    const list: ManagedImageItem[] = [];
+    if (initialPost?.featuredImage) {
+      list.push({
+        id: 'initial-featured',
+        url: initialPost.featuredImage,
+        name: 'Featured Banner',
+        alt: initialPost.featuredImageAlt || initialPost.title,
+        uploadedAt: 'Active'
+      });
+    }
+    AUSPICIOUS_IMAGE_PRESETS.forEach((p, idx) => {
+      list.push({
+        id: `preset-${idx}`,
+        url: p.url,
+        name: p.title,
+        alt: p.title,
+        uploadedAt: 'Preset',
+        isPreset: true
+      });
+    });
+    return list;
+  });
+
+  // Version Snapshots Stack
+  const [versionSnapshots, setVersionSnapshots] = useState<ArticleVersionSnapshot[]>(() => [
+    {
+      id: `v-initial-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      dateFormatted: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      label: initialPost ? 'Initial Loaded Article' : 'Initial Blank Draft',
+      author: initialPost?.author || 'BiodataCraft Editorial Team',
+      title: initialPost?.title || 'Untitled',
+      excerpt: initialPost?.excerpt || '',
+      content: initialArticleBody,
+      wordCount: initialArticleBody.trim() ? initialArticleBody.trim().split(/\s+/).length : 0,
+      charCount: initialArticleBody.length
+    }
+  ]);
 
   // Track unsaved changes for accident prevention (Phase 12)
   useEffect(() => {
@@ -430,13 +506,19 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     toast.success('Slug regenerated from title.');
   };
 
-  // Real-time metrics
-  const wordCount = contentBody.trim() ? contentBody.trim().split(/\s+/).length : 0;
+  // Real-time metrics (memoized for performance - Phase 14 & 18)
+  const wordCount = useMemo(() => {
+    return contentBody.trim() ? contentBody.trim().split(/\s+/).length : 0;
+  }, [contentBody]);
+
   const charCount = contentBody.length;
-  const paragraphCount = contentBody
-    .split('\n\n')
-    .map((p) => p.trim())
-    .filter(Boolean).length;
+
+  const paragraphCount = useMemo(() => {
+    return contentBody
+      .split('\n\n')
+      .map((p) => p.trim())
+      .filter(Boolean).length;
+  }, [contentBody]);
 
   // Configurable reading speed of approximately 200–220 words per minute (210 wpm)
   const autoMinutes = Math.max(1, Math.round(wordCount / 210));
@@ -466,9 +548,12 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     }
   }, [initialPost]);
 
-  // Autosave to localStorage every 2.5 seconds if changed
+  // Autosave to localStorage every 2.5 seconds if changed (Section 7)
   useEffect(() => {
     if (initialPost) return;
+    if (isDirty && (title.trim() || contentBody.trim())) {
+      setAutosaveStatus('saving');
+    }
     const timer = setTimeout(() => {
       if (title.trim() || contentBody.trim()) {
         try {
@@ -494,11 +579,14 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
           };
           localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftPayload));
           setLastSavedTime(draftPayload.savedAt);
+          setAutosaveStatus('saved');
         } catch {
-          // Ignore
+          setAutosaveStatus('failed');
         }
+      } else {
+        setAutosaveStatus('idle');
       }
-    }, 2500);
+    }, 2200);
     return () => clearTimeout(timer);
   }, [
     title,
@@ -518,8 +606,21 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     enableTableOfContents,
     isPublished,
     focusKeyword,
-    initialPost
+    initialPost,
+    isDirty
   ]);
+
+  // Prevent accidental loss of unsaved content via beforeunload listener (Section 7)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   const handleRestoreDraft = () => {
     try {
@@ -585,14 +686,20 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     }
   };
 
-  // HTML Sanitization for Security (Phase 8)
+  // HTML Sanitization for Security (Phase 8 & 18: DOMPurify Defense-in-Depth)
   const sanitizeArticleHtml = (rawText: string): string => {
-    return rawText
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-      .replace(/<(object|embed|form|meta|link)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/1>/gi, '')
-      .replace(/javascript\s*:/gi, '')
-      .replace(/\son\w+\s*=\s*(?:'[^']*'|"[^"]*"|[^\s>]+)/gi, '');
+    if (!rawText) return '';
+    return DOMPurify.sanitize(rawText, {
+      ALLOWED_TAGS: [
+        'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'b', 'i', 'u', 's', 'strong', 'em', 'strike',
+        'ul', 'ol', 'li', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr',
+        'th', 'td', 'a', 'img', 'figure', 'figcaption', 'code', 'pre', 'span', 'br', 'div'
+      ],
+      ALLOWED_ATTR: [
+        'href', 'target', 'rel', 'src', 'alt', 'title', 'class', 'width', 'height', 'loading', 'decoding'
+      ],
+      ALLOW_DATA_ATTR: false
+    });
   };
 
   // Push into Undo/Redo history stack
@@ -648,6 +755,99 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     }, 0);
   };
 
+  // Section 1: Heading Dropdown selector handler
+  const applyHeading = (level: 2 | 3 | 4 | 'p') => {
+    if (level === 'p') {
+      insertFormatting('', '', 'Paragraph text');
+    } else if (level === 2) {
+      insertFormatting('\n\n## ', '\n\n', 'Section Title');
+    } else if (level === 3) {
+      insertFormatting('\n\n### ', '\n\n', 'Subsection Title');
+    } else if (level === 4) {
+      insertFormatting('\n\n#### ', '\n\n', 'Minor Heading');
+    }
+    setShowHeadingMenu(false);
+  };
+
+  // Section 1: Text alignment styling helper
+  const applyAlignment = (align: 'left' | 'center' | 'right') => {
+    if (align === 'center') {
+      insertFormatting('<div class="text-center">\n\n', '\n\n</div>', 'Centered text or matrimonial note');
+    } else if (align === 'right') {
+      insertFormatting('<div class="text-right">\n\n', '\n\n</div>', 'Right aligned content');
+    } else {
+      insertFormatting('<div class="text-left">\n\n', '\n\n</div>', 'Left aligned content');
+    }
+  };
+
+  // Section 3: Internal link insertion handler
+  const handleInsertInternalLink = (anchorText: string, url: string) => {
+    insertFormatting(`[${anchorText}](`, ')', url);
+  };
+
+  // Section 4: Educational structure insertion handler (preserves existing text)
+  const handleInsertStructure = (markdownSnippet: string, mode: 'cursor' | 'append') => {
+    const textarea = textareaRef.current;
+    if (mode === 'cursor' && textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newContent =
+        contentBody.substring(0, start) + '\n\n' + markdownSnippet + '\n\n' + contentBody.substring(end);
+      setContentBody(newContent);
+      recordHistory(newContent);
+    } else {
+      const newContent = contentBody.trim() ? `${contentBody}\n\n${markdownSnippet}` : markdownSnippet;
+      setContentBody(newContent);
+      recordHistory(newContent);
+    }
+    toast.success('Structure blueprint inserted into article canvas.');
+  };
+
+  // Section 2: Session media library management
+  const handleAddMediaItem = (item: ManagedImageItem) => {
+    setSessionMediaList((prev) => [item, ...prev]);
+  };
+
+  const handleRemoveMediaItem = (id: string) => {
+    setSessionMediaList((prev) => prev.filter((img) => img.id !== id));
+  };
+
+  const handleInsertInlineFromMedia = (url: string, alt: string, caption?: string) => {
+    const snippet = caption
+      ? `\n\n![${alt}](${url} "${caption}")\n\n`
+      : `\n\n![${alt}](${url})\n\n`;
+    insertFormatting(snippet, '', '');
+  };
+
+  // Section 8: Article version snapshots
+  const createVersionSnapshot = (customLabel?: string) => {
+    const now = new Date();
+    const snapWords = contentBody.trim() ? contentBody.trim().split(/\s+/).length : 0;
+    const newSnapshot: ArticleVersionSnapshot = {
+      id: `v-${Date.now()}`,
+      timestamp: now.toISOString(),
+      dateFormatted: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      label: customLabel || `Milestone #${versionSnapshots.length + 1} (${snapWords} words)`,
+      author: author.trim() || 'BiodataCraft Editorial Team',
+      title: title.trim() || 'Untitled Article',
+      excerpt: excerpt.trim(),
+      content: contentBody,
+      wordCount: snapWords,
+      charCount: contentBody.length
+    };
+    setVersionSnapshots((prev) => [newSnapshot, ...prev]);
+    toast.success('Version milestone snapshot captured.');
+  };
+
+  const handleRestoreVersionSnapshot = (snapshot: ArticleVersionSnapshot) => {
+    createVersionSnapshot(`Auto-backup before restore (${title || 'Untitled'})`);
+    setTitle(snapshot.title);
+    setExcerpt(snapshot.excerpt);
+    setContentBody(snapshot.content);
+    recordHistory(snapshot.content);
+    toast.success(`Restored version: "${snapshot.label}"`);
+  };
+
   // Link Insertion Handlers (Phase 8)
   const handleOpenLinkModal = () => {
     const textarea = textareaRef.current;
@@ -681,6 +881,10 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
   };
 
   const handleUploadBodyImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isAdminAuthorized()) {
+      toast.error('Unauthorized: Administrator clearance required to upload images.');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -817,6 +1021,10 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
 
   // Process and upload image file using existing blogService
   const processImageFile = async (file: File) => {
+    if (!isAdminAuthorized()) {
+      toast.error('Unauthorized: Administrator clearance required to upload images.');
+      return;
+    }
     const isMimeValid = ALLOWED_IMAGE_MIMES.includes(file.type.toLowerCase());
     const isExtValid = ALLOWED_IMAGE_EXTS.test(file.name.toLowerCase());
 
@@ -990,8 +1198,12 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     return { valid: Object.keys(errors).length === 0, errors, cleanSlug };
   };
 
-  // Phase 13: Initiate Publish (Validates first, then opens Confirmation Step)
+  // Phase 13 & 18: Initiate Publish (Admin Protected, Validates first, then opens Confirmation Step)
   const handleInitiatePublish = () => {
+    if (!isAdminAuthorized()) {
+      toast.error('Unauthorized: Administrator clearance required to publish articles.');
+      return;
+    }
     const { valid, errors, cleanSlug } = validatePublishFields();
     if (!valid) {
       setFormErrors(errors);
@@ -1080,8 +1292,12 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     }
   };
 
-  // Phase 12 & 15: Save Draft without publishing
+  // Phase 12, 15 & 18: Save Draft without publishing (Admin Protected)
   const handleSaveDraft = async () => {
+    if (!isAdminAuthorized()) {
+      toast.error('Unauthorized: Administrator clearance required to save draft articles.');
+      return;
+    }
     if (isSaving) return;
 
     const trimmedTitle = title.trim();
@@ -1161,8 +1377,8 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     }
   };
 
-  // SEO Checklist Analysis
-  const seoChecklist = {
+  // SEO Checklist Analysis (memoized for performance - Phase 10 & 18)
+  const seoChecklist = useMemo(() => ({
     titleLength: seoTitle.length >= 45 && seoTitle.length <= 65,
     descLength: seoDescription.length >= 120 && seoDescription.length <= 165,
     keywordInTitle: focusKeyword ? title.toLowerCase().includes(focusKeyword.toLowerCase()) : false,
@@ -1170,10 +1386,10 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     keywordInDesc: focusKeyword ? seoDescription.toLowerCase().includes(focusKeyword.toLowerCase()) : false,
     wordCountPass: wordCount >= 300,
     hasFeaturedImage: Boolean(featuredImage.trim())
-  };
+  }), [seoTitle, seoDescription, focusKeyword, title, slug, wordCount, featuredImage]);
 
-  // Preview Renderer for Article Content (matches BlogPostPage parser + rich elements)
-  const renderPreviewContent = () => {
+  // Preview Renderer for Article Content (Memoized for high performance - Phase 18)
+  const renderedArticlePreview = useMemo(() => {
     const cleanContent = sanitizeArticleHtml(contentBody);
     const paragraphs = cleanContent
       .split('\n\n')
@@ -1276,7 +1492,16 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
         return (
           <figure key={idx} className="my-6 rounded-2xl overflow-hidden border border-stone-200/80 bg-stone-50 shadow-2xs">
             <div className="max-h-[440px] overflow-hidden flex items-center justify-center bg-stone-100">
-              <img src={src} alt={alt || 'Article visual'} className="w-full h-auto object-cover max-h-[440px]" />
+              <img
+                src={src}
+                alt={alt || 'Article visual'}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-auto object-cover max-h-[440px]"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                }}
+              />
             </div>
             {(caption || alt) && (
               <figcaption className="p-2.5 text-center text-xs text-stone-500 italic bg-stone-50 border-t border-stone-200/60 font-serif">
@@ -1484,10 +1709,12 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
         {renderedParagraphs}
       </div>
     );
-  };
+  }, [contentBody, enableTableOfContents, flatHeadings, tocItems]);
+
+  const renderPreviewContent = () => renderedArticlePreview;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto overflow-x-hidden">
+    <div className={`space-y-6 mx-auto overflow-x-hidden transition-all duration-150 ${isFullWidthEditor ? 'w-full px-2 sm:px-4' : 'max-w-7xl'}`}>
       {/* Draft Notification Banner */}
       {hasAutosaveDraft && !initialPost && (
         <div className="bg-amber-50/80 border border-amber-200/80 text-amber-950 px-4 py-3 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
@@ -1542,10 +1769,20 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
             </span>
           </nav>
 
-          {/* Quick Metrics & Autosave Tag (Phase 14: Automatic Article Statistics) */}
+          {/* Quick Metrics & Autosave Tag (Phase 14 & Section 7) */}
           <div className="flex flex-wrap items-center gap-2 text-xs text-stone-500">
-            {/* Unsaved changes indicator */}
-            {isDirty ? (
+            {/* Dynamic Autosave Status */}
+            {autosaveStatus === 'saving' ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
+                <RefreshCw className="w-2.5 h-2.5 animate-spin text-amber-700" />
+                <span>Saving draft...</span>
+              </span>
+            ) : autosaveStatus === 'failed' ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-800 border border-red-200 shadow-2xs">
+                <AlertCircle className="w-2.5 h-2.5 text-red-600" />
+                <span>Save failed</span>
+              </span>
+            ) : isDirty ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                 <span>Unsaved changes</span>
@@ -2010,6 +2247,8 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                                   <img
                                     src={preset.url}
                                     alt={preset.title}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                                   />
                                 </div>
@@ -2024,16 +2263,29 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                     )}
                   </div>
                 ) : (
-                  /* Image Preview & Management (Phase 6) */
+                  /* Image Preview & Management (Phase 6 & 18) */
                   <div className="space-y-4">
                     {/* 16:9 Image Preview Box */}
                     <div className="relative rounded-2xl overflow-hidden border border-stone-200 bg-stone-900 shadow-2xs group">
                       <div className="aspect-[16/9] w-full flex items-center justify-center overflow-hidden">
-                        <img
-                          src={featuredImage}
-                          alt={featuredImageAlt || title || 'Featured Banner Preview'}
-                          className="w-full h-full object-cover"
-                        />
+                        {imageLoadError ? (
+                          <div className="flex flex-col items-center justify-center p-6 text-center text-stone-300 space-y-2">
+                            <AlertCircle className="w-8 h-8 text-amber-400" />
+                            <p className="text-xs font-semibold">Image Preview Unavailable</p>
+                            <p className="text-[11px] text-stone-400 max-w-xs">
+                              The specified image could not be loaded. Please verify the URL or upload a fresh file.
+                            </p>
+                          </div>
+                        ) : (
+                          <img
+                            src={featuredImage}
+                            alt={featuredImageAlt || title || 'Featured Banner Preview'}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                            onError={() => setImageLoadError(true)}
+                          />
+                        )}
                       </div>
 
                       {/* Top-Right Control Actions */}
@@ -2225,7 +2477,7 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                       </button>
                     </div>
 
-                    {/* Headings & Paragraph */}
+                    {/* Headings & Paragraph Controls */}
                     <div className="flex items-center gap-0.5 px-1 border-r border-stone-200/80">
                       <button
                         type="button"
@@ -2254,14 +2506,14 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                       <button
                         type="button"
                         onClick={() => insertFormatting('#### ', '', 'Minor Topic Heading')}
-                        className="px-1.5 py-1 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/70 transition-colors font-bold text-[11px] cursor-pointer min-h-[32px] flex items-center justify-center"
+                        className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/70 transition-colors font-bold text-[11px] cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center"
                         title="Heading 4 (####)"
                       >
-                        H4
+                        <Heading4 className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    {/* Text Formatting: Bold, Italic, Underline, Strikethrough */}
+                    {/* Text Formatting: Bold, Italic, Underline, Strikethrough, Inline Code */}
                     <div className="flex items-center gap-0.5 px-1 border-r border-stone-200/80">
                       <button
                         type="button"
@@ -2294,6 +2546,42 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                         title="Strikethrough (~~text~~)"
                       >
                         <Strikethrough className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertFormatting('`', '`', 'term')}
+                        className="p-1.5 rounded-lg text-stone-700 hover:bg-stone-200/70 transition-colors cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center"
+                        title="Inline Code / Auspicious Vedic Term"
+                      >
+                        <Code className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Text Alignment (Left, Center, Right) */}
+                    <div className="flex items-center gap-0.5 px-1 border-r border-stone-200/80">
+                      <button
+                        type="button"
+                        onClick={() => applyAlignment('left')}
+                        className="p-1.5 rounded-lg text-stone-700 hover:bg-stone-200/70 transition-colors cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center"
+                        title="Align Left"
+                      >
+                        <AlignLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyAlignment('center')}
+                        className="p-1.5 rounded-lg text-stone-700 hover:bg-stone-200/70 transition-colors cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center"
+                        title="Align Center (e.g. Matrimonial Shlok / Blessing)"
+                      >
+                        <AlignCenter className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyAlignment('right')}
+                        className="p-1.5 rounded-lg text-stone-700 hover:bg-stone-200/70 transition-colors cursor-pointer min-h-[32px] min-w-[32px] flex items-center justify-center"
+                        title="Align Right"
+                      >
+                        <AlignRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
@@ -2333,17 +2621,31 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                       </button>
                     </div>
 
-                    {/* Rich Elements: Link, Body Image, Table, CTA */}
+                    {/* Advanced Content & Navigation Helpers */}
                     <div className="flex items-center gap-1 pl-1">
+                      {/* External / Custom Link */}
                       <button
                         type="button"
                         onClick={handleOpenLinkModal}
                         className="px-2 py-1.5 rounded-lg hover:bg-stone-200/70 text-stone-700 transition-colors flex items-center gap-1 cursor-pointer min-h-[32px]"
-                        title="Insert Link (Ctrl+K)"
+                        title="Insert Custom Link (Ctrl+K)"
                       >
                         <LinkIcon className="w-3.5 h-3.5 text-amber-800" />
                         <span className="text-[11px] font-medium hidden sm:inline">Link</span>
                       </button>
+
+                      {/* Internal Website Route Linker */}
+                      <button
+                        type="button"
+                        onClick={() => setShowInternalLinkModal(true)}
+                        className="px-2 py-1.5 rounded-lg hover:bg-amber-100/70 text-amber-900 transition-colors flex items-center gap-1 cursor-pointer min-h-[32px]"
+                        title="Search & Link to BiodataCraft Templates, Formats & Articles"
+                      >
+                        <Link2 className="w-3.5 h-3.5 text-amber-800" />
+                        <span className="text-[11px] font-semibold hidden md:inline">Internal Link</span>
+                      </button>
+
+                      {/* Inline Image Modal */}
                       <button
                         type="button"
                         onClick={handleOpenImageModal}
@@ -2353,6 +2655,19 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                         <ImageIcon className="w-3.5 h-3.5 text-amber-800" />
                         <span className="text-[11px] font-medium hidden sm:inline">Image</span>
                       </button>
+
+                      {/* Article Media Manager */}
+                      <button
+                        type="button"
+                        onClick={() => setShowMediaManagerModal(true)}
+                        className="px-2 py-1.5 rounded-lg hover:bg-stone-200/70 text-stone-700 transition-colors flex items-center gap-1 cursor-pointer min-h-[32px]"
+                        title="Open Media Library & Manage Uploads"
+                      >
+                        <Layers className="w-3.5 h-3.5 text-amber-800" />
+                        <span className="text-[11px] font-medium hidden lg:inline">Media Library</span>
+                      </button>
+
+                      {/* Table Modal */}
                       <button
                         type="button"
                         onClick={handleOpenTableModal}
@@ -2362,6 +2677,30 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                         <TableIcon className="w-3.5 h-3.5 text-amber-800" />
                         <span className="text-[11px] font-medium hidden sm:inline">Table</span>
                       </button>
+
+                      {/* Structure Assistant */}
+                      <button
+                        type="button"
+                        onClick={() => setShowStructureModal(true)}
+                        className="px-2 py-1.5 rounded-lg hover:bg-stone-200/70 text-stone-700 transition-colors flex items-center gap-1 cursor-pointer min-h-[32px]"
+                        title="Insert Educational Guide Structure & Outlines"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 text-amber-800" />
+                        <span className="text-[11px] font-medium hidden xl:inline">Structure</span>
+                      </button>
+
+                      {/* Version History */}
+                      <button
+                        type="button"
+                        onClick={() => setShowVersionHistoryModal(true)}
+                        className="px-2 py-1.5 rounded-lg hover:bg-stone-200/70 text-stone-700 transition-colors flex items-center gap-1 cursor-pointer min-h-[32px]"
+                        title="View Article Version History Snapshots"
+                      >
+                        <History className="w-3.5 h-3.5 text-stone-600" />
+                        <span className="text-[11px] font-medium hidden xl:inline">History</span>
+                      </button>
+
+                      {/* CTA Conversion Box */}
                       <button
                         type="button"
                         onClick={insertCtaBlock}
@@ -2374,8 +2713,27 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                     </div>
                   </div>
 
-                  {/* View Mode Toggle (Single Editor vs Split View) */}
-                  <div className="flex items-center gap-1">
+                  {/* Right Action Tools: Full-Width Toggle & Split View Toggle */}
+                  <div className="flex items-center gap-1.5">
+                    {/* Full-Width Canvas Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setIsFullWidthEditor((prev) => !prev)}
+                      className={`p-1.5 rounded-lg border transition-colors cursor-pointer min-h-[34px] min-w-[34px] flex items-center justify-center ${
+                        isFullWidthEditor
+                          ? 'bg-amber-100 text-amber-900 border-amber-300'
+                          : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+                      }`}
+                      title={isFullWidthEditor ? 'Exit Full Width (Center Content)' : 'Full Width Editor Mode'}
+                    >
+                      {isFullWidthEditor ? (
+                        <Minimize2 className="w-3.5 h-3.5" />
+                      ) : (
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+
+                    {/* View Mode Toggle (Single Editor vs Split View) */}
                     <button
                       type="button"
                       onClick={() => setViewMode(viewMode === 'split' ? 'editor' : 'split')}
@@ -2387,7 +2745,7 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                       title="Toggle Side-by-Side Split View"
                     >
                       <Columns className="w-3.5 h-3.5" />
-                      <span>{viewMode === 'split' ? 'Single Editor' : 'Split View'}</span>
+                      <span className="hidden sm:inline">{viewMode === 'split' ? 'Single Editor' : 'Split View'}</span>
                     </button>
                   </div>
                 </div>
@@ -2591,7 +2949,12 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                     <img
                       src={featuredImage}
                       alt={featuredImageAlt || title || 'Featured Banner Preview'}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
                     />
                   </div>
                   {featuredImageAlt && (
@@ -2638,11 +3001,11 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
           <aside className="w-full lg:w-[30%] shrink-0 space-y-4">
             <div className="bg-white border border-stone-200/80 rounded-2xl shadow-2xs overflow-hidden">
               {/* Sidebar Segment Tabs */}
-              <div className="grid grid-cols-4 border-b border-stone-100 p-1 bg-stone-50/60 text-xs">
+              <div className="grid grid-cols-5 border-b border-stone-100 p-1 bg-stone-50/60 text-xs">
                 <button
                   type="button"
                   onClick={() => setSidebarTab('publish')}
-                  className={`py-2 px-1 text-center font-medium rounded-xl transition-all cursor-pointer min-h-[36px] ${
+                  className={`py-2 px-0.5 text-center font-medium rounded-xl transition-all cursor-pointer min-h-[36px] ${
                     sidebarTab === 'publish'
                       ? 'bg-white text-stone-900 shadow-2xs font-semibold'
                       : 'text-stone-500 hover:text-stone-900'
@@ -2653,7 +3016,7 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setSidebarTab('seo')}
-                  className={`py-2 px-1 text-center font-medium rounded-xl transition-all cursor-pointer min-h-[36px] ${
+                  className={`py-2 px-0.5 text-center font-medium rounded-xl transition-all cursor-pointer min-h-[36px] ${
                     sidebarTab === 'seo'
                       ? 'bg-white text-stone-900 shadow-2xs font-semibold'
                       : 'text-stone-500 hover:text-stone-900'
@@ -2663,8 +3026,19 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setSidebarTab('quality')}
+                  className={`py-2 px-0.5 text-center font-medium rounded-xl transition-all cursor-pointer min-h-[36px] flex items-center justify-center gap-1 ${
+                    sidebarTab === 'quality'
+                      ? 'bg-white text-stone-900 shadow-2xs font-semibold'
+                      : 'text-stone-500 hover:text-stone-900'
+                  }`}
+                >
+                  <span>Quality</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSidebarTab('media')}
-                  className={`py-2 px-1 text-center font-medium rounded-xl transition-all cursor-pointer min-h-[36px] ${
+                  className={`py-2 px-0.5 text-center font-medium rounded-xl transition-all cursor-pointer min-h-[36px] ${
                     sidebarTab === 'media'
                       ? 'bg-white text-stone-900 shadow-2xs font-semibold'
                       : 'text-stone-500 hover:text-stone-900'
@@ -2675,7 +3049,7 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                 <button
                   type="button"
                   onClick={() => setSidebarTab('social')}
-                  className={`py-2 px-1 text-center font-medium rounded-xl transition-all cursor-pointer min-h-[36px] ${
+                  className={`py-2 px-0.5 text-center font-medium rounded-xl transition-all cursor-pointer min-h-[36px] ${
                     sidebarTab === 'social'
                       ? 'bg-white text-stone-900 shadow-2xs font-semibold'
                       : 'text-stone-500 hover:text-stone-900'
@@ -3178,6 +3552,35 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                 </div>
               )}
 
+              {/* TAB: ARTICLE QUALITY & SEO WRITING ASSISTANT */}
+              {sidebarTab === 'quality' && (
+                <ArticleQualityAssistant
+                  title={title}
+                  slug={slug}
+                  excerpt={excerpt}
+                  contentBody={contentBody}
+                  featuredImage={featuredImage}
+                  featuredImageAlt={featuredImageAlt}
+                  seoTitle={seoTitle}
+                  seoDescription={seoDescription}
+                  focusKeyword={focusKeyword}
+                  onApplyTitleSuggestion={(newTitle) => {
+                    setSeoTitle(newTitle);
+                    toast.success('Applied suggested title to SEO Title tag.');
+                  }}
+                  onApplyDescriptionSuggestion={(newDesc) => {
+                    setSeoDescription(newDesc);
+                    toast.success('Applied suggested description to Meta Description.');
+                  }}
+                  onApplyExcerptSuggestion={(newExcerpt) => {
+                    setExcerpt(newExcerpt);
+                    toast.success('Applied suggested excerpt to Catalog Summary.');
+                  }}
+                  onOpenInternalLinksModal={() => setShowInternalLinkModal(true)}
+                  onOpenStructureModal={() => setShowStructureModal(true)}
+                />
+              )}
+
               {/* TAB 3: FEATURED MEDIA */}
               {sidebarTab === 'media' && (
                 <div className="p-4 sm:p-5 space-y-4 text-xs">
@@ -3187,6 +3590,8 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                         <img
                           src={featuredImage}
                           alt="Featured Banner"
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-36 object-cover"
                         />
                         <button
@@ -3256,6 +3661,8 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                             <img
                               src={preset.url}
                               alt={preset.title}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                             />
                           </div>
@@ -3286,6 +3693,8 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                         <img
                           src={featuredImage}
                           alt="Social preview banner"
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-32 object-cover"
                         />
                       ) : (
@@ -3566,7 +3975,13 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
               {bodyImageUrl && (
                 <div className="p-2 bg-stone-50 rounded-xl border border-stone-200 flex items-center gap-3">
                   <div className="w-16 h-12 rounded-lg bg-stone-200 overflow-hidden shrink-0">
-                    <img src={bodyImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <img
+                      src={bodyImageUrl}
+                      alt="Preview"
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="text-[11px] text-stone-600 truncate">
                     <span className="font-semibold block truncate">{bodyImageAlt || 'No ALT set'}</span>
@@ -4079,7 +4494,12 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                     <img
                       src={featuredImage}
                       alt={featuredImageAlt || title || 'Featured Article Banner'}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-56 sm:h-80 md:h-96 object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
                     />
                     {featuredImageAlt && (
                       <div className="p-2.5 text-center text-xs text-stone-500 italic bg-stone-50 border-t border-stone-200/60 font-serif">
@@ -4156,123 +4576,77 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
         </div>
       )}
       {/* ============================================================== */}
-      {/* PHASE 13: CONFIRM PUBLICATION MODAL */}
+      {/* PHASE 13 & 19: PRE-PUBLISH REVIEW MODAL */}
       {/* ============================================================== */}
-      {showPublishConfirmModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirm-publication-dialog-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-        >
-          <div className="bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-lg w-full p-6 space-y-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-100/80 text-amber-900 flex items-center justify-center shrink-0 shadow-2xs">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 id="confirm-publication-dialog-title" className="font-bold text-stone-900 font-cinzel text-lg">
-                    Confirm Publication
-                  </h3>
-                  <p className="text-xs text-stone-500">
-                    Review article summary before publishing live to the public directory.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPublishConfirmModal(false)}
-                className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      <PrePublishReviewModal
+        isOpen={showPublishConfirmModal}
+        onClose={() => setShowPublishConfirmModal(false)}
+        onConfirmPublish={executePublish}
+        isPublishing={isSaving}
+        title={title}
+        slug={slug}
+        category={category === 'Custom' ? customCategory || 'General' : category}
+        author={author}
+        readTime={readTime}
+        excerpt={excerpt}
+        contentBody={contentBody}
+        featuredImage={featuredImage}
+        featuredImageAlt={featuredImageAlt}
+        seoTitle={seoTitle}
+        seoDescription={seoDescription}
+        enableTableOfContents={enableTableOfContents}
+      />
 
-            {/* Publication Review Card */}
-            <div className="bg-stone-50/80 p-4 rounded-xl border border-stone-200/70 text-xs space-y-2.5">
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Article Title</span>
-                <p className="font-bold text-stone-900 text-sm">{title || 'Untitled Article'}</p>
-              </div>
+      {/* ============================================================== */}
+      {/* PHASE 3: INTERNAL LINK SEARCH & INSERT MODAL */}
+      {/* ============================================================== */}
+      <InternalLinkModal
+        isOpen={showInternalLinkModal}
+        onClose={() => setShowInternalLinkModal(false)}
+        onInsertLink={handleInsertInternalLink}
+        existingPosts={existingPosts}
+      />
 
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Public URL Path</span>
-                <p className="font-mono text-xs text-amber-900 bg-amber-50/80 px-2.5 py-1 rounded-lg border border-amber-200/60 truncate">
-                  /blog/{slug || 'your-article-slug'}
-                </p>
-              </div>
+      {/* ============================================================== */}
+      {/* PHASE 4: ARTICLE STRUCTURE BLUEPRINT ASSISTANT */}
+      {/* ============================================================== */}
+      <ArticleStructureModal
+        isOpen={showStructureModal}
+        onClose={() => setShowStructureModal(false)}
+        onInsertStructure={handleInsertStructure}
+        currentArticleTitle={title}
+      />
 
-              <div className="grid grid-cols-2 gap-3 pt-1 border-t border-stone-200/60">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Category</span>
-                  <p className="font-semibold text-stone-800">{category === 'Custom' ? customCategory || 'General' : category}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Author</span>
-                  <p className="font-semibold text-stone-800 truncate">{author}</p>
-                </div>
-              </div>
+      {/* ============================================================== */}
+      {/* PHASE 8: ARTICLE VERSION HISTORY SNAPSHOTS */}
+      {/* ============================================================== */}
+      <VersionHistoryModal
+        isOpen={showVersionHistoryModal}
+        onClose={() => setShowVersionHistoryModal(false)}
+        versions={versionSnapshots}
+        currentContent={contentBody}
+        currentTitle={title}
+        onRestoreVersion={handleRestoreVersionSnapshot}
+        onCreateManualSnapshot={() => createVersionSnapshot()}
+      />
 
-              <div className="grid grid-cols-2 gap-3 pt-1 border-t border-stone-200/60">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Word Count</span>
-                  <p className="font-semibold text-stone-800">{wordCount} words ({readTime})</p>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Table of Contents</span>
-                  <p className="font-semibold text-stone-800">{enableTableOfContents ? 'Enabled (Auto H2/H3)' : 'Disabled'}</p>
-                </div>
-              </div>
-
-              {featuredImage && (
-                <div className="pt-1 border-t border-stone-200/60 flex items-center gap-3">
-                  <img
-                    src={featuredImage}
-                    alt={featuredImageAlt || title}
-                    className="w-16 h-10 object-cover rounded-lg border border-stone-200"
-                  />
-                  <div className="text-[11px] text-stone-600 truncate">
-                    <span className="font-medium text-stone-800 block">Featured Image Attached</span>
-                    <span className="text-stone-400 truncate block">{featuredImageAlt || 'No ALT text'}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-3 bg-amber-50/70 border border-amber-200/70 rounded-xl text-amber-900 text-xs flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-amber-800 shrink-0" />
-              <span>
-                Once confirmed, the article will be published live and indexed immediately.
-              </span>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2 border-t border-stone-100">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowPublishConfirmModal(false)}
-                disabled={isSaving}
-                className="w-full sm:w-auto rounded-xl border-stone-200 text-stone-700 hover:bg-stone-50 min-h-[40px] px-4 cursor-pointer"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={executePublish}
-                isLoading={isSaving}
-                disabled={isSaving}
-                leftIcon={<Save className="w-3.5 h-3.5" />}
-                className="w-full sm:w-auto rounded-xl bg-amber-800 hover:bg-amber-900 text-white min-h-[40px] px-5 font-semibold cursor-pointer shadow-2xs"
-              >
-                Confirm & Publish Article
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ============================================================== */}
+      {/* PHASE 2: ARTICLE MEDIA MANAGER */}
+      {/* ============================================================== */}
+      <MediaManagerModal
+        isOpen={showMediaManagerModal}
+        onClose={() => setShowMediaManagerModal(false)}
+        mediaList={sessionMediaList}
+        onAddImage={handleAddMediaItem}
+        onRemoveImage={handleRemoveMediaItem}
+        featuredImageUrl={featuredImage}
+        onSetFeaturedImage={(url, alt) => {
+          setFeaturedImage(url);
+          setFeaturedImageAlt(alt);
+          toast.success('Updated featured image & ALT text.');
+        }}
+        onInsertInlineImage={handleInsertInlineFromMedia}
+      />
 
       {/* ============================================================== */}
       {/* PHASE 13: PUBLISHED SUCCESS NOTIFICATION MODAL */}

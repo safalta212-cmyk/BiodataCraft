@@ -12,19 +12,24 @@ import {
 } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../utils/firestoreError';
 
+import DOMPurify from 'dompurify';
+
 const BLOG_COLLECTION = 'blog_posts';
 const BLOG_STORAGE_KEY = 'biodatacraft_admin_blog_posts_v2';
 
-function verifyAdminAuthorization(): void {
-  if (typeof window === 'undefined') return;
-  const isAuthed = Boolean(
+export function isAdminAuthorized(): boolean {
+  if (typeof window === 'undefined') return true;
+  return Boolean(
     sessionStorage.getItem('biodatacraft_admin_token') ||
     sessionStorage.getItem('biodatacraft_admin_session_token') ||
     sessionStorage.getItem('biodatacraft_admin_auth_user') ||
     localStorage.getItem('biodatacraft_admin_token') ||
     auth?.currentUser
   );
-  if (!isAuthed) {
+}
+
+function verifyAdminAuthorization(): void {
+  if (!isAdminAuthorized()) {
     throw new Error('Unauthorized: Administrator clearance required to modify blog publications.');
   }
 }
@@ -252,6 +257,20 @@ class BlogService {
   }
 
   private sanitizeContent(text: string): string {
+    if (!text) return '';
+    if (typeof window !== 'undefined') {
+      return DOMPurify.sanitize(text, {
+        ALLOWED_TAGS: [
+          'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'b', 'i', 'u', 's', 'strong', 'em', 'strike',
+          'ul', 'ol', 'li', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr',
+          'th', 'td', 'a', 'img', 'figure', 'figcaption', 'code', 'pre', 'span', 'br', 'div'
+        ],
+        ALLOWED_ATTR: [
+          'href', 'target', 'rel', 'src', 'alt', 'title', 'class', 'width', 'height', 'loading', 'decoding'
+        ],
+        ALLOW_DATA_ATTR: false
+      });
+    }
     return text
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
@@ -429,11 +448,18 @@ class BlogService {
     if (!validMimes.includes(file.type.toLowerCase())) {
       throw new Error('Invalid file type. Only JPEG, PNG, WEBP, and SVG images are allowed.');
     }
+    const hasValidExtension = /\.(jpe?g|png|webp|svg)$/i.test(file.name);
+    if (!hasValidExtension && file.name) {
+      throw new Error('Invalid file extension. Only .jpg, .jpeg, .png, .webp, and .svg are permitted.');
+    }
     if (file.size > 5 * 1024 * 1024) {
       throw new Error('File size exceeds the 5MB maximum limit.');
     }
 
-    const safeName = (assetName || file.name || 'blog-image').replace(/[^a-zA-Z0-9._-]/g, '_');
+    const rawName = (assetName || file.name || 'blog-image')
+      .replace(/[\/\\]/g, '')
+      .replace(/\.\.+/g, '.');
+    const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_');
     let finalUrl = '';
 
     if (isConfigured) {
