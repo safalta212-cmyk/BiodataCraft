@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { Breadcrumbs } from '../components/common/Breadcrumbs';
@@ -8,8 +8,28 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ErrorState } from '../components/ui/ErrorState';
 import { ResponsiveAd } from '../components/ads/ResponsiveAd';
-import { ArrowLeft, Clock, User, Calendar, Share2, Sparkles, BookOpen } from 'lucide-react';
+import { ArrowLeft, Clock, User, Calendar, Share2, Sparkles, BookOpen, ListTree } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
+
+const slugifyHeadingText = (text: string): string => {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip markdown links
+    .replace(/[*_~`]/g, '')                   // strip markdown formatting
+    .replace(/<[^>]+>/g, '')                  // strip inline HTML
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'section';
+};
+
+interface TocHeadingItem {
+  id: string;
+  text: string;
+  level: 2 | 3;
+  children?: TocHeadingItem[];
+}
 
 export const BlogPostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -77,6 +97,93 @@ export const BlogPostPage: React.FC = () => {
       toast.success('Article link copied to clipboard!');
     }
   };
+
+  // Split post content into clean, distinct paragraph blocks
+  const contentBlocks = useMemo(() => {
+    if (!post || !post.content) return [];
+    const rawList = Array.isArray(post.content) ? post.content : [String(post.content || '')];
+    const flattened: string[] = [];
+    for (const item of rawList) {
+      if (typeof item === 'string') {
+        const parts = item.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+        if (parts.length > 0) {
+          flattened.push(...parts);
+        }
+      }
+    }
+    return flattened;
+  }, [post]);
+
+  // Extract headings for Table of Contents
+  const { tocItems, flatHeadings } = useMemo(() => {
+    if (!contentBlocks || contentBlocks.length === 0) {
+      return { tocItems: [], flatHeadings: [] };
+    }
+
+    const flat: Array<{ id: string; text: string; level: 2 | 3 }> = [];
+    const idCountMap = new Map<string, number>();
+
+    contentBlocks.forEach((block) => {
+      const trimmed = block.trim();
+      const isH2 = trimmed.startsWith('## ') && !trimmed.startsWith('### ');
+      const isH3 = trimmed.startsWith('### ');
+
+      if (isH2 || isH3) {
+        const rawText = isH2 ? trimmed.slice(3) : trimmed.slice(4);
+        const cleanText = rawText.replace(/[*_~`]/g, '').trim();
+        const baseSlug = slugifyHeadingText(cleanText);
+        const seenCount = idCountMap.get(baseSlug) || 0;
+        idCountMap.set(baseSlug, seenCount + 1);
+        const uniqueId = seenCount === 0 ? baseSlug : `${baseSlug}-${seenCount}`;
+
+        flat.push({
+          id: uniqueId,
+          text: cleanText,
+          level: isH2 ? 2 : 3
+        });
+      }
+    });
+
+    const rootItems: TocHeadingItem[] = [];
+    let currentH2: TocHeadingItem | null = null;
+
+    flat.forEach((h) => {
+      if (h.level === 2) {
+        currentH2 = { ...h, children: [] };
+        rootItems.push(currentH2);
+      } else if (h.level === 3) {
+        if (currentH2) {
+          currentH2.children = currentH2.children || [];
+          currentH2.children.push({ ...h });
+        } else {
+          rootItems.push({ ...h });
+        }
+      }
+    });
+
+    return { tocItems: rootItems, flatHeadings: flat };
+  }, [contentBlocks]);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.history.replaceState(null, '', `#${id}`);
+    }
+  };
+
+  // Scroll to hash target on initial load if present
+  useEffect(() => {
+    if (!loading && post && typeof window !== 'undefined' && window.location.hash) {
+      const targetId = window.location.hash.slice(1);
+      setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+    }
+  }, [loading, post]);
 
   return (
     <div className="min-h-screen bg-stone-50 py-10 sm:py-16">
@@ -181,60 +288,353 @@ export const BlogPostPage: React.FC = () => {
           {/* Article Body Content */}
           <Card>
             <CardContent className="p-6 sm:p-10 space-y-4 text-sm sm:text-base text-stone-700 leading-relaxed font-sans">
-              {(() => {
-                const totalParagraphs = post.content.length;
-                // Sensible content threshold: middle ad only rendered if article has at least 4 paragraphs
-                const middleIndex = totalParagraphs >= 4 ? Math.floor(totalParagraphs / 2) : -1;
+              {/* Optional Table of Contents */}
+              {post.enableTableOfContents && tocItems.length >= 2 && (
+                <nav aria-label="Table of Contents" className="mb-8 p-5 sm:p-6 rounded-2xl bg-amber-50/70 border border-amber-200/80 shadow-2xs font-sans not-prose">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-amber-200/60">
+                    <div className="flex items-center gap-2 text-amber-950 font-bold text-sm sm:text-base font-cinzel">
+                      <ListTree className="w-4 h-4 text-amber-800" />
+                      <span>Table of Contents</span>
+                    </div>
+                    <span className="text-[11px] font-medium text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded-full border border-amber-200/80">
+                      {flatHeadings.length} Sections
+                    </span>
+                  </div>
+                  <ul className="space-y-2 text-xs sm:text-sm">
+                    {tocItems.map((h2Item) => (
+                      <li key={h2Item.id} className="space-y-1.5">
+                        <a
+                          href={`#${h2Item.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            scrollToSection(h2Item.id);
+                          }}
+                          className="text-stone-800 font-semibold hover:text-amber-900 transition-colors flex items-center gap-2 group cursor-pointer"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-800 group-hover:scale-125 transition-transform shrink-0" />
+                          <span className="hover:underline">{h2Item.text}</span>
+                        </a>
+                        {h2Item.children && h2Item.children.length > 0 && (
+                          <ul className="pl-5 space-y-1 border-l border-amber-200/70 ml-1.5 mt-1">
+                            {h2Item.children.map((h3Item) => (
+                              <li key={h3Item.id}>
+                                <a
+                                  href={`#${h3Item.id}`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    scrollToSection(h3Item.id);
+                                  }}
+                                  className="text-stone-600 hover:text-amber-950 transition-colors flex items-center gap-1.5 py-0.5 text-xs group cursor-pointer"
+                                >
+                                  <span className="text-amber-800/60 font-mono text-[10px]">↳</span>
+                                  <span className="hover:underline">{h3Item.text}</span>
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              )}
 
-                const renderFormattedText = (text: string) => {
-                  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-                  return parts.map((part, i) => {
-                    if (part.startsWith('**') && part.endsWith('**')) {
-                      return <strong key={i} className="font-bold text-stone-900">{part.slice(2, -2)}</strong>;
+              {(() => {
+                const totalParagraphs = contentBlocks.length;
+                const middleIndex = totalParagraphs >= 4 ? Math.floor(totalParagraphs / 2) : -1;
+                const headingIdCountMap = new Map<string, number>();
+
+                const renderFormattedText = (text: string): React.ReactNode => {
+                  if (!text) return null;
+
+                  // Regex matches both markdown links [label](url) and HTML links <a href="url">label</a>
+                  const linkRegex = /\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)|<a\s+(?:[^>]*?\s+)?href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi;
+                  const parts: React.ReactNode[] = [];
+                  let lastIndex = 0;
+                  let match: RegExpExecArray | null;
+
+                  const parseInlineStyles = (subText: string, keyPrefix: string): React.ReactNode[] => {
+                    if (!subText) return [];
+                    const pattern = /(\*\*[^*]+\*\*|<u>[^<]+<\/u>|~~[^~]+~~|<s>[^<]+<\/s>|\*[^*]+\*|`[^`]+`)/g;
+                    const subParts = subText.split(pattern);
+                    return subParts.map((subPart, i) => {
+                      const subKey = `${keyPrefix}-${i}`;
+                      if (subPart.startsWith('**') && subPart.endsWith('**')) {
+                        return <strong key={subKey} className="font-bold text-stone-900">{subPart.slice(2, -2)}</strong>;
+                      }
+                      if (subPart.startsWith('<u>') && subPart.endsWith('</u>')) {
+                        return <u key={subKey} className="underline decoration-amber-800/60 underline-offset-2">{subPart.slice(3, -4)}</u>;
+                      }
+                      if ((subPart.startsWith('~~') && subPart.endsWith('~~')) || (subPart.startsWith('<s>') && subPart.endsWith('</s>'))) {
+                        const rawInner = subPart.startsWith('~~') ? subPart.slice(2, -2) : subPart.slice(3, -4);
+                        return <s key={subKey} className="line-through text-stone-400">{rawInner}</s>;
+                      }
+                      if (subPart.startsWith('*') && subPart.endsWith('*')) {
+                        return <em key={subKey} className="italic text-stone-800">{subPart.slice(1, -1)}</em>;
+                      }
+                      if (subPart.startsWith('`') && subPart.endsWith('`')) {
+                        return <code key={subKey} className="px-1.5 py-0.5 rounded-md bg-stone-100 text-stone-800 font-mono text-[11px]">{subPart.slice(1, -1)}</code>;
+                      }
+                      return subPart;
+                    });
+                  };
+
+                  while ((match = linkRegex.exec(text)) !== null) {
+                    if (match.index > lastIndex) {
+                      parts.push(...parseInlineStyles(text.substring(lastIndex, match.index), `txt-${match.index}`));
                     }
-                    return part;
-                  });
+
+                    const isMarkdown = Boolean(match[1]);
+                    const linkLabel = isMarkdown ? match[1] : match[4];
+                    const linkHref = (isMarkdown ? match[2] : match[3]) || '#';
+
+                    const isInternal =
+                      linkHref.startsWith('/') ||
+                      linkHref.startsWith('#') ||
+                      (typeof window !== 'undefined' && linkHref.includes(window.location.host)) ||
+                      linkHref.includes('biodata-craft') ||
+                      linkHref.includes('biodatacraft');
+
+                    let internalPath = linkHref;
+                    if (isInternal && (linkHref.startsWith('http://') || linkHref.startsWith('https://'))) {
+                      try {
+                        const urlObj = new URL(linkHref);
+                        internalPath = urlObj.pathname + urlObj.search + urlObj.hash;
+                      } catch {
+                        internalPath = linkHref;
+                      }
+                    }
+
+                    if (linkHref.startsWith('#')) {
+                      parts.push(
+                        <a
+                          key={`anchor-${match.index}`}
+                          href={linkHref}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            scrollToSection(linkHref.slice(1));
+                          }}
+                          className="text-amber-800 font-semibold underline decoration-amber-800/40 hover:text-amber-950 transition-colors cursor-pointer"
+                        >
+                          {parseInlineStyles(linkLabel, `lnk-anc-${match.index}`)}
+                        </a>
+                      );
+                    } else if (isInternal) {
+                      parts.push(
+                        <Link
+                          key={`link-${match.index}`}
+                          to={internalPath}
+                          className="text-amber-800 font-semibold underline decoration-amber-800/40 hover:text-amber-950 transition-colors cursor-pointer"
+                        >
+                          {parseInlineStyles(linkLabel, `lnk-in-${match.index}`)}
+                        </Link>
+                      );
+                    } else {
+                      parts.push(
+                        <a
+                          key={`link-${match.index}`}
+                          href={linkHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-amber-800 font-semibold underline decoration-amber-800/40 hover:text-amber-950 transition-colors cursor-pointer"
+                        >
+                          {parseInlineStyles(linkLabel, `lnk-out-${match.index}`)}
+                        </a>
+                      );
+                    }
+
+                    lastIndex = match.index + match[0].length;
+                  }
+
+                  if (lastIndex < text.length) {
+                    parts.push(...parseInlineStyles(text.substring(lastIndex), `tail-${lastIndex}`));
+                  }
+
+                  return parts;
                 };
 
                 const renderSafeBlock = (paragraph: string, key: React.Key) => {
                   const trimmed = paragraph.trim();
-                  if (trimmed.startsWith('### ')) {
+
+                  // Horizontal Rule / Divider
+                  if (/^---+|\*\*\*+$/.test(trimmed)) {
+                    return <hr key={key} className="my-8 border-t border-stone-200/80" />;
+                  }
+
+                  // Inline Image ![alt](url "caption") or ![alt](url)
+                  const imgMatch = trimmed.match(/^!\[([^\]]*)\]\(([^"\s)]+)(?:\s+"([^"]*)")?\)$/);
+                  if (imgMatch) {
+                    const alt = imgMatch[1];
+                    const src = imgMatch[2];
+                    const caption = imgMatch[3];
                     return (
-                      <h3 key={key} className="text-base sm:text-lg font-bold font-cinzel text-amber-950 mt-6 mb-2">
-                        {renderFormattedText(trimmed.slice(4))}
+                      <figure key={key} className="my-6 rounded-2xl overflow-hidden border border-stone-200/80 bg-stone-50 shadow-2xs">
+                        <div className="max-h-[440px] overflow-hidden flex items-center justify-center bg-stone-100">
+                          <img
+                            src={src}
+                            alt={alt || 'Article visual'}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-auto object-cover max-h-[440px]"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                        {(caption || alt) && (
+                          <figcaption className="p-2.5 text-center text-xs text-stone-500 italic bg-stone-50 border-t border-stone-200/60 font-serif">
+                            {caption || alt}
+                          </figcaption>
+                        )}
+                      </figure>
+                    );
+                  }
+
+                  // Markdown Table
+                  if (trimmed.startsWith('|') && trimmed.includes('|')) {
+                    const rows = trimmed
+                      .split('\n')
+                      .map((r) => r.trim())
+                      .filter((r) => r.startsWith('|'));
+                    if (rows.length >= 2) {
+                      const parseRow = (rowStr: string) =>
+                        rowStr
+                          .slice(1, rowStr.endsWith('|') ? -1 : undefined)
+                          .split('|')
+                          .map((c) => c.trim());
+                      const headerCols = parseRow(rows[0]);
+                      const isSep = /^\|[\s-:]+\|/.test(rows[1]);
+                      const bodyRows = rows.slice(isSep ? 2 : 1).map(parseRow);
+
+                      return (
+                        <div key={key} className="my-6 overflow-x-auto rounded-xl border border-stone-200/90 shadow-2xs bg-white">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-amber-50/80 border-b border-stone-200 text-amber-950 font-bold uppercase tracking-wider text-[11px]">
+                                {headerCols.map((h, hIdx) => (
+                                  <th key={hIdx} className="p-3">
+                                    {renderFormattedText(h)}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-stone-100 text-stone-700">
+                              {bodyRows.map((r, rIdx) => (
+                                <tr key={rIdx} className="hover:bg-stone-50/60 transition-colors">
+                                  {r.map((c, cIdx) => (
+                                    <td key={cIdx} className="p-3 leading-relaxed">
+                                      {renderFormattedText(c)}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    }
+                  }
+
+                  // Headings: H2, H3, H4 with anchor permalinks
+                  if (trimmed.startsWith('#### ')) {
+                    return (
+                      <h4 key={key} className="text-sm sm:text-base font-bold font-cinzel text-amber-950 mt-5 mb-2">
+                        {renderFormattedText(trimmed.slice(5))}
+                      </h4>
+                    );
+                  }
+                  if (trimmed.startsWith('### ')) {
+                    const rawText = trimmed.slice(4);
+                    const cleanText = rawText.replace(/[*_~`]/g, '').trim();
+                    const baseSlug = slugifyHeadingText(cleanText);
+                    const seenCount = headingIdCountMap.get(baseSlug) || 0;
+                    headingIdCountMap.set(baseSlug, seenCount + 1);
+                    const headingId = seenCount === 0 ? baseSlug : `${baseSlug}-${seenCount}`;
+                    return (
+                      <h3 id={headingId} key={key} className="scroll-mt-20 text-base sm:text-lg font-bold font-cinzel text-amber-950 mt-6 mb-2 flex items-center justify-between group">
+                        <span>{renderFormattedText(rawText)}</span>
+                        <a
+                          href={`#${headingId}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            scrollToSection(headingId);
+                          }}
+                          className="text-stone-300 opacity-0 group-hover:opacity-100 hover:text-amber-800 transition-opacity text-xs font-mono ml-2 cursor-pointer"
+                          title="Section permalink"
+                        >
+                          #
+                        </a>
                       </h3>
                     );
                   }
                   if (trimmed.startsWith('## ')) {
+                    const rawText = trimmed.slice(3);
+                    const cleanText = rawText.replace(/[*_~`]/g, '').trim();
+                    const baseSlug = slugifyHeadingText(cleanText);
+                    const seenCount = headingIdCountMap.get(baseSlug) || 0;
+                    headingIdCountMap.set(baseSlug, seenCount + 1);
+                    const headingId = seenCount === 0 ? baseSlug : `${baseSlug}-${seenCount}`;
                     return (
-                      <h2 key={key} className="text-lg sm:text-xl font-bold font-cinzel text-amber-950 mt-7 mb-3 border-b border-stone-100 pb-2">
-                        {renderFormattedText(trimmed.slice(3))}
+                      <h2 id={headingId} key={key} className="scroll-mt-20 text-lg sm:text-xl font-bold font-cinzel text-amber-950 mt-7 mb-3 border-b border-stone-200/60 pb-2 flex items-center justify-between group">
+                        <span>{renderFormattedText(rawText)}</span>
+                        <a
+                          href={`#${headingId}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            scrollToSection(headingId);
+                          }}
+                          className="text-stone-300 opacity-0 group-hover:opacity-100 hover:text-amber-800 transition-opacity text-xs font-mono ml-2 cursor-pointer"
+                          title="Section permalink"
+                        >
+                          #
+                        </a>
                       </h2>
                     );
                   }
+
+                  // Blockquote
                   if (trimmed.startsWith('> ')) {
                     return (
-                      <blockquote key={key} className="border-l-4 border-amber-800 pl-4 py-2 italic text-stone-700 bg-amber-50/50 rounded-r-xl my-4">
+                      <blockquote key={key} className="border-l-4 border-amber-800 pl-4 py-2 italic text-stone-700 bg-amber-50/50 rounded-r-xl my-4 leading-relaxed">
                         {renderFormattedText(trimmed.slice(2))}
                       </blockquote>
                     );
                   }
-                  if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+
+                  // Bullet List
+                  if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ')) {
                     return (
                       <div key={key} className="flex items-start gap-2.5 my-1.5 pl-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-800 mt-2 shrink-0" />
-                        <span className="leading-relaxed text-stone-700">{renderFormattedText(trimmed.replace(/^[-•]\s*/, ''))}</span>
+                        <span className="leading-relaxed text-stone-700">{renderFormattedText(trimmed.replace(/^[-•*]\s*/, ''))}</span>
                       </div>
                     );
                   }
+
+                  // Numbered List
+                  if (/^\d+\.\s+/.test(trimmed)) {
+                    const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+                    return (
+                      <div key={key} className="flex items-start gap-2.5 my-1.5 pl-2">
+                        <span className="font-semibold text-amber-800 font-mono text-xs mt-0.5 shrink-0 min-w-[18px]">
+                          {numMatch ? numMatch[1] : '1'}.
+                        </span>
+                        <span className="leading-relaxed text-stone-700">
+                          {renderFormattedText(numMatch ? numMatch[2] : trimmed)}
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  // Standard Paragraph
                   return (
-                    <p key={key} className="leading-relaxed text-stone-700">
+                    <p key={key} className="leading-relaxed text-stone-700 my-3">
                       {renderFormattedText(trimmed)}
                     </p>
                   );
                 };
 
-                return post.content.map((paragraph, idx) => (
+                return contentBlocks.map((paragraph, idx) => (
                   <React.Fragment key={idx}>
                     {renderSafeBlock(paragraph, idx)}
                     {idx === middleIndex && (
