@@ -39,6 +39,8 @@ interface ArticleQualityAssistantProps {
   onApplyExcerptSuggestion: (newExcerpt: string) => void;
   onOpenInternalLinksModal: () => void;
   onOpenStructureModal: () => void;
+  onApplyInternalLinkOpportunity?: (keyword: string, route: string, pageName: string) => void;
+  onOpenInternalLinksModalWithQuery?: (searchQuery: string, anchorText: string) => void;
 }
 
 export const ArticleQualityAssistant: React.FC<ArticleQualityAssistantProps> = ({
@@ -55,7 +57,9 @@ export const ArticleQualityAssistant: React.FC<ArticleQualityAssistantProps> = (
   onApplyDescriptionSuggestion,
   onApplyExcerptSuggestion,
   onOpenInternalLinksModal,
-  onOpenStructureModal
+  onOpenStructureModal,
+  onApplyInternalLinkOpportunity,
+  onOpenInternalLinksModalWithQuery
 }) => {
   // Analyze content for quality checks
   const analysis = useMemo(() => {
@@ -409,21 +413,42 @@ export const ArticleQualityAssistant: React.FC<ArticleQualityAssistantProps> = (
                   key={idx}
                   className="p-2 bg-white rounded-lg border border-stone-200 flex items-center justify-between gap-2"
                 >
-                  <div className="truncate">
-                    <span className="text-[11px] font-semibold text-stone-800 block">
-                      Found keyword: <code className="text-amber-800">"{opp.keyword}"</code>
+                  <div className="truncate min-w-0">
+                    <span className="text-[11px] font-semibold text-stone-800 block truncate">
+                      Found keyword: <code className="text-amber-800 font-mono">"{opp.keyword}"</code>
                     </span>
                     <span className="text-[10px] text-stone-400 truncate block">
                       Link to {opp.pageName} ({opp.route})
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={onOpenInternalLinksModal}
-                    className="px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[10px] font-medium cursor-pointer shrink-0"
-                  >
-                    Insert Link
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onApplyInternalLinkOpportunity) {
+                          onApplyInternalLinkOpportunity(opp.keyword, opp.route, opp.pageName);
+                        } else if (onOpenInternalLinksModalWithQuery) {
+                          onOpenInternalLinksModalWithQuery(opp.keyword, opp.keyword);
+                        } else {
+                          onOpenInternalLinksModal();
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-amber-800 hover:bg-amber-900 text-white text-[10px] font-semibold transition-colors cursor-pointer shadow-2xs"
+                      title={`Insert link to ${opp.route} for keyword "${opp.keyword}"`}
+                    >
+                      Apply Link
+                    </button>
+                    {onOpenInternalLinksModalWithQuery && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenInternalLinksModalWithQuery(opp.keyword, opp.keyword)}
+                        className="px-2 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-[10px] font-medium transition-colors cursor-pointer border border-stone-200/80"
+                        title="Browse other matching internal pages"
+                      >
+                        Search
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

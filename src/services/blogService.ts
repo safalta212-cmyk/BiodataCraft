@@ -13,6 +13,7 @@ import {
 import { handleFirestoreError, OperationType } from '../utils/firestoreError';
 
 import DOMPurify from 'dompurify';
+import { optimizeImageForWeb } from '../utils/imageOptimizer';
 
 const BLOG_COLLECTION = 'blog_posts';
 const BLOG_STORAGE_KEY = 'biodatacraft_admin_blog_posts_v2';
@@ -59,6 +60,74 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(new Error('Failed to read image file.'));
     reader.readAsDataURL(file);
   });
+}
+
+function stripUndefined<T extends Record<string, any>>(obj: T): Partial<T> {
+  const clean: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      clean[key] = value;
+    }
+  }
+  return clean;
+}
+
+async function ensureSafeDocumentSize(post: BlogPost): Promise<BlogPost> {
+  const safePost = { ...post };
+
+  // 1. Optimize featuredImage if it is a large base64 data URI (> 120 KB)
+  if (
+    safePost.featuredImage &&
+    safePost.featuredImage.startsWith('data:image/') &&
+    safePost.featuredImage.length > 120_000
+  ) {
+    try {
+      const opt = await optimizeImageForWeb(safePost.featuredImage, 1200, 800, 0.78);
+      safePost.featuredImage = opt.dataUrl;
+    } catch (err) {
+      console.warn('Notice: featured image optimization fallback:', err);
+    }
+  }
+
+  // 2. Optimize any inline data URIs inside content paragraphs
+  if (Array.isArray(safePost.content)) {
+    const updatedContent: string[] = [];
+    for (const paragraph of safePost.content) {
+      if (paragraph.includes('data:image/') && paragraph.length > 120_000) {
+        const dataUriRegex = /(data:image\/[a-zA-Z0-9.+_-]+;base64,[A-Za-z0-9+/=]+)/g;
+        let updated = paragraph;
+        const matches = Array.from(paragraph.matchAll(dataUriRegex));
+        for (const match of matches) {
+          const uri = match[1];
+          if (uri.length > 120_000) {
+            try {
+              const opt = await optimizeImageForWeb(uri, 900, 600, 0.75);
+              updated = updated.replace(uri, opt.dataUrl);
+            } catch {
+              // keep existing on error
+            }
+          }
+        }
+        updatedContent.push(updated);
+      } else {
+        updatedContent.push(paragraph);
+      }
+    }
+    safePost.content = updatedContent;
+  }
+
+  // 3. Final safety check against Firestore's 1 MiB (1,048,576 bytes) document ceiling
+  const estimatedBytes = new TextEncoder().encode(JSON.stringify(safePost)).length;
+  if (estimatedBytes > 800_000 && safePost.featuredImage && safePost.featuredImage.startsWith('data:image/')) {
+    try {
+      const aggressiveOpt = await optimizeImageForWeb(safePost.featuredImage, 800, 500, 0.60);
+      safePost.featuredImage = aggressiveOpt.dataUrl;
+    } catch {
+      // keep existing
+    }
+  }
+
+  return safePost;
 }
 
 class BlogService {
@@ -176,8 +245,11 @@ class BlogService {
               author: data.author || 'Editorial Team',
               content: Array.isArray(data.content) ? data.content : [data.content || ''],
               featuredImage: data.featuredImage || '',
+              featuredImageAlt: data.featuredImageAlt || '',
               seoTitle: data.seoTitle || data.title,
               seoDescription: data.seoDescription || data.excerpt,
+              canonicalUrl: data.canonicalUrl || '',
+              enableTableOfContents: typeof data.enableTableOfContents === 'boolean' ? data.enableTableOfContents : false,
               isPublished: data.isPublished !== false,
               createdAt: data.createdAt || new Date().toISOString(),
               updatedAt: data.updatedAt || new Date().toISOString()
@@ -319,10 +391,12 @@ class BlogService {
       isPublished: data.isPublished !== false
     };
 
+    const safePost = await ensureSafeDocumentSize(newPost);
+
     if (isConfigured && db) {
       const docRef = doc(db, BLOG_COLLECTION, id);
       try {
-        await withTimeout(setDoc(docRef, newPost), 15000, 'Firestore blog post creation');
+        await withTimeout(setDoc(docRef, stripUndefined(safePost)), 15000, 'Firestore blog post creation');
       } catch (err: any) {
         if (err?.message?.includes('permission') || err?.code?.includes('permission')) {
           handleFirestoreError(err, OperationType.CREATE, `${BLOG_COLLECTION}/${id}`);
@@ -331,10 +405,10 @@ class BlogService {
       }
     }
 
-    this.posts = [newPost, ...this.posts];
+    this.posts = [safePost, ...this.posts];
     this.saveLocalPosts(this.posts);
     this.invalidateCache();
-    return newPost;
+    return safePost;
   }
 
   /**
@@ -383,14 +457,21 @@ class BlogService {
       cleanUpdates.excerpt = this.sanitizeContent(updates.excerpt.trim());
     }
 
+    const mergedPost: BlogPost = {
+      ...currentPost,
+      ...cleanUpdates
+    };
+    const safePost = await ensureSafeDocumentSize(mergedPost);
+    const sanitizedUpdates = stripUndefined(safePost);
+
     if (isConfigured && db) {
       const docRef = doc(db, BLOG_COLLECTION, docId);
       try {
-        await withTimeout(updateDoc(docRef, cleanUpdates), 15000, 'Firestore blog post update');
+        await withTimeout(updateDoc(docRef, sanitizedUpdates), 15000, 'Firestore blog post update');
       } catch (err: any) {
         // If document doesn't exist yet in Firestore, create it with setDoc
         if (err?.code === 'not-found' || err?.message?.includes('No document to update')) {
-          await withTimeout(setDoc(docRef, { ...currentPost, ...cleanUpdates }), 15000, 'Firestore blog post set');
+          await withTimeout(setDoc(docRef, sanitizedUpdates), 15000, 'Firestore blog post set');
         } else {
           if (err?.message?.includes('permission') || err?.code?.includes('permission')) {
             handleFirestoreError(err, OperationType.UPDATE, `${BLOG_COLLECTION}/${docId}`);
@@ -400,10 +481,7 @@ class BlogService {
       }
     }
 
-    this.posts[idx] = {
-      ...this.posts[idx],
-      ...cleanUpdates
-    };
+    this.posts[idx] = safePost;
     this.saveLocalPosts(this.posts);
     this.invalidateCache();
     return true;
@@ -462,6 +540,20 @@ class BlogService {
     const safeName = rawName.replace(/[^a-zA-Z0-9._-]/g, '_');
     let finalUrl = '';
 
+    // Optimize and compress client-side before upload or data URL fallback
+    let optimizedDataUrl = '';
+    let uploadPayload: Blob | File = file;
+
+    try {
+      const optimized = await optimizeImageForWeb(file, 1200, 800, 0.80);
+      optimizedDataUrl = optimized.dataUrl;
+      if (optimized.blob) {
+        uploadPayload = optimized.blob;
+      }
+    } catch {
+      // Graceful fallback to raw file if canvas is unsupported
+    }
+
     if (isConfigured) {
       try {
         const storageInstance = await getStorageInstance();
@@ -469,7 +561,7 @@ class BlogService {
           const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
           const storageRef = ref(storageInstance, `template-assets/blog_${Date.now()}_${safeName}`);
           const snapshot = await withTimeout(
-            uploadBytes(storageRef, file, { contentType: file.type }),
+            uploadBytes(storageRef, uploadPayload, { contentType: (uploadPayload as any).type || file.type }),
             12000,
             'Firebase Storage blog image upload'
           );
@@ -481,7 +573,7 @@ class BlogService {
     }
 
     if (!finalUrl) {
-      finalUrl = await fileToDataUrl(file);
+      finalUrl = optimizedDataUrl || (await fileToDataUrl(file));
     }
 
     // Record upload metadata in uploads collection

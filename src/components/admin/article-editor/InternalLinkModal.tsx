@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BlogPost, BLOG_POSTS } from '../../../data/blogData';
+import { blogService } from '../../../services/blogService';
 import { INITIAL_TEMPLATES } from '../../../data/templateData';
 import {
   Search,
@@ -28,18 +29,55 @@ interface InternalLinkModalProps {
   onClose: () => void;
   onInsertLink: (anchorText: string, url: string) => void;
   existingPosts?: BlogPost[];
+  initialSearchQuery?: string;
+  initialAnchorText?: string;
 }
 
 export const InternalLinkModal: React.FC<InternalLinkModalProps> = ({
   isOpen,
   onClose,
   onInsertLink,
-  existingPosts = []
+  existingPosts = [],
+  initialSearchQuery = '',
+  initialAnchorText = ''
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'article' | 'template' | 'format' | 'tool'>('all');
-  const [customAnchorText, setCustomAnchorText] = useState('');
+  const [customAnchorText, setCustomAnchorText] = useState(initialAnchorText);
   const [selectedItem, setSelectedItem] = useState<InternalLinkItem | null>(null);
+  const [livePosts, setLivePosts] = useState<BlogPost[]>(existingPosts);
+
+  // Synchronize when modal opens or initial search query / anchor text changes
+  useEffect(() => {
+    if (isOpen) {
+      setSearchQuery(initialSearchQuery || '');
+      setCustomAnchorText(initialAnchorText || '');
+      setSelectedItem(null);
+    }
+  }, [isOpen, initialSearchQuery, initialAnchorText]);
+
+  // Synchronize when existingPosts changes from parent
+  useEffect(() => {
+    if (existingPosts && existingPosts.length > 0) {
+      setLivePosts(existingPosts);
+    }
+  }, [existingPosts]);
+
+  // Fetch latest real articles directly from database when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      blogService
+        .getPosts({ includeUnpublished: true, forceRefresh: true })
+        .then((fetched) => {
+          if (fetched && fetched.length > 0) {
+            setLivePosts(fetched);
+          }
+        })
+        .catch(() => {
+          // Graceful fallback to existingPosts
+        });
+    }
+  }, [isOpen]);
 
   // Build the comprehensive directory of actual existing website routes
   const linkDirectory = useMemo<InternalLinkItem[]>(() => {
@@ -161,10 +199,10 @@ export const InternalLinkModal: React.FC<InternalLinkModalProps> = ({
       });
     });
 
-    // 4. Real Blog Articles (Merged from existingPosts and default BLOG_POSTS)
+    // 4. Real Blog Articles (Merged from livePosts and default BLOG_POSTS)
     const postMap = new Map<string, BlogPost>();
     BLOG_POSTS.forEach((p) => postMap.set(p.slug, p));
-    existingPosts.forEach((p) => postMap.set(p.slug, p));
+    livePosts.forEach((p) => postMap.set(p.slug, p));
 
     Array.from(postMap.values()).forEach((p) => {
       list.push({
@@ -178,7 +216,7 @@ export const InternalLinkModal: React.FC<InternalLinkModalProps> = ({
     });
 
     return list;
-  }, [existingPosts]);
+  }, [livePosts]);
 
   // Filter based on search query and category
   const filteredLinks = useMemo(() => {
@@ -206,7 +244,7 @@ export const InternalLinkModal: React.FC<InternalLinkModalProps> = ({
 
   const handleSelectLink = (item: InternalLinkItem) => {
     setSelectedItem(item);
-    if (!customAnchorText || customAnchorText === selectedItem?.title) {
+    if (!customAnchorText.trim()) {
       setCustomAnchorText(item.title);
     }
   };
@@ -219,7 +257,8 @@ export const InternalLinkModal: React.FC<InternalLinkModalProps> = ({
   };
 
   const handleQuickInsert = (item: InternalLinkItem) => {
-    onInsertLink(item.title, item.url);
+    const finalAnchor = customAnchorText.trim() || item.title;
+    onInsertLink(finalAnchor, item.url);
     onClose();
   };
 

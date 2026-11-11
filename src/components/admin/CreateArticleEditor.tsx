@@ -281,6 +281,15 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
   const [showVersionHistoryModal, setShowVersionHistoryModal] = useState(false);
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
 
+  // Active cursor & highlighted text tracking for modal insertions
+  const [savedSelectionRange, setSavedSelectionRange] = useState<{
+    start: number;
+    end: number;
+    selectedText: string;
+  } | null>(null);
+  const [internalLinkInitialQuery, setInternalLinkInitialQuery] = useState('');
+  const [internalLinkInitialAnchor, setInternalLinkInitialAnchor] = useState('');
+
   // Media Library Session items (seeded with initial featured image & Auspicious presets)
   const [sessionMediaList, setSessionMediaList] = useState<ManagedImageItem[]>(() => {
     const list: ManagedImageItem[] = [];
@@ -780,9 +789,110 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     }
   };
 
+  // Dedicated Markdown link insertion helper that handles cursor restoration and saved range
+  const insertMarkdownLink = (
+    anchorText: string,
+    url: string,
+    targetRange?: { start: number; end: number; selectedText?: string } | null
+  ) => {
+    const textarea = textareaRef.current;
+    const finalUrl = url.trim();
+    const finalAnchor = anchorText.trim() || finalUrl;
+
+    if (!finalUrl) {
+      toast.error('Destination URL cannot be empty.');
+      return;
+    }
+
+    const markdownSnippet = `[${finalAnchor}](${finalUrl})`;
+
+    // Determine target range: saved range, or active textarea selection, or end of body
+    let start = contentBody.length;
+    let end = contentBody.length;
+
+    if (targetRange && typeof targetRange.start === 'number' && typeof targetRange.end === 'number') {
+      start = Math.max(0, Math.min(targetRange.start, contentBody.length));
+      end = Math.max(start, Math.min(targetRange.end, contentBody.length));
+    } else if (textarea) {
+      start = textarea.selectionStart ?? contentBody.length;
+      end = textarea.selectionEnd ?? contentBody.length;
+    }
+
+    const newContent =
+      contentBody.substring(0, start) + markdownSnippet + contentBody.substring(end);
+
+    setContentBody(newContent);
+    recordHistory(newContent);
+    setIsDirty(true);
+    setSavedSelectionRange(null);
+
+    // Refocus and position cursor immediately after inserted link
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const newCursorPos = start + markdownSnippet.length;
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 50);
+
+    toast.success(`Inserted link: "${finalAnchor}"`);
+  };
+
   // Section 3: Internal link insertion handler
+  const handleOpenInternalLinkModal = (prefillQuery?: string, prefillAnchor?: string) => {
+    const textarea = textareaRef.current;
+    let start = 0;
+    let end = 0;
+    let selected = '';
+    if (textarea) {
+      start = textarea.selectionStart;
+      end = textarea.selectionEnd;
+      selected = contentBody.substring(start, end);
+    }
+    setSavedSelectionRange({ start, end, selectedText: selected });
+
+    const query = prefillQuery !== undefined ? prefillQuery : selected;
+    const anchor = prefillAnchor !== undefined ? prefillAnchor : selected;
+
+    setInternalLinkInitialQuery(query);
+    setInternalLinkInitialAnchor(anchor);
+    setShowInternalLinkModal(true);
+  };
+
   const handleInsertInternalLink = (anchorText: string, url: string) => {
-    insertFormatting(`[${anchorText}](`, ')', url);
+    insertMarkdownLink(anchorText, url, savedSelectionRange);
+    setShowInternalLinkModal(false);
+  };
+
+  // One-click linking opportunity applicator from ArticleQualityAssistant
+  const handleApplyLinkingOpportunity = (keyword: string, route: string, pageName: string) => {
+    const cleanKw = keyword.toLowerCase().split('/')[0].trim();
+    const lowerBody = contentBody.toLowerCase();
+    const kwIdx = lowerBody.indexOf(cleanKw);
+
+    if (kwIdx !== -1) {
+      const before = contentBody.substring(0, kwIdx);
+      const after = contentBody.substring(kwIdx + cleanKw.length);
+      const matchedText = contentBody.substring(kwIdx, kwIdx + cleanKw.length);
+      const linkedSnippet = `[${matchedText}](${route})`;
+      const newContent = `${before}${linkedSnippet}${after}`;
+
+      setContentBody(newContent);
+      recordHistory(newContent);
+      setIsDirty(true);
+
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          const newCursorPos = kwIdx + linkedSnippet.length;
+          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }, 50);
+
+      toast.success(`Linked "${matchedText}" to ${pageName} (${route})`);
+    } else {
+      insertMarkdownLink(pageName, route, savedSelectionRange);
+    }
   };
 
   // Section 4: Educational structure insertion handler (preserves existing text)
@@ -848,13 +958,19 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
     toast.success(`Restored version: "${snapshot.label}"`);
   };
 
-  // Link Insertion Handlers (Phase 8)
+  // Link Insertion Handlers (Phase 8 & Fix)
   const handleOpenLinkModal = () => {
     const textarea = textareaRef.current;
+    let start = 0;
+    let end = 0;
+    let selected = '';
     if (textarea) {
-      const selected = contentBody.substring(textarea.selectionStart, textarea.selectionEnd);
-      setLinkText(selected || '');
+      start = textarea.selectionStart;
+      end = textarea.selectionEnd;
+      selected = contentBody.substring(start, end);
     }
+    setSavedSelectionRange({ start, end, selectedText: selected });
+    setLinkText(selected || '');
     setLinkUrl('');
     setLinkType('custom');
     setShowLinkModal(true);
@@ -866,9 +982,8 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
       return;
     }
     const label = linkText.trim() || linkUrl.trim();
-    insertFormatting(`[${label}](`, ')', linkUrl.trim());
+    insertMarkdownLink(label, linkUrl.trim(), savedSelectionRange);
     setShowLinkModal(false);
-    toast.success('Link inserted into article.');
   };
 
   // Image Insertion Handlers (Phase 8)
@@ -1267,6 +1382,9 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
         const created = await blogService.createPost(postPayload);
         setActivePostId(created.id || null);
         setActivePostSlug(created.slug);
+        if (created.featuredImage && created.featuredImage !== featuredImage) {
+          setFeaturedImage(created.featuredImage);
+        }
       }
 
       // ONLY AFTER backend confirms publishing succeeded:
@@ -1283,10 +1401,10 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
         slug: cleanSlug,
         url: publicArticleUrl
       });
-      toast.success('Article published successfully!');
     } catch (err: any) {
       // Never show success if backend fails!
-      toast.error('Failed to publish article.');
+      console.error('Failed to publish article:', err);
+      toast.error(err?.message || 'Failed to publish article.');
     } finally {
       setIsSaving(false);
     }
@@ -1353,6 +1471,9 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
         const created = await blogService.createPost(postPayload);
         setActivePostId(created.id || null);
         setActivePostSlug(created.slug);
+        if (created.featuredImage && created.featuredImage !== featuredImage) {
+          setFeaturedImage(created.featuredImage);
+        }
       }
 
       setIsPublished(false);
@@ -1362,7 +1483,8 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
       localStorage.removeItem(DRAFT_STORAGE_KEY);
       toast.success(`Draft "${trimmedTitle}" saved successfully!`);
     } catch (err: any) {
-      toast.error('Failed to save article.');
+      console.error('Failed to save article draft:', err);
+      toast.error(err?.message || 'Failed to save article.');
     } finally {
       setIsSaving(false);
     }
@@ -2637,7 +2759,7 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                       {/* Internal Website Route Linker */}
                       <button
                         type="button"
-                        onClick={() => setShowInternalLinkModal(true)}
+                        onClick={() => handleOpenInternalLinkModal()}
                         className="px-2 py-1.5 rounded-lg hover:bg-amber-100/70 text-amber-900 transition-colors flex items-center gap-1 cursor-pointer min-h-[32px]"
                         title="Search & Link to BiodataCraft Templates, Formats & Articles"
                       >
@@ -3576,7 +3698,9 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
                     setExcerpt(newExcerpt);
                     toast.success('Applied suggested excerpt to Catalog Summary.');
                   }}
-                  onOpenInternalLinksModal={() => setShowInternalLinkModal(true)}
+                  onOpenInternalLinksModal={() => handleOpenInternalLinkModal()}
+                  onOpenInternalLinksModalWithQuery={(query, anchor) => handleOpenInternalLinkModal(query, anchor)}
+                  onApplyInternalLinkOpportunity={handleApplyLinkingOpportunity}
                   onOpenStructureModal={() => setShowStructureModal(true)}
                 />
               )}
@@ -4602,9 +4726,15 @@ export const CreateArticleEditor: React.FC<CreateArticleEditorProps> = ({
       {/* ============================================================== */}
       <InternalLinkModal
         isOpen={showInternalLinkModal}
-        onClose={() => setShowInternalLinkModal(false)}
+        onClose={() => {
+          setShowInternalLinkModal(false);
+          setInternalLinkInitialQuery('');
+          setInternalLinkInitialAnchor('');
+        }}
         onInsertLink={handleInsertInternalLink}
         existingPosts={existingPosts}
+        initialSearchQuery={internalLinkInitialQuery}
+        initialAnchorText={internalLinkInitialAnchor}
       />
 
       {/* ============================================================== */}
