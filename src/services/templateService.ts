@@ -220,12 +220,32 @@ class TemplateService {
   }
 
   /**
-   * Retrieves categories
+   * Retrieves categories (merging default taxonomy with Firestore categories)
    */
-  async getCategories(): Promise<TemplateCategory[]> {
+  async getCategories(forceRefresh = false): Promise<TemplateCategory[]> {
     const now = Date.now();
-    if (this.cachedCategories && now - this.categoriesCacheTime < this.CACHE_TTL_MS) {
+    if (!forceRefresh && this.cachedCategories && now - this.categoriesCacheTime < this.CACHE_TTL_MS) {
       return this.cachedCategories;
+    }
+
+    const categoryMap = new Map<string, TemplateCategory>();
+    for (const cat of TEMPLATE_CATEGORIES) {
+      categoryMap.set(cat.id, cat);
+    }
+
+    // Load any custom categories from localStorage
+    try {
+      const stored = localStorage.getItem('biodatacraft_admin_categories');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          for (const c of parsed) {
+            categoryMap.set(c.id, c);
+          }
+        }
+      }
+    } catch {
+      // Ignore
     }
 
     if (isConfigured && db) {
@@ -234,17 +254,121 @@ class TemplateService {
         const catCol = collection(db, CATEGORIES_COLLECTION);
         const snapshot = await withTimeout(getDocs(catCol), 10000, 'Firestore categories query');
         if (!snapshot.empty) {
-          this.cachedCategories = snapshot.docs.map((doc) => doc.data() as TemplateCategory);
-          this.categoriesCacheTime = now;
-          return this.cachedCategories;
+          snapshot.docs.forEach((docSnap) => {
+            const data = docSnap.data() as TemplateCategory;
+            categoryMap.set(data.id || docSnap.id, {
+              ...data,
+              id: data.id || docSnap.id
+            });
+          });
         }
       } catch (err) {
         console.warn('Firestore categories query notice:', err);
       }
     }
-    this.cachedCategories = TEMPLATE_CATEGORIES;
+
+    const allCategories = Array.from(categoryMap.values()).sort((a, b) => (a.sortOrder || 99) - (b.sortOrder || 99));
+    this.cachedCategories = allCategories;
     this.categoriesCacheTime = now;
-    return TEMPLATE_CATEGORIES;
+    return allCategories;
+  }
+
+  /**
+   * Admin CRUD: Create a new category in Firestore & local cache
+   */
+  async createCategory(categoryData: Omit<TemplateCategory, 'id'> & { id?: string }): Promise<TemplateCategory> {
+    verifyAdminAuthorization();
+    const cleanSlug = categoryData.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    const id = categoryData.id || `cat-${cleanSlug || Date.now()}`;
+    const newCategory: TemplateCategory = {
+      ...categoryData,
+      id,
+      slug: cleanSlug || id,
+      sortOrder: categoryData.sortOrder || 99
+    };
+
+    if (isConfigured && db) {
+      const { doc, setDoc } = await loadFirestore();
+      const docRef = doc(db, CATEGORIES_COLLECTION, id);
+      try {
+        await withTimeout(setDoc(docRef, newCategory), 15000, 'Firestore category creation');
+      } catch (err: any) {
+        if (err?.message?.includes('permission') || err?.code?.includes('permission')) {
+          handleFirestoreError(err, OperationType.CREATE, `${CATEGORIES_COLLECTION}/${id}`);
+        }
+        throw err;
+      }
+    }
+
+    // Persist to local storage custom categories cache
+    try {
+      const stored = localStorage.getItem('biodatacraft_admin_categories');
+      const existing: TemplateCategory[] = stored ? JSON.parse(stored) : [];
+      const updated = [...existing.filter((c) => c.id !== id), newCategory];
+      localStorage.setItem('biodatacraft_admin_categories', JSON.stringify(updated));
+    } catch {
+      // Ignore
+    }
+
+    this.invalidateCache();
+    return newCategory;
+  }
+
+  /**
+   * Admin CRUD: Update category in Firestore & local cache
+   */
+  async updateCategory(id: string, updates: Partial<TemplateCategory>): Promise<boolean> {
+    verifyAdminAuthorization();
+    if (isConfigured && db) {
+      const { doc, updateDoc } = await loadFirestore();
+      const docRef = doc(db, CATEGORIES_COLLECTION, id);
+      try {
+        await withTimeout(updateDoc(docRef, updates), 15000, 'Firestore category update');
+      } catch (err: any) {
+        if (err?.message?.includes('permission') || err?.code?.includes('permission')) {
+          handleFirestoreError(err, OperationType.UPDATE, `${CATEGORIES_COLLECTION}/${id}`);
+        }
+        throw err;
+      }
+    }
+
+    this.invalidateCache();
+    return true;
+  }
+
+  /**
+   * Admin CRUD: Delete category from Firestore & local cache
+   */
+  async deleteCategory(id: string): Promise<boolean> {
+    verifyAdminAuthorization();
+    if (isConfigured && db) {
+      const { doc, deleteDoc } = await loadFirestore();
+      const docRef = doc(db, CATEGORIES_COLLECTION, id);
+      try {
+        await withTimeout(deleteDoc(docRef), 15000, 'Firestore category deletion');
+      } catch (err: any) {
+        if (err?.message?.includes('permission') || err?.code?.includes('permission')) {
+          handleFirestoreError(err, OperationType.DELETE, `${CATEGORIES_COLLECTION}/${id}`);
+        }
+        throw err;
+      }
+    }
+
+    try {
+      const stored = localStorage.getItem('biodatacraft_admin_categories');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter((c) => c.id !== id);
+          localStorage.setItem('biodatacraft_admin_categories', JSON.stringify(filtered));
+        }
+      }
+    } catch {
+      // Ignore
+    }
+
+    this.invalidateCache();
+    return true;
   }
 
   /**

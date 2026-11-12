@@ -8,6 +8,13 @@ import {
   DailyMetricPoint
 } from '../types/analytics';
 
+import { db, isConfigured } from '../config/firebase';
+
+const loadFirestore = async () => {
+  const { doc, setDoc, getDoc, getDocs, collection, increment } = await import('firebase/firestore');
+  return { doc, setDoc, getDoc, getDocs, collection, increment };
+};
+
 const ANALYTICS_LOCAL_KEY = 'biodatacraft_anon_analytics_v1';
 const VISITOR_ID_KEY = 'biodatacraft_anon_vid';
 const SESSION_ID_KEY = 'biodatacraft_anon_sid';
@@ -824,8 +831,302 @@ class AnalyticsService {
       stats.recentEvents = [eventRecord, ...(stats.recentEvents || [])].slice(0, 50);
 
       this.saveStats(stats);
+
+      // Asynchronously synchronize anonymous operational telemetry to Firestore
+      this.syncToFirestore(eventName, safeMetadata, eventRecord, {
+        isNewVisitorToday: safeMetadata.isNewVisitorToday !== false,
+        isFirstTimeVisitor: Boolean(safeMetadata.isFirstTimeVisitor),
+        device,
+        browser,
+        traffic,
+        templateId,
+        format,
+        stepNumber
+      }).catch(() => {});
     } catch {
       // Do not allow analytics failure to break anything
+    }
+  }
+
+  /**
+   * Asynchronously synchronizes non-blocking anonymous operational counts to Firestore
+   * Strictly adheres to Zero-PII principles.
+   */
+  private async syncToFirestore(
+    eventName: string,
+    safeMetadata: Record<string, unknown>,
+    eventRecord: AnonymousAnalyticsEvent,
+    context: {
+      isNewVisitorToday: boolean;
+      isFirstTimeVisitor: boolean;
+      device: string;
+      browser: string;
+      traffic: string;
+      templateId?: string;
+      format?: string;
+      stepNumber?: number;
+    }
+  ): Promise<void> {
+    if (!isConfigured || !db || typeof window === 'undefined') return;
+
+    try {
+      const { doc, setDoc, increment, getDoc } = await loadFirestore();
+      const todayStr = new Date().toISOString().split('T')[0];
+      const monthShort = new Date().toLocaleDateString('en-US', { month: 'short' });
+      const dayNum = new Date().getDate();
+      const todayLabel = `${monthShort} ${dayNum}`;
+
+      const isPageView = eventName === 'page_view';
+      const isBuilderStart = eventName === 'builder_started';
+      const isGeneration = eventName === 'pdf_generation_completed';
+      const isDownload =
+        eventName === 'download_completed' ||
+        eventName === 'download_pdf' ||
+        eventName === 'download_png' ||
+        eventName === 'print_biodata';
+      const isPdf = context.format === 'pdf' || eventName === 'download_pdf';
+      const isPng = context.format === 'png' || eventName === 'download_png';
+      const isPrint = context.format === 'print' || eventName === 'print_biodata';
+      const isSession = eventName === 'session_started';
+
+      // 1. Update /analytics/summary
+      const summaryRef = doc(db, 'analytics', 'summary');
+      const summaryUpdates: Record<string, unknown> = {
+        lastUpdated: new Date().toISOString()
+      };
+
+      if (context.isFirstTimeVisitor) {
+        summaryUpdates.visitors = increment(1);
+      }
+      if (isPageView) {
+        summaryUpdates.pageViews = increment(1);
+        summaryUpdates.totalVisits = increment(1);
+      }
+      if (isBuilderStart) {
+        summaryUpdates.builderStarts = increment(1);
+      }
+      if (isGeneration) {
+        summaryUpdates.biodataGenerations = increment(1);
+      }
+      if (isDownload) {
+        summaryUpdates.downloads = increment(1);
+        if (isPdf) {
+          summaryUpdates['downloadsBreakdown.pdf'] = increment(1);
+          summaryUpdates.totalPdfDownloads = increment(1);
+        } else if (isPng) {
+          summaryUpdates['downloadsBreakdown.png'] = increment(1);
+          summaryUpdates.totalPngDownloads = increment(1);
+        } else if (isPrint) {
+          summaryUpdates['downloadsBreakdown.print'] = increment(1);
+          summaryUpdates.totalPrints = increment(1);
+        }
+      }
+      if (context.templateId && isDownload) {
+        summaryUpdates[`templateUsage.${context.templateId}`] = increment(1);
+      }
+      if (isSession) {
+        summaryUpdates[`deviceCategory.${context.device}`] = increment(1);
+        summaryUpdates[`browserCategory.${context.browser}`] = increment(1);
+        summaryUpdates[`trafficSource.${context.traffic}`] = increment(1);
+      }
+
+      await setDoc(summaryRef, summaryUpdates, { merge: true });
+
+      // 2. Update /analytics/daily_{todayStr}
+      const dailyRef = doc(db, 'analytics', `daily_${todayStr}`);
+      const dailyUpdates: Record<string, unknown> = {
+        date: todayStr,
+        label: todayLabel,
+        lastUpdated: new Date().toISOString()
+      };
+      if (context.isNewVisitorToday) dailyUpdates.visitors = increment(1);
+      if (isPageView) dailyUpdates.pageViews = increment(1);
+      if (isGeneration) dailyUpdates.biodataGenerations = increment(1);
+      if (isDownload) {
+        dailyUpdates.downloads = increment(1);
+        if (isPdf) dailyUpdates.downloadsPdf = increment(1);
+        if (isPng) dailyUpdates.downloadsPng = increment(1);
+        if (isPrint) dailyUpdates.downloadsPrint = increment(1);
+      }
+
+      await setDoc(dailyRef, dailyUpdates, { merge: true });
+
+      // 3. Update /analytics/activity_stream (latest 50 anonymous events)
+      const streamRef = doc(db, 'analytics', 'activity_stream');
+      try {
+        const streamSnap = await getDoc(streamRef);
+        let existingList: AnonymousAnalyticsEvent[] = [];
+        if (streamSnap.exists()) {
+          const data = streamSnap.data();
+          if (Array.isArray(data.events)) {
+            existingList = data.events;
+          }
+        }
+        const updatedList = [eventRecord, ...existingList].slice(0, 50);
+        await setDoc(streamRef, { events: updatedList, lastUpdated: new Date().toISOString() }, { merge: true });
+      } catch {
+        // Non-fatal
+      }
+    } catch {
+      // Non-blocking catch
+    }
+  }
+
+  /**
+   * Fetches real database-backed aggregate metrics from Firestore /analytics
+   * Merges live cloud truth with base figures, updates local cache, and returns refreshed stats.
+   */
+  public async fetchStats(forceRefresh: boolean = false): Promise<AggregateStats> {
+    const cached = this.getStats();
+    if (!isConfigured || !db || typeof window === 'undefined') {
+      return cached;
+    }
+
+    try {
+      const { doc, getDoc, getDocs, collection } = await loadFirestore();
+
+      // Retrieve cloud summary and all documents in analytics collection
+      const summaryRef = doc(db, 'analytics', 'summary');
+      const streamRef = doc(db, 'analytics', 'activity_stream');
+      const analyticsCol = collection(db, 'analytics');
+
+      const [summarySnap, streamSnap, analyticsDocs] = await Promise.all([
+        getDoc(summaryRef).catch(() => null),
+        getDoc(streamRef).catch(() => null),
+        getDocs(analyticsCol).catch(() => null)
+      ]);
+
+      if (!summarySnap?.exists() && (!analyticsDocs || analyticsDocs.empty)) {
+        return cached;
+      }
+
+      const summaryData = summarySnap?.exists() ? summarySnap.data() : {};
+      
+      // Extract daily records
+      const dailyMap = new Map<string, Record<string, any>>();
+      if (analyticsDocs && !analyticsDocs.empty) {
+        analyticsDocs.forEach((d) => {
+          if (d.id.startsWith('daily_')) {
+            const data = d.data();
+            const dateKey = data.date || d.id.replace('daily_', '');
+            dailyMap.set(dateKey, data);
+          }
+        });
+      }
+
+      // Merge daily time series
+      const baseSeries = cached.dailyTimeSeries && cached.dailyTimeSeries.length > 0
+        ? cached.dailyTimeSeries
+        : generateDefaultTimeSeries();
+
+      const mergedTimeSeries: DailyMetricPoint[] = baseSeries.map((point) => {
+        const cloudPoint = dailyMap.get(point.date);
+        if (!cloudPoint) return point;
+
+        return {
+          ...point,
+          visitors: Math.max(point.visitors, (cloudPoint.visitors || 0)),
+          pageViews: Math.max(point.pageViews, (cloudPoint.pageViews || 0)),
+          biodataGenerations: Math.max(point.biodataGenerations, (cloudPoint.biodataGenerations || 0)),
+          downloads: Math.max(point.downloads, (cloudPoint.downloads || 0)),
+          downloadsPdf: Math.max(point.downloadsPdf, (cloudPoint.downloadsPdf || 0)),
+          downloadsPng: Math.max(point.downloadsPng, (cloudPoint.downloadsPng || 0)),
+          downloadsPrint: Math.max(point.downloadsPrint, (cloudPoint.downloadsPrint || 0))
+        };
+      });
+
+      // Today's metrics
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayPoint = mergedTimeSeries.find((p) => p.date === todayStr) || mergedTimeSeries[mergedTimeSeries.length - 1];
+
+      // Monthly metrics
+      const currYearMonth = todayStr.substring(0, 7);
+      const thisMonthPoints = mergedTimeSeries.filter((p) => p.date.startsWith(currYearMonth));
+      const visitorsThisMonth = thisMonthPoints.reduce((acc, p) => acc + p.visitors, 0);
+      const downloadsThisMonth = thisMonthPoints.reduce((acc, p) => acc + p.downloads, 0);
+
+      // Merge template usage counts
+      const templateUsage: Record<string, number> = {
+        ...initialStats.templateUsage,
+        ...(cached.templateUsage || {}),
+        ...(summaryData.templateUsage || {})
+      };
+
+      const totalUsage = Object.values(templateUsage).reduce((a, b) => a + b, 0) || 1;
+      const popularTemplates: PopularTemplateItem[] = Object.entries(templateUsage)
+        .map(([id, count]) => ({
+          id,
+          name: TEMPLATE_NAMES[id] || id.replace('-', ' '),
+          count,
+          percentage: Math.round((count / totalUsage) * 100)
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      // Merge device categories
+      const deviceCategory = {
+        ...initialStats.deviceCategory,
+        ...(cached.deviceCategory || {}),
+        ...(summaryData.deviceCategory || {})
+      };
+
+      // Merge browser categories
+      const browserCategory = {
+        ...initialStats.browserCategory,
+        ...(cached.browserCategory || {}),
+        ...(summaryData.browserCategory || {})
+      };
+
+      // Merge traffic sources
+      const trafficSource = {
+        ...initialStats.trafficSource,
+        ...(cached.trafficSource || {}),
+        ...(summaryData.trafficSource || {})
+      };
+
+      // Merge download breakdowns
+      const downloadsBreakdown = {
+        pdf: Math.max(cached.downloadsBreakdown.pdf, (summaryData.downloadsBreakdown?.pdf || 0)),
+        png: Math.max(cached.downloadsBreakdown.png, (summaryData.downloadsBreakdown?.png || 0)),
+        print: Math.max(cached.downloadsBreakdown.print, (summaryData.downloadsBreakdown?.print || 0))
+      };
+
+      // Merge activity stream events
+      let recentEvents = cached.recentEvents || [];
+      if (streamSnap?.exists()) {
+        const streamData = streamSnap.data();
+        if (Array.isArray(streamData.events) && streamData.events.length > 0) {
+          recentEvents = streamData.events;
+        }
+      }
+
+      const mergedStats: AggregateStats = {
+        ...cached,
+        visitors: Math.max(cached.visitors, (summaryData.visitors || 0)),
+        pageViews: Math.max(cached.pageViews, (summaryData.pageViews || 0)),
+        builderStarts: Math.max(cached.builderStarts, (summaryData.builderStarts || 0)),
+        biodataGenerations: Math.max(cached.biodataGenerations, (summaryData.biodataGenerations || 0)),
+        downloads: Math.max(cached.downloads, (summaryData.downloads || 0)),
+        visitorsToday: todayPoint.visitors,
+        pageViewsToday: todayPoint.pageViews,
+        biodataCreatedToday: todayPoint.biodataGenerations,
+        downloadsToday: todayPoint.downloads,
+        visitorsThisMonth: Math.max(cached.visitorsThisMonth, visitorsThisMonth),
+        downloadsThisMonth: Math.max(cached.downloadsThisMonth, downloadsThisMonth),
+        downloadsBreakdown,
+        templateUsage,
+        popularTemplates,
+        deviceCategory,
+        browserCategory,
+        trafficSource,
+        dailyTimeSeries: mergedTimeSeries,
+        recentEvents
+      };
+
+      this.saveStats(mergedStats);
+      return mergedStats;
+    } catch (err) {
+      console.warn('Firestore fetchStats fallback notice:', err);
+      return cached;
     }
   }
 

@@ -248,6 +248,19 @@
         }
       },
       "required": ["name", "email", "subject", "message", "status", "createdAt"]
+    },
+    "AnalyticsRecord": {
+      "title": "AnalyticsRecord",
+      "description": "Aggregated platform counters and anonymous daily metric totals (Zero PII)",
+      "type": "object",
+      "properties": {
+        "visitors": { "type": "number", "description": "Unique visitor counter" },
+        "pageViews": { "type": "number", "description": "Total page view counter" },
+        "builderStarts": { "type": "number", "description": "Builder session starts" },
+        "biodataGenerations": { "type": "number", "description": "Completed PDF renderings" },
+        "downloads": { "type": "number", "description": "Total downloads executed" },
+        "lastUpdated": { "type": "string", "format": "date-time", "description": "Last increment timestamp" }
+      }
     }
   },
   "firestore": {
@@ -270,6 +283,10 @@
     "/contact_messages/{messageId}": {
       "schema": "ContactMessage",
       "description": "Support messages and user feedback"
+    },
+    "/analytics/{metricId}": {
+      "schema": "AnalyticsRecord",
+      "description": "Aggregated platform telemetry documents and daily metrics"
     }
   }
 }

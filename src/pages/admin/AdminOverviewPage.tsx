@@ -40,29 +40,33 @@ export const AdminOverviewPage: React.FC = () => {
   const [downloadRange, setDownloadRange] = useState(14);
   const [, startTransition] = useTransition();
 
-  // Authentication check
+  const loadData = async (force = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const fresh = await analyticsService.fetchStats(force);
+      startTransition(() => {
+        setStats(fresh);
+        setLoading(false);
+      });
+    } catch {
+      setError('Failed to refresh analytics telemetry.');
+      setLoading(false);
+    }
+  };
+
+  // Authentication check and load data
   useEffect(() => {
     const token = sessionStorage.getItem('biodatacraft_admin_token');
     if (!token) {
       navigate('/admin/login');
+      return;
     }
+    loadData(true);
   }, [navigate]);
 
   const handleRefresh = () => {
-    setLoading(true);
-    setError(null);
-    setTimeout(() => {
-      try {
-        const fresh = analyticsService.getStats();
-        startTransition(() => {
-          setStats(fresh);
-          setLoading(false);
-        });
-      } catch {
-        setError('Failed to refresh analytics telemetry.');
-        setLoading(false);
-      }
-    }, 400);
+    loadData(true);
   };
 
   const handleExportSummary = () => {

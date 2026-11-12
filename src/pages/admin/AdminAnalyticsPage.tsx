@@ -36,28 +36,44 @@ export const AdminAnalyticsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<number>(14);
+  const [visitorRange, setVisitorRange] = useState<number>(14);
+  const [generationRange, setGenerationRange] = useState<number>(14);
+  const [downloadRange, setDownloadRange] = useState<number>(14);
   const [, startTransition] = useTransition();
+
+  const loadData = async (force = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const fresh = await analyticsService.fetchStats(force);
+      startTransition(() => {
+        setStats(fresh);
+        setLoading(false);
+      });
+    } catch {
+      setError('Failed to refresh analytics telemetry.');
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const token = sessionStorage.getItem('biodatacraft_admin_token');
-    if (!token) navigate('/admin/login');
+    if (!token) {
+      navigate('/admin/login');
+      return;
+    }
+    loadData(true);
   }, [navigate]);
 
   const handleRefresh = () => {
-    setLoading(true);
-    setError(null);
-    setTimeout(() => {
-      try {
-        const fresh = analyticsService.getStats();
-        startTransition(() => {
-          setStats(fresh);
-          setLoading(false);
-        });
-      } catch {
-        setError('Failed to refresh analytics telemetry.');
-        setLoading(false);
-      }
-    }, 400);
+    loadData(true);
+  };
+
+  const handleGlobalRangeChange = (days: number) => {
+    setTimeRange(days);
+    setVisitorRange(days);
+    setGenerationRange(days);
+    setDownloadRange(days);
   };
 
   const handleExportFull = () => {
@@ -283,9 +299,9 @@ export const AdminAnalyticsPage: React.FC = () => {
                   <button
                     key={d}
                     type="button"
-                    onClick={() => setTimeRange(d)}
+                    onClick={() => handleGlobalRangeChange(d)}
                     className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                      timeRange === d
+                      visitorRange === d && generationRange === d && downloadRange === d
                         ? 'bg-white text-stone-900 shadow-xs'
                         : 'text-stone-500 hover:text-stone-900'
                     }`}
@@ -307,8 +323,8 @@ export const AdminAnalyticsPage: React.FC = () => {
               metricLabel="visitors"
               colorScheme="amber"
               timeRanges={[7, 14, 30]}
-              selectedRange={timeRange}
-              onRangeChange={setTimeRange}
+              selectedRange={visitorRange}
+              onRangeChange={setVisitorRange}
               loading={loading}
               badgeText="Visitors"
             />
@@ -322,8 +338,8 @@ export const AdminAnalyticsPage: React.FC = () => {
               metricLabel="creations"
               colorScheme="purple"
               timeRanges={[7, 14, 30]}
-              selectedRange={timeRange}
-              onRangeChange={setTimeRange}
+              selectedRange={generationRange}
+              onRangeChange={setGenerationRange}
               loading={loading}
               badgeText="Generations"
             />
@@ -337,8 +353,8 @@ export const AdminAnalyticsPage: React.FC = () => {
               metricLabel="downloads"
               colorScheme="emerald"
               timeRanges={[7, 14, 30]}
-              selectedRange={timeRange}
-              onRangeChange={setTimeRange}
+              selectedRange={downloadRange}
+              onRangeChange={setDownloadRange}
               loading={loading}
               badgeText="Downloads"
             />
@@ -379,20 +395,20 @@ export const AdminAnalyticsPage: React.FC = () => {
                 {
                   step: '2. Builder Sessions',
                   count: stats.builderStarts,
-                  pct: Math.round((stats.builderStarts / Math.max(1, stats.visitors)) * 100),
-                  sub: 'Initiated biodata builder'
+                  pct: Math.min(100, Math.round((stats.builderStarts / Math.max(1, stats.visitors)) * 100)),
+                  sub: `${Math.min(100, Math.round((stats.builderStarts / Math.max(1, stats.visitors)) * 100))}% of visitors opened builder`
                 },
                 {
                   step: '3. Biodata Rendered',
                   count: stats.biodataGenerations,
-                  pct: Math.round((stats.biodataGenerations / Math.max(1, stats.visitors)) * 100),
-                  sub: 'Completed preview generation'
+                  pct: Math.min(100, Math.round((stats.biodataGenerations / Math.max(1, stats.visitors)) * 100)),
+                  sub: `${stats.builderStarts > 0 ? Math.min(100, Math.round((stats.biodataGenerations / stats.builderStarts) * 100)) : 0}% completion from builder start`
                 },
                 {
                   step: '4. Downloads Completed',
                   count: stats.downloads,
-                  pct: Math.round((stats.downloads / Math.max(1, stats.visitors)) * 100),
-                  sub: 'Saved PDF / PNG locally'
+                  pct: Math.min(100, Math.round((stats.downloads / Math.max(1, stats.visitors)) * 100)),
+                  sub: `${stats.biodataGenerations > 0 ? Math.min(100, Math.round((stats.downloads / stats.biodataGenerations) * 100)) : 0}% conversion from preview`
                 }
               ].map((item, idx) => (
                 <div key={idx} className="space-y-1.5 p-2 rounded-xl bg-stone-50/70 border border-stone-100">
