@@ -1,4 +1,4 @@
-import React, { useState, useId } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../ui/Card';
 import { DailyMetricPoint } from '../../../types/analytics';
 import { TrendingUp, Calendar, Info } from 'lucide-react';
@@ -35,10 +35,25 @@ export const AreaTrendChart: React.FC<AreaTrendChartProps> = ({
   className = ''
 }) => {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [internalRange, setInternalRange] = useState<number>(selectedRange);
   const gradientId = useId();
 
-  // Slice data based on selected range
-  const displayData = data.slice(-selectedRange);
+  useEffect(() => {
+    setInternalRange(selectedRange);
+  }, [selectedRange]);
+
+  const activeRange = selectedRange !== undefined ? selectedRange : internalRange;
+
+  // Reset hover index when selected range changes
+  const handleRangeChange = (range: number) => {
+    setHoverIndex(null);
+    setInternalRange(range);
+    onRangeChange?.(range);
+  };
+
+  // Slice data based on selected range safely
+  const safeData = Array.isArray(data) ? data.filter(Boolean) : [];
+  const displayData = safeData.slice(-Math.max(1, activeRange));
 
   const colors = {
     amber: {
@@ -71,7 +86,8 @@ export const AreaTrendChart: React.FC<AreaTrendChartProps> = ({
     }
   }[colorScheme];
 
-  if (loading) {
+  // Only render loading skeleton if there is no pre-existing data
+  if (loading && displayData.length === 0) {
     return (
       <Card className={`border-stone-200 shadow-xs animate-pulse ${className}`}>
         <CardHeader className="pb-2">
@@ -105,12 +121,15 @@ export const AreaTrendChart: React.FC<AreaTrendChartProps> = ({
     );
   }
 
-  // Calculate coordinates & bounds
-  const values = displayData.map((d) => (d[metricKey] as number) || 0);
+  // Calculate coordinates & bounds safely against NaN or undefined
+  const values = displayData.map((d) => {
+    const v = Number(d?.[metricKey]);
+    return Number.isFinite(v) ? Math.max(0, v) : 0;
+  });
   const maxValue = Math.max(...values, 10);
   const minValue = Math.min(...values, 0);
   const totalSum = values.reduce((a, b) => a + b, 0);
-  const avgValue = Math.round(totalSum / displayData.length);
+  const avgValue = displayData.length > 0 ? Math.round(totalSum / displayData.length) : 0;
 
   // SVG dimensions
   const width = 600;
@@ -133,30 +152,53 @@ export const AreaTrendChart: React.FC<AreaTrendChartProps> = ({
     return paddingY + innerHeight - normalized * innerHeight;
   };
 
-  // Build smooth cubic Bézier curve
-  const points = displayData.map((d, i) => ({
-    x: getX(i),
-    y: getY((d[metricKey] as number) || 0)
-  }));
+  // Build safe points array
+  const points = displayData.map((d, i) => {
+    const raw = Number(d?.[metricKey]);
+    const safeVal = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+    return {
+      x: getX(i),
+      y: getY(safeVal)
+    };
+  });
 
-  let pathD = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const curr = points[i];
-    const next = points[i + 1];
-    const cpX1 = curr.x + (next.x - curr.x) / 3;
-    const cpY1 = curr.y;
-    const cpX2 = curr.x + ((next.x - curr.x) * 2) / 3;
-    const cpY2 = next.y;
-    pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${next.x} ${next.y}`;
+  // Construct SVG paths cleanly
+  let pathD = '';
+  let areaD = '';
+
+  if (points.length === 1) {
+    pathD = `M ${paddingX} ${points[0].y} L ${width - paddingX} ${points[0].y}`;
+    areaD = `M ${paddingX} ${points[0].y} L ${width - paddingX} ${points[0].y} L ${width - paddingX} ${paddingY + innerHeight} L ${paddingX} ${paddingY + innerHeight} Z`;
+  } else if (points.length > 1) {
+    pathD = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const curr = points[i];
+      const next = points[i + 1];
+      const cpX1 = curr.x + (next.x - curr.x) / 3;
+      const cpY1 = curr.y;
+      const cpX2 = curr.x + ((next.x - curr.x) * 2) / 3;
+      const cpY2 = next.y;
+      pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${next.x} ${next.y}`;
+    }
+    areaD = `${pathD} L ${points[points.length - 1].x} ${
+      paddingY + innerHeight
+    } L ${points[0].x} ${paddingY + innerHeight} Z`;
   }
 
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${
-    paddingY + innerHeight
-  } L ${points[0].x} ${paddingY + innerHeight} Z`;
+  // Safe active point selection avoiding out-of-bound errors
+  const validHoverIndex =
+    hoverIndex !== null && hoverIndex >= 0 && hoverIndex < displayData.length
+      ? hoverIndex
+      : null;
 
-  const activePoint = hoverIndex !== null ? displayData[hoverIndex] : displayData[displayData.length - 1];
-  const activeValue = (activePoint[metricKey] as number) || 0;
-  const activeDate = activePoint.label || activePoint.date;
+  const activePoint =
+    validHoverIndex !== null
+      ? displayData[validHoverIndex]
+      : displayData[displayData.length - 1] || { label: 'Today', date: '', [metricKey]: 0 };
+
+  const rawActiveVal = activePoint?.[metricKey];
+  const activeValue = Number.isFinite(Number(rawActiveVal)) ? Number(rawActiveVal) : 0;
+  const activeDate = activePoint?.label || activePoint?.date || 'Today';
 
   return (
     <Card className={`border-stone-200 shadow-xs overflow-hidden ${className}`}>
@@ -184,9 +226,9 @@ export const AreaTrendChart: React.FC<AreaTrendChartProps> = ({
               <button
                 key={range}
                 type="button"
-                onClick={() => onRangeChange?.(range)}
+                onClick={() => handleRangeChange(range)}
                 className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                  selectedRange === range
+                  activeRange === range
                     ? 'bg-white text-stone-900 shadow-xs'
                     : 'text-stone-500 hover:text-stone-900'
                 }`}
@@ -284,20 +326,20 @@ export const AreaTrendChart: React.FC<AreaTrendChartProps> = ({
             />
 
             {/* Active / Hover crosshair */}
-            {hoverIndex !== null && (
+            {validHoverIndex !== null && points[validHoverIndex] && (
               <g>
                 <line
-                  x1={points[hoverIndex].x}
+                  x1={points[validHoverIndex].x}
                   y1={paddingY}
-                  x2={points[hoverIndex].x}
+                  x2={points[validHoverIndex].x}
                   y2={paddingY + innerHeight}
                   stroke="#cbd5e1"
                   strokeWidth="1.5"
                   strokeDasharray="2 2"
                 />
                 <circle
-                  cx={points[hoverIndex].x}
-                  cy={points[hoverIndex].y}
+                  cx={points[validHoverIndex].x}
+                  cy={points[validHoverIndex].y}
                   r="5"
                   fill="#ffffff"
                   stroke={colors.stroke}

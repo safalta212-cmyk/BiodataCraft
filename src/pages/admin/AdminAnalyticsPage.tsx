@@ -42,7 +42,7 @@ export const AdminAnalyticsPage: React.FC = () => {
   const [, startTransition] = useTransition();
 
   const loadData = async (force = false) => {
-    setLoading(true);
+    if (force) setLoading(true);
     setError(null);
     try {
       const fresh = await analyticsService.fetchStats(force);
@@ -62,7 +62,7 @@ export const AdminAnalyticsPage: React.FC = () => {
       navigate('/admin/login');
       return;
     }
-    loadData(true);
+    loadData(false);
   }, [navigate]);
 
   const handleRefresh = () => {

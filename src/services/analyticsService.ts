@@ -704,12 +704,19 @@ class AnalyticsService {
       const stepNumber = typeof safeMetadata.stepNumber === 'number' ? safeMetadata.stepNumber : undefined;
 
       // Update counters based on event type
+      let isNewVisitorRecordedThisEvent = false;
       switch (eventName) {
         case 'page_view':
           stats.pageViews = (stats.pageViews || 0) + 1;
           stats.totalVisits = (stats.totalVisits || 0) + 1;
           stats.pageViewsToday = (stats.pageViewsToday || 0) + 1;
-          todayPoint.pageViews += 1;
+          todayPoint.pageViews = (todayPoint.pageViews || 0) + 1;
+          if (this.isNewVisitorToday(visitorId)) {
+            stats.visitorsToday = (stats.visitorsToday || 0) + 1;
+            stats.visitorsThisMonth = (stats.visitorsThisMonth || 0) + 1;
+            todayPoint.visitors = (todayPoint.visitors || 0) + 1;
+            isNewVisitorRecordedThisEvent = true;
+          }
           break;
 
         case 'template_view':
@@ -782,6 +789,7 @@ class AnalyticsService {
             stats.visitorsToday = (stats.visitorsToday || 0) + 1;
             stats.visitorsThisMonth = (stats.visitorsThisMonth || 0) + 1;
             todayPoint.visitors += 1;
+            isNewVisitorRecordedThisEvent = true;
           }
           // Record device, browser, and traffic distributions per anonymous session
           stats.deviceCategory[device] = (stats.deviceCategory[device] || 0) + 1;
@@ -834,7 +842,7 @@ class AnalyticsService {
 
       // Asynchronously synchronize anonymous operational telemetry to Firestore
       this.syncToFirestore(eventName, safeMetadata, eventRecord, {
-        isNewVisitorToday: safeMetadata.isNewVisitorToday !== false,
+        isNewVisitorToday: isNewVisitorRecordedThisEvent,
         isFirstTimeVisitor: Boolean(safeMetadata.isFirstTimeVisitor),
         device,
         browser,
@@ -990,10 +998,16 @@ class AnalyticsService {
       const streamRef = doc(db, 'analytics', 'activity_stream');
       const analyticsCol = collection(db, 'analytics');
 
+      const timeoutPromise = <T>(promise: Promise<T>, ms = 3500): Promise<T | null> =>
+        Promise.race([
+          promise,
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
+        ]);
+
       const [summarySnap, streamSnap, analyticsDocs] = await Promise.all([
-        getDoc(summaryRef).catch(() => null),
-        getDoc(streamRef).catch(() => null),
-        getDocs(analyticsCol).catch(() => null)
+        timeoutPromise(getDoc(summaryRef).catch(() => null), 3500),
+        timeoutPromise(getDoc(streamRef).catch(() => null), 3500),
+        timeoutPromise(getDocs(analyticsCol).catch(() => null), 3500)
       ]);
 
       if (!summarySnap?.exists() && (!analyticsDocs || analyticsDocs.empty)) {
